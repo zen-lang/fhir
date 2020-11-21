@@ -1,0 +1,60 @@
+{:paths ["src" "zen-core"]
+
+ :deps {
+        org.clojure/clojure  {:mvn/version "1.10.1"}
+        healthsamurai/matcho {:mvn/version "0.3.7"}
+        cheshire/cheshire    {:mvn/version "5.10.0"}
+        zen/zen              {:local/root "../zen"}
+        zen/zen-doc          {:local/root "../zen-doc"}
+        ;; zen-lang/zen {:git/url "https://github.com/zen-lang/zen"
+        ;;               :sha "593a18f7f7f780f7024ae5ee2248e50a97d4bcaa"}
+
+        }
+
+ :aliases
+ {:nrepl
+  {:extra-paths []
+   :override-deps {zen/zen {:local/root "../zen"}}
+   :extra-deps {org.clojure/tools.nrepl       {:mvn/version "0.2.13"}
+                org.clojure/core.rrb-vector   {:mvn/version "0.0.13"}
+                cider/cider-nrepl             {:mvn/version "0.25.2"}
+                refactor-nrepl/refactor-nrepl {:mvn/version "2.4.0"}}
+
+   :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]}
+
+  :test {:extra-paths ["test" "lib/example" "lib/auth"]
+         :extra-deps {healthsamurai/matcho {:mvn/version "0.3.7"}}}
+
+  :outdated {:extra-deps {olical/depot {:mvn/version "1.7.0"}}
+             :main-opts ["-m" "depot.outdated.main"]}
+
+  :kaocha
+  {:extra-deps {lambdaisland/kaocha  {:mvn/version "1.0-612"}}
+   :extra-paths ["runner" "test"]
+   :jvm-opts    ^:replace ["-XX:-OmitStackTraceInFastThrow"]
+   :main-opts   ["-m" "kaocha.runner" "--config-file" "test/test.edn"]}
+
+  :runner {:extra-deps {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner"
+                                                   :sha     "3cb0a9daf1cb746259dc8309b218f9211ad3b33b"}}
+           :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]
+           :main-opts ["-m" "test-runner"]}
+
+  :build
+  {:extra-paths ["build"]
+   :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]
+   :extra-deps {cambada/cambada {:git/url "https://github.com/HealthSamurai/cambada"
+                                 :sha     "a8ccf922e516e3249e96ae63dadd91d5f01e83f5"}}
+   :main-opts  ["-m" "build"]}
+
+
+  :depstar {:extra-deps
+            {seancorfield/depstar {:mvn/version "1.1.133"}}
+            :ns-default hf.depstar
+            :main-class zen.doc.core
+            :exec-args {}}
+
+  :deploy
+  {:extra-deps {slipset/deps-deploy {:mvn/version "RELEASE"}}
+   :main-opts ["-m" "deps-deploy.deps-deploy" "deploy" "target/zen-doc.jar"]}
+
+  }}

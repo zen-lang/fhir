@@ -1,1 +1,3 @@
-# fhir
+# zen doc
+
+Documentation generator for zen
