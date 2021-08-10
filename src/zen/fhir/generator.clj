@@ -7,7 +7,6 @@
 
 (def types (cheshire.core/parse-string (slurp "fhir/profiles-types.json") keyword))
 
-
 (def subj (:resource (first (:entry types))))
 
 (defn pp [x]
@@ -74,9 +73,24 @@
                                          (assoc acc (symbol (:name res)) (sd-to-zen res))
                                          acc))
                                      {'ns 'fhir.datatypes}) pp))]
-  (spit "pkg/datatypes.edn" edn))
+  (spit "zrc/datatypes.edn" edn))
 
+(def resources (cheshire.core/parse-string (slurp "fhir/profiles-resources.json") keyword))
 
+(defn res-to-zen [res]
+  (let [tp {'ns 'fhir.smth
+            :zen/tags #{'zen/schema}
+            :type 'zen/map}]
+    tp
+    ))
 
-
-
+(let [out (->> (:entry resources)
+               (reduce (fn [acc {res :resource}]
+                         (if (and (= "StructureDefinition" (:resourceType res))
+                                  (= "resource" (:kind res)))
+                           (assoc acc (symbol (:name res)) (res-to-zen res))
+                           acc))
+                       {})
+               )]
+  (doseq [[k v] out]
+    (spit (str "zrc/" k ".edn") v)))
