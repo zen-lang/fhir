@@ -1,22 +1,14 @@
-{:paths ["src" "zen-core"]
+{:paths ["src"]
 
- :deps {
-        org.clojure/clojure  {:mvn/version "1.10.1"}
-        healthsamurai/matcho {:mvn/version "0.3.7"}
+ :deps {org.clojure/clojure  {:mvn/version "1.10.1"}
         cheshire/cheshire    {:mvn/version "5.10.0"}
-        zen/zen              {:local/root "../zen"}
-        zen/zen-doc          {:local/root "../zen-doc"}
-        ;; zen-lang/zen {:git/url "https://github.com/zen-lang/zen"
-        ;;               :sha "593a18f7f7f780f7024ae5ee2248e50a97d4bcaa"}
-
-        }
+        zen-lang/zen         {:git/url "https://github.com/zen-lang/zen"
+                              :sha "8351ddd5482b3f1f659ecdaf8a20e6ea121fd16b"}}
 
  :aliases
  {:nrepl
   {:extra-paths []
-   :override-deps {zen/zen {:local/root "../zen"}}
    :extra-deps {org.clojure/tools.nrepl       {:mvn/version "0.2.13"}
-                org.clojure/core.rrb-vector   {:mvn/version "0.0.13"}
                 cider/cider-nrepl             {:mvn/version "0.25.2"}
                 refactor-nrepl/refactor-nrepl {:mvn/version "2.4.0"}}
 

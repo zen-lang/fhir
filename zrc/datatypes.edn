@@ -612,14 +612,56 @@
    :value
    {:zen/desc "Value of extension",
     :confirms
-    #{uri CodeableConcept uuid Quantity Count boolean Age Reference
-      Annotation unsignedInt Signature markdown date Dosage
-      RelatedArtifact ContactDetail instant UsageContext
-      DataRequirement base64Binary time Meta Distance SampledData
-      TriggerDefinition Identifier string Address Expression dateTime
-      integer Ratio oid Range ContactPoint id Attachment Contributor
-      Period Money decimal canonical url code positiveInt Coding
-      ParameterDefinition HumanName Duration Timing}}},
+    #{uri
+      CodeableConcept
+      uuid
+      Quantity
+      Count
+      boolean
+      Age
+      Reference
+      Annotation
+      unsignedInt
+      Signature
+      markdown
+      date
+      Dosage
+      RelatedArtifact
+      ContactDetail
+      instant
+      UsageContext
+      DataRequirement
+      base64Binary
+      time
+      Meta
+      Distance
+      SampledData
+      TriggerDefinition
+      Identifier
+      string
+      Address
+      Expression
+      dateTime
+      integer
+      Ratio
+      oid
+      Range
+      ContactPoint
+      id
+      Attachment
+      Contributor
+      Period
+      Money
+      decimal
+      canonical
+      url
+      code
+      positiveInt
+      Coding
+      ParameterDefinition
+      HumanName
+      Duration
+      Timing}}},
   :confirms #{Element}},
  dateTime
  {:zen/tags #{fhir/primitive-type zen/schema}, :type zen/datetime},
@@ -687,7 +729,14 @@
    :maxValue
    {:zen/desc "Maximum Allowed Value (for some types)",
     :confirms
-    #{Quantity unsignedInt date instant time dateTime integer decimal
+    #{Quantity
+      unsignedInt
+      date
+      instant
+      time
+      dateTime
+      integer
+      decimal
       positiveInt}},
    :isModifier
    {:zen/desc "If this modifies the meaning of other elements",
@@ -794,7 +843,14 @@
    :minValue
    {:zen/desc "Minimum Allowed Value (for some types)",
     :confirms
-    #{Quantity unsignedInt date instant time dateTime integer decimal
+    #{Quantity
+      unsignedInt
+      date
+      instant
+      time
+      dateTime
+      integer
+      decimal
       positiveInt}},
    :sliceName
    {:zen/desc "Name for this particular element (in a set of slices)",
@@ -870,14 +926,55 @@
       :value
       {:zen/desc "Value of Example (one of allowed types)",
        :confirms
-       #{uri CodeableConcept uuid Quantity Count boolean Age Reference
-         Annotation unsignedInt Signature markdown date Dosage
-         RelatedArtifact ContactDetail instant UsageContext
-         DataRequirement base64Binary time Meta Distance SampledData
-         TriggerDefinition Identifier string Address Expression
-         dateTime integer Ratio oid Range ContactPoint id Attachment
-         Contributor Period Money decimal canonical url code
-         positiveInt Coding ParameterDefinition HumanName Duration
+       #{uri
+         CodeableConcept
+         uuid
+         Quantity
+         Count
+         boolean
+         Age
+         Reference
+         Annotation
+         unsignedInt
+         Signature
+         markdown
+         date
+         Dosage
+         RelatedArtifact
+         ContactDetail
+         instant
+         UsageContext
+         DataRequirement
+         base64Binary
+         time
+         Meta
+         Distance
+         SampledData
+         TriggerDefinition
+         Identifier
+         string
+         Address
+         Expression
+         dateTime
+         integer
+         Ratio
+         oid
+         Range
+         ContactPoint
+         id
+         Attachment
+         Contributor
+         Period
+         Money
+         decimal
+         canonical
+         url
+         code
+         positiveInt
+         Coding
+         ParameterDefinition
+         HumanName
+         Duration
          Timing}}}}},
    :orderMeaning
    {:zen/desc "What the order of the elements means",
@@ -886,25 +983,109 @@
    :defaultValue
    {:zen/desc "Specified value if missing from instance",
     :confirms
-    #{uri CodeableConcept uuid Quantity Count boolean Age Reference
-      Annotation unsignedInt Signature markdown date Dosage
-      RelatedArtifact ContactDetail instant UsageContext
-      DataRequirement base64Binary time Meta Distance SampledData
-      TriggerDefinition Identifier string Address Expression dateTime
-      integer Ratio oid Range ContactPoint id Attachment Contributor
-      Period Money decimal canonical url code positiveInt Coding
-      ParameterDefinition HumanName Duration Timing}},
+    #{uri
+      CodeableConcept
+      uuid
+      Quantity
+      Count
+      boolean
+      Age
+      Reference
+      Annotation
+      unsignedInt
+      Signature
+      markdown
+      date
+      Dosage
+      RelatedArtifact
+      ContactDetail
+      instant
+      UsageContext
+      DataRequirement
+      base64Binary
+      time
+      Meta
+      Distance
+      SampledData
+      TriggerDefinition
+      Identifier
+      string
+      Address
+      Expression
+      dateTime
+      integer
+      Ratio
+      oid
+      Range
+      ContactPoint
+      id
+      Attachment
+      Contributor
+      Period
+      Money
+      decimal
+      canonical
+      url
+      code
+      positiveInt
+      Coding
+      ParameterDefinition
+      HumanName
+      Duration
+      Timing}},
    :fixed
    {:zen/desc "Value must be exactly this",
     :confirms
-    #{uri CodeableConcept uuid Quantity Count boolean Age Reference
-      Annotation unsignedInt Signature markdown date Dosage
-      RelatedArtifact ContactDetail instant UsageContext
-      DataRequirement base64Binary time Meta Distance SampledData
-      TriggerDefinition Identifier string Address Expression dateTime
-      integer Ratio oid Range ContactPoint id Attachment Contributor
-      Period Money decimal canonical url code positiveInt Coding
-      ParameterDefinition HumanName Duration Timing}},
+    #{uri
+      CodeableConcept
+      uuid
+      Quantity
+      Count
+      boolean
+      Age
+      Reference
+      Annotation
+      unsignedInt
+      Signature
+      markdown
+      date
+      Dosage
+      RelatedArtifact
+      ContactDetail
+      instant
+      UsageContext
+      DataRequirement
+      base64Binary
+      time
+      Meta
+      Distance
+      SampledData
+      TriggerDefinition
+      Identifier
+      string
+      Address
+      Expression
+      dateTime
+      integer
+      Ratio
+      oid
+      Range
+      ContactPoint
+      id
+      Attachment
+      Contributor
+      Period
+      Money
+      decimal
+      canonical
+      url
+      code
+      positiveInt
+      Coding
+      ParameterDefinition
+      HumanName
+      Duration
+      Timing}},
    :base
    {:zen/desc "Base definition information for tools",
     :confirms #{Element},
@@ -931,14 +1112,56 @@
    :pattern
    {:zen/desc "Value must have at least these property values",
     :confirms
-    #{uri CodeableConcept uuid Quantity Count boolean Age Reference
-      Annotation unsignedInt Signature markdown date Dosage
-      RelatedArtifact ContactDetail instant UsageContext
-      DataRequirement base64Binary time Meta Distance SampledData
-      TriggerDefinition Identifier string Address Expression dateTime
-      integer Ratio oid Range ContactPoint id Attachment Contributor
-      Period Money decimal canonical url code positiveInt Coding
-      ParameterDefinition HumanName Duration Timing}}},
+    #{uri
+      CodeableConcept
+      uuid
+      Quantity
+      Count
+      boolean
+      Age
+      Reference
+      Annotation
+      unsignedInt
+      Signature
+      markdown
+      date
+      Dosage
+      RelatedArtifact
+      ContactDetail
+      instant
+      UsageContext
+      DataRequirement
+      base64Binary
+      time
+      Meta
+      Distance
+      SampledData
+      TriggerDefinition
+      Identifier
+      string
+      Address
+      Expression
+      dateTime
+      integer
+      Ratio
+      oid
+      Range
+      ContactPoint
+      id
+      Attachment
+      Contributor
+      Period
+      Money
+      decimal
+      canonical
+      url
+      code
+      positiveInt
+      Coding
+      ParameterDefinition
+      HumanName
+      Duration
+      Timing}}},
   :confirms #{BackboneElement}},
  Range
  {:zen/tags #{fhir/complex-type zen/schema},
