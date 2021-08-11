@@ -1,6 +1,6 @@
 (ns zen.fhir.generator-test
   (:require
-   [zen.fhir.generator :as subj]
+   [zen.fhir.generator :as sut]
    [matcho.core :as matcho]
    [clojure.java.io :as io]
    [clojure.test :as t]))
@@ -138,22 +138,22 @@
             :baseDefinition "http://hl7.org/fhir/StructureDefinition/Element"})
 
 (def qzs {'Quantity
-          {:zen/tags #{'zen/schema 'fhir/complex-type}
+          {:zen/tags #{'zen/schema 'complex-type}
            :zen/desc "A measured or measurable amount",
            :confirms #{'Element} ;; [:baseDefinition]
            #_:effects #_{'fhir/binding {:strength "extensible",
-                                    :description "Appropriate units for Duration.",
-                                    :valueSet "http://hl7.org/fhir/ValueSet/duration-units"}
+                                        :description "Appropriate units for Duration.",
+                                        :valueSet "http://hl7.org/fhir/ValueSet/duration-units"}
 
-                     'fhir/constraint {"qty-3"
-                                       {:severity "error",
-                                        :human "If a code for the unit is present, the system SHALL also be present",
-                                        :expression "code.empty() or system.exists()",}}}
+                         'fhir/constraint {"qty-3"
+                                           {:severity "error",
+                                            :human "If a code for the unit is present, the system SHALL also be present",
+                                            :expression "code.empty() or system.exists()",}}}
            :type 'zen/map
            :keys {:value {:confirms #{'decimal}
                           :zen/desc "Numerical value (with implicit precision)"}
                   :comparator {:type 'zen/string
-                               ;; :fhir/isSummary true ;;TODO 
+                               ;; :fhir/isSummary true ;;TODO
                                ;; :fhir/isModifier true
                                }
                   :unit {:type 'zen/string
@@ -162,15 +162,29 @@
                            :zen/desc "System that defines coded unit form"}
                   :code {:confirms #{'code}}}}})
 
-;; (slurp (io/resource "zen/fhir/pt-sd.edn"))
-;; (slurp (io/resource "zen/fhir/pt-zd.edn"))
 
-(t/deftest test-generator
-  (matcho/match (subj/sd-to-zen qsd)
-                qzs)
-
-  )
+(def patient-sd (read-string (slurp (io/resource "zen/fhir/pt-sd.edn"))))
+(def patient-zs (read-string (slurp (io/resource "zen/fhir/pt-zs.edn"))))
 
 
+(t/deftest differential-schema
+  (t/testing "complex-type"
+    (matcho/match
+      (sut/structure-definitions->zen-project
+        'fhir.R4-test
+        "http://hl7.org/fhir/StructureDefinition/Quantity"
+        [qsd]
+        :fold-schemas? true
+        :elements-mode :differential)
+      [qzs]))
 
-
+  (t/testing "resource"
+    (matcho/match
+      (sut/structure-definitions->zen-project
+        'fhir.R4-test
+        "http://hl7.org/fhir/StructureDefinition/Patient"
+        [patient-sd]
+        :remove-gen-keys? true
+        :fold-schemas? true
+        :elements-mode :differential)
+      [{'Patient patient-zs}])))
