@@ -1,0 +1,235 @@
+{:name "Patient",
+ :abstract false,
+ :type "Patient",
+ :resourceType "StructureDefinition",
+ :status "active",
+ :id "Patient",
+ :kind "resource",
+ :url "http://hl7.org/fhir/StructureDefinition/Patient",
+ :differential
+ {:element
+  [{:path "Patient",
+    :short
+    "Information about an individual or animal receiving health care services",
+    :min 0,
+    :max "*"}
+   {:path "Patient.identifier",
+    :min 0,
+    :short "An identifier for this patient",
+    :type [{:code "Identifier"}],
+    :max "*",
+    :isSummary true}
+   {:path "Patient.active",
+    :min 0,
+    :isModifier true,
+    :short "Whether this patient's record is in active use",
+    :type [{:code "boolean"}],
+    :max "1",
+    :isSummary true}
+   {:path "Patient.name",
+    :min 0,
+    :short "A name associated with the patient",
+    :type [{:code "HumanName"}],
+    :max "*",
+    :isSummary true}
+   {:path "Patient.telecom",
+    :min 0,
+    :short "A contact detail for the individual",
+    :type [{:code "ContactPoint"}],
+    :max "*",
+    :isSummary true}
+   {:path "Patient.gender",
+    :min 0,
+    :short "male | female | other | unknown",
+    :type [{:code "code"}],
+    :binding
+    {:strength "required",
+     :description "The gender of a person used for administrative purposes.",
+     :valueSet "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"},
+    :max "1",
+    :isSummary true}
+   {:path "Patient.birthDate",
+    :min 0,
+    :short "The date of birth for the individual",
+    :type [{:code "date"}],
+    :max "1",
+    :isSummary true}
+   {:path "Patient.deceased[x]",
+    :min 0,
+    :isModifier true,
+    :short "Indicates if the individual is deceased or not",
+    :type [{:code "boolean"} {:code "dateTime"}],
+    :max "1",
+    :isSummary true}
+   {:path "Patient.address",
+    :min 0,
+    :short "An address for the individual",
+    :type [{:code "Address"}],
+    :max "*",
+    :isSummary true}
+   {:path "Patient.maritalStatus",
+    :min 0,
+    :short "Marital (civil) status of a patient",
+    :type [{:code "CodeableConcept"}],
+    :binding
+    {:strength "extensible",
+     :description "The domestic partnership status of a person.",
+     :valueSet "http://hl7.org/fhir/ValueSet/marital-status"},
+    :max "1"}
+   {:path "Patient.multipleBirth[x]",
+    :min 0,
+    :short "Whether patient is part of a multiple birth",
+    :type [{:code "boolean"} {:code "integer"}],
+    :max "1"}
+   {:path "Patient.photo",
+    :min 0,
+    :short "Image of the patient",
+    :type [{:code "Attachment"}],
+    :max "*"}
+   {:constraint
+    [{:key "pat-1",
+      :severity "error",
+      :human
+      "SHALL at least contain a contact's details or a reference to an organization",
+      :expression
+      "name.exists() or telecom.exists() or address.exists() or organization.exists()",
+      :xpath
+      "exists(f:name) or exists(f:telecom) or exists(f:address) or exists(f:organization)"}],
+    :path "Patient.contact",
+    :min 0,
+    :short "A contact party (e.g. guardian, partner, friend) for the patient",
+    :type [{:code "BackboneElement"}],
+    :extension
+    [{:url
+      "http://hl7.org/fhir/StructureDefinition/structuredefinition-explicit-type-name",
+      :valueString "Contact"}],
+    :max "*"}
+   {:path "Patient.contact.relationship",
+    :min 0,
+    :short "The kind of relationship",
+    :type [{:code "CodeableConcept"}],
+    :binding
+    {:strength "extensible",
+     :description
+     "The nature of the relationship between a patient and a contact person for that patient.",
+     :valueSet "http://hl7.org/fhir/ValueSet/patient-contactrelationship"},
+    :max "*"}
+   {:path "Patient.contact.name",
+    :min 0,
+    :short "A name associated with the contact person",
+    :type [{:code "HumanName"}],
+    :max "1"}
+   {:path "Patient.contact.telecom",
+    :min 0,
+    :short "A contact detail for the person",
+    :type [{:code "ContactPoint"}],
+    :max "*"}
+   {:path "Patient.contact.address",
+    :min 0,
+    :short "Address for the contact person",
+    :type [{:code "Address"}],
+    :max "1"}
+   {:path "Patient.contact.gender",
+    :min 0,
+    :short "male | female | other | unknown",
+    :type [{:code "code"}],
+    :binding
+    {:strength "required",
+     :description "The gender of a person used for administrative purposes.",
+     :valueSet "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"},
+    :max "1"}
+   {:path "Patient.contact.organization",
+    :min 0,
+    :short "Organization that is associated with the contact",
+    :type
+    [{:code "Reference",
+      :targetProfile
+      ["http://hl7.org/fhir/StructureDefinition/Organization"]}],
+    :max "1",
+    :condition ["pat-1"]}
+   {:path "Patient.contact.period",
+    :short
+    "The period during which this contact person or organization is valid to be contacted relating to this patient",
+    :min 0,
+    :max "1",
+    :type [{:code "Period"}]}
+   {:path "Patient.communication",
+    :min 0,
+    :short
+    "A language which may be used to communicate with the patient about his or her health",
+    :type [{:code "BackboneElement"}],
+    :max "*"}
+   {:path "Patient.communication.language",
+    :min 1,
+    :short
+    "The language which can be used to communicate with the patient about his or her health",
+    :type [{:code "CodeableConcept"}],
+    :binding
+    {:strength "preferred",
+     :description "A human language.",
+     :valueSet "http://hl7.org/fhir/ValueSet/languages"},
+    :max "1"}
+   {:path "Patient.communication.preferred",
+    :min 0,
+    :short "Language preference indicator",
+    :type [{:code "boolean"}],
+    :max "1"}
+   {:path "Patient.generalPractitioner",
+    :min 0,
+    :short "Patient's nominated primary care provider",
+    :type
+    [{:code "Reference",
+      :targetProfile
+      ["http://hl7.org/fhir/StructureDefinition/Organization"
+       "http://hl7.org/fhir/StructureDefinition/Practitioner"
+       "http://hl7.org/fhir/StructureDefinition/PractitionerRole"]}],
+    :max "*"}
+   {:path "Patient.managingOrganization",
+    :min 0,
+    :short "Organization that is the custodian of the patient record",
+    :type
+    [{:code "Reference",
+      :targetProfile
+      ["http://hl7.org/fhir/StructureDefinition/Organization"]}],
+    :max "1",
+    :isSummary true}
+   {:path "Patient.link",
+    :min 0,
+    :isModifier true,
+    :short
+    "Link to another patient resource that concerns the same actual person",
+    :type [{:code "BackboneElement"}],
+    :max "*",
+    :isSummary true}
+   {:path "Patient.link.other",
+    :min 1,
+    :short
+    "The other patient or related person resource that the link refers to",
+    :type
+    [{:extension
+      [{:url
+        "http://hl7.org/fhir/StructureDefinition/structuredefinition-hierarchy",
+        :valueBoolean false}],
+      :code "Reference",
+      :targetProfile
+      ["http://hl7.org/fhir/StructureDefinition/Patient"
+       "http://hl7.org/fhir/StructureDefinition/RelatedPerson"]}],
+    :max "1",
+    :isSummary true}
+   {:path "Patient.link.type",
+    :min 1,
+    :short "replaced-by | replaces | refer | seealso",
+    :type [{:code "code"}],
+    :binding
+    {:strength "required",
+     :description
+     "The type of link between this patient resource and another patient resource.",
+     :valueSet "http://hl7.org/fhir/ValueSet/link-type|4.0.1"},
+    :max "1",
+    :isSummary true}]},
+ :contact
+ [{:telecom [{:system "url", :value "http://hl7.org/fhir"}]}
+  {:telecom
+   [{:system "url",
+     :value "http://www.hl7.org/Special/committees/pafm/index.cfm"}]}],
+ :baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"}

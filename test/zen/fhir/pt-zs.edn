@@ -1,0 +1,44 @@
+{:zen/tags #{fhir/resource zen/schema}
+ :zen/desc "Information about an individual or animal receiving health care services",
+ :confirms #{fhir/DomainResource}
+
+ :type zen/map
+ :keys {
+        :identifier {:type zen/vector
+                     :zen/desc "An identifier for this patient",
+                     :every {:confirms #{fhir.datatypes/Identifier}}}
+        :active {:type zen/boolean}
+
+        :name {:type zen/vector
+               :every {:confirms #{fhir.datatypes/HumanName}}}
+
+        :telecom {:type zen/vector
+                  :every {:confirms #{fhir.datatypes/ContactPoint}}}
+
+        :gender  {:confirms #{fhir.datatypes/code}
+                  :effects {fhir/binding {:strength "required",
+                                         :description "The gender of a person used for administrative purposes.",
+                                         :valueSet "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"}}}
+
+        :birthDate {:confirms #{fhir.datatypes/date}}
+
+        :deceased {:type zen/map
+                   :exclusive-keys #{:boolean :dateTime}
+                   :keys {:boolean {:type zen/boolean}
+                          :dateTime {:type zen/datetime}}}
+        :contact {:type zen/vector
+                  :every {:type zen/map
+                          :keys {:relationship {:confirms #{fhir.datatypes/CodeableConcept}}
+                                 :name {:confirms #{fhir.datatypes/HumanName}}
+                                 ;;TODO
+                                 }}}
+        ;; ...
+        :managingOrganization {:confirms #{fhir.datatypes/Reference}
+                               :type zen/map
+                               :keys {:resourceType {:type zen/string
+                                                     :enum [{:value "Organization"}]}}}
+        
+        }
+
+
+ }
