@@ -188,3 +188,328 @@
         :fold-schemas? true
         :elements-mode :differential)
       [{'Patient patient-zs}])))
+
+
+(t/deftest structure-definition-conversion
+  (t/testing "rich parsed path"
+    (t/is (= [{:key "Element"}
+              {:key "foo"}
+              {:slice "bar"}
+              {:key "baz"}
+              {:poly "quux[x]"}
+              {:key "quuxCodeableConcept"}
+              {:key "code"}
+              {:poly "value[x]"}]
+             (sut/rich-parse-path "Element.foo:bar.baz.quux[x]:quuxCodeableConcept.code.value[x]")))
+
+    (t/is (= "Element.foo:bar.baz.quuxCodeableConcept.code"
+             (sut/format-rich-path [{:key "Element"}
+                                    {:key "foo"}
+                                    {:slice "bar"}
+                                    {:key "baz"}
+                                    {:poly "quux[x]"}
+                                    {:key "quuxCodeableConcept"}
+                                    {:key "code"}
+                                    {:poly "value[x]"}]))))
+
+  (t/testing "id sanitization"
+    (t/is (= ["Resource.fieldComplex.valuePrimitive"
+              "Resource.fieldComplex.value_x_"
+              "Resource.value_x_"
+              "Resource.value"
+              "Resource"
+              nil
+              nil]
+             (mapv (comp sut/format-rich-id sut/rich-parse-path)
+                   ["Resource.field[x]:fieldComplex.value[x]:valuePrimitive"
+                    "Resource.field[x]:fieldComplex.value[x]"
+                    "Resource.value[x]"
+                    "Resource.value"
+                    "Resource"
+                    ""
+                    nil]))))
+
+  (t/testing "various root ids"
+    (t/is (= [[0 [true false false]]
+              [1 [true false false]]
+              [2 [true false false]]
+              [3 [false false false]]
+              [4 [false false true]]
+              [5 [false false false]]
+              [6 [false true false]]
+              [7 [false false false]]
+              [8 [false false false]]
+              [9 [false false false]]]
+             (->> [nil
+                   ""
+                   "Element"
+                   "Element.foo"
+                   "Element.foo:bar"
+                   "Element.foo:bar.baz"
+                   "Element.foo:bar.baz.quux[x]"
+                   "Element.foo:bar.baz.quux[x]:quuxCode"
+                   "Element.foo:bar.baz.quux[x]:quuxCodeableConcept"
+                   "Element.foo:bar.baz.quux[x]:quuxCodeableConcept.code"]
+                  (mapv (juxt sut/root-element? sut/poly-root? sut/slice-root?))
+                  (map-indexed vector)))))
+
+
+  (t/testing "element -> zen"
+    (t/testing "pattern -> zen"
+      (matcho/match
+        (sut/pattern->zen
+          {:system "http://hl7.org/fhir/sid/us-npi"
+           :type   {:text "foo"}})
+        {:type 'zen/map
+         :keys {:system {:const {:value "http://hl7.org/fhir/sid/us-npi"}},
+                :type   {:type 'zen/map
+                         :keys {:text {:const {:value "foo"}}}}}})
+
+      (matcho/match
+        (sut/element->zen
+          {:patternCodeableConcept
+           {:coding
+            [{:system "http://terminology.hl7.org/CodeSystem/v2-0203",
+              :code "MB"}
+             {:system "sys",
+              :code "code"}]}})
+        '{:type zen/map
+          :validation-type :open
+          :keys {:coding
+                 {:type zen/vector
+                  :slicing {:slices {"RESERVED-aidbox-array-pattern-slicing-0"
+                                     {:filter {:engine :zen
+                                               :zen {:type zen/map
+                                                     :validation-type :open
+                                                     :keys {:system {:const {:value "http://terminology.hl7.org/CodeSystem/v2-0203"}}
+                                                            :code {:const {:value "MB"}}}}}
+                                      :schema {:type zen/vector
+                                               :minItems 1}}
+
+                                     "RESERVED-aidbox-array-pattern-slicing-1"
+                                     {:filter {:engine :zen
+                                               :zen {:type zen/map
+                                                     :validation-type :open
+                                                     :keys {:system {:const {:value "sys"}}
+                                                            :code {:const {:value "code"}}}}}
+                                      :schema {:type zen/vector
+                                               :minItems 1}}}}}}}))
+
+    (t/testing "multimethod"
+      (defmethod sut/ed->zen [:foo :baz] [arg] {:zen/foo arg})
+
+      (defmethod sut/ed->zen [:tar] [arg] {:zen/tar arg})
+
+      (matcho/match
+        (sut/element->zen {:foo "bar", :baz "taz", :tar "mar"})
+        {:zen/foo {:foo "bar", :baz "taz"}
+         :zen/tar {:tar "mar"}})
+
+      (remove-method sut/ed->zen [:tar])
+      (remove-method sut/ed->zen [:foo :baz])
+
+      (t/testing "fhir primitive types"
+        (matcho/match (sut/element->zen {:type [{:code "id"}]})
+                      {:confirms #{'fhir/id}})
+
+        (matcho/match (sut/element->zen {:type [{:code      "http://hl7.org/fhirpath/System.String"
+                                                 :extension [{:url      "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type"
+                                                              :valueUrl "uri"}]}]})
+                      {:confirms #{'fhir/uri}})
+
+        (matcho/match (sut/element->zen {:type [{:code "HumanName"}]})
+                      '{:confirms #{fhir/HumanName}}))
+
+      (t/testing "fhir polymorphic types"
+        (matcho/match (sut/element->zen {:type [{:code "url"} {:code "code"} {:code "id"}]})
+                      {::sut/poly [{:key    :valueUrl
+                                    :schema {:confirms #{'fhir/url}}}
+                                   {:key    :valueCode
+                                    :schema {:confirms #{'fhir/code}}}
+                                   {:key    :valueId
+                                    :schema {:confirms #{'fhir/id}}}]})))
+
+
+    (t/testing "path & id"
+      (matcho/match
+        (mapv sut/element->zen
+              [{:id "a", :path "a"}
+               {:id "a.b", :path "a.b"}
+               {:id "a.c", :path "a.c"}
+               {:id "a.b.c", :path "a.b.c"}
+               {:id "a.c.d", :path "a.c.d"}
+               {:id "a.field[x]", :path "a.field[x]"}
+               {:id "a.field[x]:fieldCoding", :path "a.field[x]"}
+               {:id "a.field[x]:fieldCoding.code", :path "a.field[x].code"}])
+        [#::sut{:id 'a, :key :a, :parent nil}
+         #::sut{:id 'a.b, :key :b, :parent 'a}
+         #::sut{:id 'a.c, :key :c, :parent 'a}
+         #::sut{:id 'a.b.c, :key :c, :parent 'a.b}
+         #::sut{:id 'a.c.d, :key :d, :parent 'a.c}
+         #::sut{:id 'a.field_x_, :key nil?, :parent 'a}
+         #::sut{:id 'a.fieldCoding, :key :fieldCoding, :parent 'a}
+         #::sut{:id 'a.fieldCoding.code, :key :code, :parent 'a.fieldCoding}]))
+
+    (t/testing "map or vector"
+      (matcho/match
+        (mapv sut/element->zen
+              [{:id "a", :path "a", :min 1, :max "1", :base {:max "1"}}
+               {:id "b", :path "b", :min 1, :max "1", :base {:max "*"}}
+               {:id "a.c", :path "a.c", :min 1, :max "1", :base {:max "1"}}
+               {:id "a.d", :path "a.d", :min 1, :max "1", :base {:max "*"}}
+               {:id "a.b", :path "a.b", :min 0, :max "*"}
+               {:id "a.b.c", :path "a.b.c", :min 0}
+               {:id "a.b.e", :path "a.b.e", :min 0, :max "1"}
+               {:id "a.b.d", :path "a.b.d", :min 1, :max "2", :base {:max "*"}}])
+        [#::sut{:collection? not, :required? true?}
+         #::sut{:collection? not, :required? true?}
+         #::sut{:collection? not, :required? true?}
+         #::sut{:collection? true?, :required? true?}
+         #::sut{:collection? true?, :required? not}
+         #::sut{:collection? not, :required? not}
+         #::sut{:collection? not, :required? not}
+         {::sut/collection? true?, :maxItems 2, :minItems 1}])))
+
+
+  (t/testing "links"
+    (matcho/match (mapv sut/element->zen
+                        '[{:id   "Extension"
+                           :path "Extension"}
+                          {:id   "Extension.url"
+                           :path "Extension.url"}
+                          {:id   "Extension.extension"
+                           :path "Extension.extension"}
+                          {:id   "Extension.extension.url"
+                           :path "Extension.extension.url"}
+                          {:id   "Extension.extension.value[x]"
+                           :path "Extension.extension.value[x]"}
+                          {:id   "Extension.extension.value[x]:valueCoding"
+                           :path "Extension.extension.value[x]"}
+                          {:id   "Extension.extension.value[x]:valueCoding.code"
+                           :path "Extension.extension.value[x].code"}
+                          {:id   "Extension.extension.value[x]:valueCode"
+                           :path "Extension.extension.value[x]"}
+                          {:id   "Extension.extension:daysOfWeek"
+                           :path "Extension.extension"}
+                          {:id   "Extension.extension:daysOfWeek.url"
+                           :path "Extension.extension.url"}])
+                  [#::sut{:id     'Extension
+                          :key    :Extension
+                          :parent nil}
+                   #::sut{:id     'Extension.url
+                          :key    :url
+                          :parent 'Extension}
+                   #::sut{:id     'Extension.extension
+                          :key    :extension
+                          :parent 'Extension}
+                   #::sut{:id     'Extension.extension.url
+                          :key    :url
+                          :parent 'Extension.extension}
+                   #::sut{:id     'Extension.extension.value_x_
+                          :key    nil?
+                          :parent 'Extension.extension}
+                   #::sut{:id     'Extension.extension.valueCoding
+                          :key    :valueCoding
+                          :parent 'Extension.extension}
+                   #::sut{:id     'Extension.extension.valueCoding.code
+                          :key    :code
+                          :parent 'Extension.extension.valueCoding}
+                   #::sut{:id     'Extension.extension.valueCode
+                          :key    :valueCode
+                          :parent 'Extension.extension}
+                   #::sut{:id     'Extension.extension:daysOfWeek
+                          :key    nil?
+                          :parent nil?}
+                   #::sut{:id     'Extension.extension:daysOfWeek.url
+                          :key    :url
+                          :parent 'Extension.extension:daysOfWeek}]))
+
+
+  (t/testing "link schemas"
+    (matcho/match
+      (sut/link-schemas '[#::sut{:id a, :key :a, :parent nil}
+                          #::sut{:id a.b, :key :b, :parent a}
+                          #::sut{:id a.c, :key :c, :parent a}
+                          #::sut{:id a.b.c, :key :c, :parent a.b}
+                          #::sut{:id a.c.d, :key :d, :parent a.c}])
+      '{a     #::sut{:links #{a.b a.c}},
+        a.b   #::sut{:links #{a.b.c}},
+        a.c   #::sut{:links #{a.c.d}},
+        a.b.c #::sut{:links #{}},
+        a.c.d #::sut{:links #{}}}))
+
+  (t/testing "build-schemas"
+    (t/testing "build keys"
+      (matcho/match (sut/build-schemas
+                      '{a     #::sut{:id a :key :a :parent nil :links #{a.b a.c}}
+                        a.b   #::sut{:id a.b :key :b :parent a :links #{a.b.c}}
+                        a.c   #::sut{:id a.c :key :c :parent a :links #{a.c.d}}
+                        a.b.c #::sut{:id a.b.c :key :c :parent a.b :links #{}}
+                        a.c.d #::sut{:id a.c.d :key :d :parent a.c :links #{}}})
+                    {'a     {:keys {:b {:confirms #{'a.b,}} :c {:confirms #{'a.c}}}},
+                     'a.b   {:keys {:c {:confirms #{'a.b.c}}}},
+                     'a.c   {:keys {:d {:confirms #{'a.c.d}}}},
+                     'a.b.c #(not (contains? % :keys)),
+                     'a.c.d #(not (contains? % :keys))}))
+
+    (t/testing "build every & types"
+      (matcho/match (sut/build-schemas
+                      '{a     #::sut{:id a :key :a :parent nil :collection? false :links #{a.b}}
+                        a.b   #::sut{:id a.b :key :b :parent a :collection? true :links #{a.b.c a.b.d}}
+                        a.b.c #::sut{:id a.b.c :key :c :parent a.b :collection? false :links #{}}
+                        a.b.d #::sut{:id a.b.d :key :d :parent a.b :collection? false :links #{}}})
+                    {'a     {:type 'zen/map
+                             :keys {:b {:confirms #{'a.b}}}}
+                     'a.b   {:type  'zen/vector
+                             :every {:confirms #{'a.b.*}}}
+                     'a.b.* {:type 'zen/map
+                             :keys {:d {:confirms #{'a.b.d}}
+                                    :c {:confirms #{'a.b.c}}}}
+                     'a.b.c {:type #(not (contains? '#{zen/map zen/vector} %))}
+                     'a.b.d {:type #(not (contains? '#{zen/map zen/vector} %))}})))
+
+  (t/testing "remove gen keys"
+    (t/is (= '[{ns  foo1
+                bar {:baz1 :taz}}
+               {ns  foo2
+                bar {:baz :taz}}]
+             (sut/remove-gen-keys
+               '[{ns  foo1
+                  bar {:baz1     :taz
+                       ::sut/tar :mar}}
+                 {ns  foo2
+                  bar {:baz      :taz
+                       ::sut/tar :mar}}]))))
+
+  (t/testing "get-deps-urls"
+    (t/is (= #{"pr"}
+             (sut/get-deps-urls
+               '{:snapshot
+                 {:element
+                  [{}
+                   {:type [{:code "ContactPoint"}]}
+                   {:type [{:code "Extension"}]}
+                   {:type [{:code "uri"}]}
+                   {:type [{:code "Extension" :profile ["pr"]}]}]}}))))
+
+  (t/testing "resolve-deps"
+    (matcho/match (sut/resolve-deps
+                    'lib
+                    '{ns     lib.foo
+                      import #{aidbox}
+                      bar    {:confirms #{baz}
+                              :foo      :bar}
+                      baz    {::sut/confirms-profile {:urls ["pr"] :symbol Extension}}
+                      bar2   {:confirms #{baz2}}
+                      baz2   {::sut/confirms-profile {:urls ["pr2" "pr3"] :symbol Extension}}
+                      bar3   {:confirms #{baz3}}
+                      baz3   {::sut/confirms-profile ["pr5"]}}
+                    {"pr"  {:url "pr", :id "baz"}
+                     "pr2" {:url "pr2" :id "baz2"}
+                     "pr3" {:url "pr3" :id "baz3"}
+                     "pr4" {:url "pr3" :id "baz3"}})
+                  '{ns     lib.foo
+                    import #{aidbox lib.baz lib.baz2}
+                    baz    {:confirms #{lib.baz/Extension}}
+                    baz2   {:confirms #{lib.baz2/Extension}}
+                    baz3   {:confirms nil}})))
