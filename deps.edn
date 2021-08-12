@@ -1,6 +1,6 @@
 {:paths ["src"]
 
- :deps {org.clojure/clojure  {:mvn/version "1.10.1"}
+ :deps {org.clojure/clojure  {:mvn/version "1.10.3"}
         cheshire/cheshire    {:mvn/version "5.10.0"}
         zen-lang/zen         {:git/url "https://github.com/zen-lang/zen"
                               :sha "8351ddd5482b3f1f659ecdaf8a20e6ea121fd16b"}
@@ -9,9 +9,7 @@
  :aliases
  {:nrepl
   {:extra-paths []
-   :extra-deps {org.clojure/tools.nrepl       {:mvn/version "0.2.13"}
-                cider/cider-nrepl             {:mvn/version "0.25.2"}
-                refactor-nrepl/refactor-nrepl {:mvn/version "2.4.0"}}
+   :extra-deps  {cider/cider-nrepl {:mvn/version "LATEST"}}
 
    :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]}
 

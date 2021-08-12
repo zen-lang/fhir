@@ -4,7 +4,7 @@
 SHELL = bash
 
 repl:
-	clj -A:test:nrepl -m nrepl.cmdline
+	clj -M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]
 
 test:
 	clj -A:test:kaocha
