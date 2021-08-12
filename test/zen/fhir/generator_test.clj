@@ -324,12 +324,17 @@
 
       (t/testing "fhir polymorphic types"
         (matcho/match (sut/element->zen {:type [{:code "url"} {:code "code"} {:code "id"}]})
-                      {::sut/poly [{:key    :valueUrl
-                                    :schema {:confirms #{'url}}}
-                                   {:key    :valueCode
-                                    :schema {:confirms #{'code}}}
-                                   {:key    :valueId
-                                    :schema {:confirms #{'id}}}]})))
+                      {::sut/poly
+                       {:key  :value
+                        :keys {:url  {:confirms #{'url}}
+                               :code {:confirms #{'code}}
+                               :id   {:confirms #{'id}}}}})
+
+        (matcho/match (sut/element->zen {:id "foo.bar.baz[x]"
+                                         :type [{:code "type"}]})
+                      {::sut/poly
+                       {:key  :baz
+                        :keys {:type {:confirms #{'type}}}}})))
 
 
     (t/testing "path & id"
@@ -684,7 +689,7 @@
           :snapshot {:element [{:id "Extension", :path "Extension"}
                                {:id   "Extension.value[x]",
                                 :path "Extension.value[x]",
-                                :min  0,
+                                :min  1,
                                 :max  "1",
                                 :type [{:code "url"} {:code "code"} {:code "id"}]
                                 :base {:path "Extension.value[x]", :min 0, :max "1"}}
@@ -703,19 +708,20 @@
     (matcho/match
       plannet-practitioner-zen-project
       '[{Extension
-         {:type           zen/map
-          :format         :aidbox
-          :exclusive-keys #{#{:valueCode :valueId :valueUrl}}
-          :keys           {:value {:type zen/map
-                                   :keys {:code {:confirms #{code}}
-                                          :id   {:confirms #{id}}
-                                          :url  {:confirms #{url}}}}
-                           :foo   {:type  zen/vector
-                                   :every {:type zen/map
-                                           :keys {:value {:type zen/map
-                                                          :keys {:code {:confirms #{code}}
-                                                                 :id   {:confirms #{id}}
-                                                                 :url  {:confirms #{url}}}}}}}}}}]))
+         {:type    zen/map
+          :format  :aidbox
+          :require #{:value}
+          :keys    {:value {:type           zen/map
+                            :exclusive-keys #{#{:code :id :url}}
+                            :keys           {:code {:confirms #{code}}
+                                             :id   {:confirms #{id}}
+                                             :url  {:confirms #{url}}}}
+                    :foo   {:type  zen/vector
+                            :every {:type zen/map
+                                    :keys {:value {:type zen/map
+                                                   :keys {:code {:confirms #{code}}
+                                                          :id   {:confirms #{id}}
+                                                          :url  {:confirms #{url}}}}}}}}}}]))
 
   #_(t/testing "validating resource type"
     (def zctx*

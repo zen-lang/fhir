@@ -212,12 +212,14 @@
 
 (defn ed-types->zen-type [id ed-types poly?]
   (if poly?
-    {::poly (mapv (fn [{code :code :as poly-type}]
-                    (assert code "Code should be defined for polymorphic type")
-                    (let [[_ poly-key] (re-matches #"^.+\.(.+?)\[x\]$" (str id))]
-                      {:key    (keyword (str (or poly-key "value") (str/upper-case (subs code 0 1)) (subs code 1)))
-                       :schema (ed-type->zen-type poly-type)}))
-                  ed-types)}
+    (let [[_ poly-key'] (re-matches #"^.+\.(.+?)\[x\]$" (str id))
+          poly-key      (or poly-key' "value")]
+      {::poly {:key  (keyword poly-key)
+               :keys (into {}
+                           (map (fn [{code :code :as poly-type}]
+                                  (assert code "Code should be defined for polymorphic type")
+                                  {(keyword code) (ed-type->zen-type poly-type)}))
+                           ed-types)}})
     (ed-type->zen-type (first ed-types))))
 
 
@@ -341,17 +343,10 @@
     schema))
 
 
-(defn build-exclusive [linked-schema]
-  (when-let [poly (::poly linked-schema)]
-    (let [exclusive (set (map :key poly))]
-      (when (<= 2 (count exclusive))
-        exclusive))))
-
-
 (defn build-require [linked-schema]
   (when (::required? linked-schema)
     (if (::poly linked-schema)
-      (set (map :key (::poly linked-schema)))
+      (get-in linked-schema [::poly :key])
       (::key linked-schema))))
 
 
@@ -364,9 +359,9 @@
 
 (defn build-poly [linked-schema]
   (when-let [poly (::poly linked-schema)]
-    (into {}
-          (map (fn [poly] {(:key poly) (:schema poly)}))
-          poly)))
+    {(:key poly) {:type 'zen/map
+                  :exclusive-keys #{(set (keys (:keys poly)))}
+                  :keys (:keys poly)}}))
 
 
 (def merge-attrs (partial merge-with (partial merge-with into)))
@@ -392,7 +387,6 @@
 
     (seq (::links schema))
     (let [linked-schemas (map schemas (::links schema))
-          exclusives     (into #{} (keep build-exclusive) linked-schemas)
           requires       (into #{} (keep build-require) linked-schemas)
           linked-attrs   (into {} (keep build-key) linked-schemas)
           poly-attrs     (into {} (keep build-poly) linked-schemas)
@@ -401,7 +395,6 @@
           built-schema   (utils/assoc-some
                            schema
                            :type 'zen/map
-                           :exclusive-keys (not-empty exclusives)
                            :require        (not-empty requires)
                            :keys           (not-empty attrs))]
       {schema-id built-schema})
@@ -455,7 +448,7 @@
                    :zen/tags           #{'zen/schema 'fhir/profile}
                    :zen/desc           description
                    :type               'zen/map
-                   :format             :fhir
+                   :format             :aidbox
                    :validation-type    :open
                    :profile-definition url}
                   (when (or (= "DomainResource" base)

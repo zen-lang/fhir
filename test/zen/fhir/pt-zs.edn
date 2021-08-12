@@ -22,11 +22,12 @@
 
         :birthDate {:confirms #{date}}
 
-        #_#_:deceased {:type zen/map
-                       :exclusive-keys #{:boolean :dateTime}
-                       :keys {:boolean {:type zen/boolean}}}
-        :deceasedDateTime {:confirms #{dateTime}, :type zen/datetime},
-        :deceasedBoolean {:confirms #{boolean}, :type zen/boolean},
+        :deceased {:type zen/map
+                   :exclusive-keys #{#{:boolean :dateTime}}
+                   :keys {:boolean {:type zen/boolean
+                                    :confirms #{boolean}}
+                          :dateTime {:type zen/datetime
+                                     :confirms #{dateTime}}}}
         :contact {:type zen/vector
                   :every {:type zen/map
                           :keys {:relationship
