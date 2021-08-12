@@ -1,0 +1,13 @@
+{ns fhir
+
+ profile
+ {:zen/tags #{zen/tag zen/schema}
+  :type     zen/map
+  :keys     {:resourceType       {:type zen/string}
+             :profile-definition {:type zen/string}
+             :format             {:type zen/keyword
+                                  :enum [{:value :aidbox}
+                                         {:value :fhir}]}
+             :severity           {:type zen/string
+                                  :enum [{:value "required"}
+                                         {:value "supported"}]}}}}
