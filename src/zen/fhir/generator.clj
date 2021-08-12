@@ -344,7 +344,7 @@
           schemas)))
 
 
-;; TODO: for better solumtion filter.zen.confirms
+;; TODO: for better solution filter.zen.confirms
 ;; should be separate simple schema without validation only for data distincion
 (defn build-slice [schema]
   (let [schema-id      (::id schema)
@@ -459,9 +459,11 @@
            (clojure.walk/postwalk
              (fn [x]
                (if (and (map? x) (contains? (:confirms x) schema-id))
-                 (safe-merge-with-into
-                   (update x :confirms disj schema-id) ;; TODO: disj produces empty sets
-                   (get acc schema-id))
+                 (let [schema-to-be-included (get acc schema-id)
+                       this-schema (zen.utils/dissoc-when empty?
+                                                          (update x :confirms disj schema-id)
+                                                          :confirms)]
+                   (safe-merge-with-into this-schema schema-to-be-included))
                  x))
              acc))
          schemas)))
