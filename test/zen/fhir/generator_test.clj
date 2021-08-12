@@ -697,27 +697,25 @@
                                 :min  0,
                                 :max  "1",
                                 :type [{:code "url"} {:code "code"} {:code "id"}]
-                                :base {:path "Extension.value[x]", :min 0, :max "1"}}]}}]))
+                                :base {:path "Extension.value[x]", :min 0, :max "1"}}]}}]
+        :fold-schemas? true))
 
     (matcho/match
       plannet-practitioner-zen-project
       '[{Extension
          {:type           zen/map
+          :format         :aidbox
           :exclusive-keys #{#{:valueCode :valueId :valueUrl}}
-          :keys           {:valueCode {:confirms #{code}}
-                           :valueId   {:confirms #{id}}
-                           :valueUrl  {:confirms #{url}}
-                           :foo       {:confirms #{Extension.foo}}}}
-
-         Extension.foo
-         {:type  zen/vector
-          :every {:confirms #{Extension.foo.*}}}
-
-         Extension.foo.*
-         {:type zen/map
-          :keys {:valueCode {:confirms #{code}}
-                 :valueId   {:confirms #{id}}
-                 :valueUrl  {:confirms #{url}}}}}]))
+          :keys           {:value {:type zen/map
+                                   :keys {:code {:confirms #{code}}
+                                          :id   {:confirms #{id}}
+                                          :url  {:confirms #{url}}}}
+                           :foo   {:type  zen/vector
+                                   :every {:type zen/map
+                                           :keys {:value {:type zen/map
+                                                          :keys {:code {:confirms #{code}}
+                                                                 :id   {:confirms #{id}}
+                                                                 :url  {:confirms #{url}}}}}}}}}}]))
 
   #_(t/testing "validating resource type"
     (def zctx*
@@ -854,11 +852,23 @@
                               :max       "1",
                               :id        "Observation.value[x]:valueQuantity.code",
                               :base      {:path "Quantity.code", :min 0, :max "1"}}]}}]
+      :fold-schemas? true
       :strict-deps false))
 
   (matcho/match
     us-bmi-obs-zen-project
-    '[{}])
+    '[{Observation
+       {:format :aidbox
+        :keys {:value
+               {:Quantity
+                {:confirms #{Quantity}
+                 :keys {:extension  {:type zen/vector, :every {:confirms #{Extension}}}
+                        :comparator {}
+                        :id         {}
+                        :system     {}
+                        :unit       {}
+                        :code       {}
+                        :value      {}}}}}}}])
 
   #_(t/testing "validating zen schema"
     (def zctx*
