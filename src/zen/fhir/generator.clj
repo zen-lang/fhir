@@ -452,7 +452,7 @@
     (utils/strip-nils
       (merge-with into
                   {::collection?       false ;; in some profiles there is * cardinality for the root resource
-                   :zen/tags           #{'zen/schema}
+                   :zen/tags           #{'zen/schema 'fhir/profile}
                    :zen/desc           description
                    :type               'zen/map
                    :format             :fhir
@@ -502,7 +502,7 @@
         build-schemas
         (cond-> fold-schemas? (-> fold-schemas (select-keys [resource-type])))
         (assoc 'ns     zen-ns
-               'import #{'fhir 'aidbox 'aidbox-fx})
+               'import #{'fhir})
         order-zen-ns)))
 
 

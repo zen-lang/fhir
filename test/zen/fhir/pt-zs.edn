@@ -1,4 +1,4 @@
-{:zen/tags #{resource zen/schema}
+{:zen/tags #{fhir/profile resource zen/schema}
  :zen/desc "Demographics and other administrative information about an individual or animal receiving care or other health-related services."
  #_"Information about an individual or animal receiving health care services",
  :confirms #{DomainResource}
