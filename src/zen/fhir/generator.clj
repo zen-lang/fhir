@@ -271,7 +271,7 @@
     :else {:const {:value pattern}}))
 
 
-(defmethod ed->zen #{:binding :id} [{:keys [binding id]}]
+#_(defmethod ed->zen #{:binding :id} [{:keys [binding id]}]
   (when (and binding (= "required" (:strength binding)))
     (let [rich-path (rich-parse-path id)
           name      (some-> (format-rich-id rich-path)
@@ -410,7 +410,7 @@
     {schema-id schema}))
 
 
-(defn build-valueset [[schema-id schema]]
+#_(defn build-valueset [[schema-id schema]]
   (cond-> {schema-id schema}
     (::binding schema)
     (assoc (get-in schema [::binding :name])
@@ -424,7 +424,7 @@
   [schemas]
   (into {}
         (comp
-          (mapcat build-valueset)
+          #_(mapcat build-valueset)
           (mapcat (partial build-schema schemas)))
         schemas))
 
