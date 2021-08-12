@@ -523,7 +523,7 @@
         elements-key    elements-mode
         element-schemas (link-schemas (map element->zen (get-in resource [elements-key :element])))
         resource-schema (sd->profile-schema resource)
-        schemas         (update element-schemas resource-type merge resource-schema)] ;; TODO: maybe merge-with into
+        schemas         (update element-schemas resource-type safe-merge-with-into resource-schema)]
     (-> schemas
         build-schemas
         (cond-> fold-schemas? (-> fold-schemas (select-keys [resource-type])))
