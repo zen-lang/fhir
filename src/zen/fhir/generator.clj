@@ -369,9 +369,7 @@
 
 (defn build-require [linked-schema]
   (when (::required? linked-schema)
-    (if (::poly linked-schema)
-      (get-in linked-schema [::poly :key])
-      (::key linked-schema))))
+    (::key linked-schema)))
 
 
 (defn build-key [linked-schema]
