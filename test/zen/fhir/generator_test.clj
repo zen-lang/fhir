@@ -198,32 +198,32 @@
               {:key "foo"}
               {:slice "bar"}
               {:key "baz"}
-              {:poly "quux[x]"}
-              {:key "quuxCodeableConcept"}
+              {:poly "quux"}
+              {:key "CodeableConcept", :poly-name "quux"}
               {:key "code"}
-              {:poly "value[x]"}]
+              {:poly "value"}]
              (sut/rich-parse-path "Element.foo:bar.baz.quux[x]:quuxCodeableConcept.code.value[x]")))
 
-    (t/is (= "Element.foo:bar.baz.quuxCodeableConcept.code"
+    (t/is (= "Element.foo:bar.baz.quux.CodeableConcept.code.value"
              (sut/format-rich-path [{:key "Element"}
                                     {:key "foo"}
                                     {:slice "bar"}
                                     {:key "baz"}
-                                    {:poly "quux[x]"}
-                                    {:key "quuxCodeableConcept"}
+                                    {:poly "quux"}
+                                    {:key "CodeableConcept", :poly-name "quux"}
                                     {:key "code"}
-                                    {:poly "value[x]"}]))))
+                                    {:poly "value"}]))))
 
   (t/testing "id sanitization"
-    (t/is (= ["Resource.fieldComplex.valuePrimitive"
-              "Resource.fieldComplex.value_x_"
-              "Resource.value_x_"
+    (t/is (= [#_"Resource.field.Complex.value.primitive"
+              "Resource.field.Complex.value"
+              "Resource.value"
               "Resource.value"
               "Resource"
               nil
               nil]
              (mapv (comp sut/format-rich-id sut/rich-parse-path)
-                   ["Resource.field[x]:fieldComplex.value[x]:valuePrimitive"
+                   [#_"Resource.field[x]:fieldComplex.value[x]:valuePrimitive" ;; NOTE: this assert can't be done without type
                     "Resource.field[x]:fieldComplex.value[x]"
                     "Resource.value[x]"
                     "Resource.value"
@@ -337,7 +337,7 @@
                         :keys {:type {:confirms #{'type}}}}})))
 
 
-    (t/testing "path & id"
+    (t/testing "id"
       (matcho/match
         (mapv sut/element->zen
               [{:id "a", :path "a"}
@@ -346,16 +346,18 @@
                {:id "a.b.c", :path "a.b.c"}
                {:id "a.c.d", :path "a.c.d"}
                {:id "a.field[x]", :path "a.field[x]"}
-               {:id "a.field[x]:fieldCoding", :path "a.field[x]"}
-               {:id "a.field[x]:fieldCoding.code", :path "a.field[x].code"}])
+               {:id "a.field[x]:fieldCoding", :path "a.field[x]" :type [{:code "Coding"}]}
+               {:id "a.field[x]:fieldCoding.code", :path "a.field[x].code"}
+               {:id "a.field[x]:fieldCode", :path "a.field[x]" :type [{:code "code"}]}])
         [#::sut{:id 'a, :key :a, :parent nil}
          #::sut{:id 'a.b, :key :b, :parent 'a}
          #::sut{:id 'a.c, :key :c, :parent 'a}
          #::sut{:id 'a.b.c, :key :c, :parent 'a.b}
          #::sut{:id 'a.c.d, :key :d, :parent 'a.c}
-         #::sut{:id 'a.field_x_, :key nil?, :parent 'a}
-         #::sut{:id 'a.fieldCoding, :key :fieldCoding, :parent 'a}
-         #::sut{:id 'a.fieldCoding.code, :key :code, :parent 'a.fieldCoding}]))
+         #::sut{:id 'a.field, :key :field, :parent 'a}
+         #::sut{:id 'a.field.Coding, :key :Coding, :parent 'a.field}
+         #::sut{:id 'a.field.Coding.code, :key :code, :parent 'a.field.Coding}
+         #::sut{:id 'a.field.code, :key :code, :parent 'a.field}]))
 
     (t/testing "map or vector"
       (matcho/match
@@ -395,6 +397,7 @@
                           {:id   "Extension.extension.value[x]:valueCoding.code"
                            :path "Extension.extension.value[x].code"}
                           {:id   "Extension.extension.value[x]:valueCode"
+                           :type [{:code "code"}]
                            :path "Extension.extension.value[x]"}
                           {:id   "Extension.extension:daysOfWeek"
                            :path "Extension.extension"}
@@ -412,18 +415,18 @@
                    #::sut{:id     'Extension.extension.url
                           :key    :url
                           :parent 'Extension.extension}
-                   #::sut{:id     'Extension.extension.value_x_
-                          :key    nil?
+                   #::sut{:id     'Extension.extension.value
+                          :key    :value
                           :parent 'Extension.extension}
-                   #::sut{:id     'Extension.extension.valueCoding
-                          :key    :valueCoding
-                          :parent 'Extension.extension}
-                   #::sut{:id     'Extension.extension.valueCoding.code
+                   #::sut{:id     'Extension.extension.value.Coding
+                          :key    :Coding
+                          :parent 'Extension.extension.value}
+                   #::sut{:id     'Extension.extension.value.Coding.code
                           :key    :code
-                          :parent 'Extension.extension.valueCoding}
-                   #::sut{:id     'Extension.extension.valueCode
-                          :key    :valueCode
-                          :parent 'Extension.extension}
+                          :parent 'Extension.extension.value.Coding}
+                   #::sut{:id     'Extension.extension.value.code
+                          :key    :code
+                          :parent 'Extension.extension.value}
                    #::sut{:id     'Extension.extension:daysOfWeek
                           :key    nil?
                           :parent nil?}
@@ -859,6 +862,7 @@
                               :id        "Observation.value[x]:valueQuantity.code",
                               :base      {:path "Quantity.code", :min 0, :max "1"}}]}}]
       :fold-schemas? true
+      :remove-gen-keys? true
       :strict-deps false))
 
   (matcho/match
@@ -866,15 +870,16 @@
     '[{Observation
        {:format :aidbox
         :keys {:value
-               {:Quantity
-                {:confirms #{Quantity}
-                 :keys {:extension  {:type zen/vector, :every {:confirms #{Extension}}}
-                        :comparator {}
-                        :id         {}
-                        :system     {}
-                        :unit       {}
-                        :code       {}
-                        :value      {}}}}}}}])
+               {:type zen/map
+                :keys {:Quantity
+                       {:confirms #{Quantity}
+                        :keys {:extension  {:type zen/vector, :every {:confirms #{Extension}}}
+                               :comparator {}
+                               :id         {}
+                               :system     {}
+                               :unit       {}
+                               :code       {}
+                               :value      {}}}}}}}}])
 
   #_(t/testing "validating zen schema"
     (def zctx*

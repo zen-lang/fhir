@@ -52,6 +52,17 @@
 (remove-all-methods ed->zen)  ;; To remove defmethods erased from code when re-eval a whole buffer in REPL
 
 
+(def poly-id-terminator "[x]")
+
+
+(defn drop-poly-terminator [id]
+  (subs id 0 (- (count id) (count poly-id-terminator))))
+
+
+(defn drop-poly-name [id poly-name]
+  (subs id (count poly-name)))
+
+
 (defn rich-parse-path [id]
   (if (str/blank? id)
     []
@@ -60,41 +71,40 @@
            (fn [id-part]
              (let [[key-part slice-part] (str/split id-part #":" 2)]
                (cond
-                 (str/ends-with? key-part "[x]") (cond-> [{:poly key-part}]
-                                                   (some? slice-part)
-                                                   (conj {:key slice-part}))
-                 (some? slice-part)              [{:key key-part} {:slice slice-part}]
-                 :else                           [{:key key-part}]))))
+                 (str/ends-with? key-part poly-id-terminator)
+                 (let [poly-name (drop-poly-terminator key-part)]
+                   (cond-> [{:poly poly-name}]
+                     (some? slice-part) (conj {:key (drop-poly-name slice-part poly-name)
+                                               :poly-name poly-name})))
+
+                 (some? slice-part) [{:key key-part} {:slice slice-part}]
+                 :else              [{:key key-part}]))))
          vec)))
 
 
 (defn format-rich-path [rich-path]
   (reduce
     (fn [path-acc rich-part]
-      (cond
-        (:slice rich-part) (str path-acc ":" (:slice rich-part))
-        (:poly rich-part)  path-acc
-        :else              (str path-acc "." (:key rich-part))))
+      (str path-acc
+           (cond
+             (:slice rich-part) (str ":" (:slice rich-part))
+             (:poly rich-part)  (str "." (:poly rich-part))
+             :else              (str "." (:key rich-part)))))
     (or (:key (first rich-path))
         (:slice (first rich-path)))
     (rest rich-path)))
 
 
 (defn format-rich-id [rich-path]
-  (let [last-idx (dec (count rich-path))]
-    (reduce
-      (fn [path-acc {:keys [part last?]}]
-        (cond
-          (:slice part) (str path-acc ":" (str/replace (:slice part) #"@" "_"))
-          (:poly part)  (if last?
-                          (str path-acc "." (str/replace (:poly part) #"[\[\]]" "_"))
-                          path-acc)
-          :else         (str path-acc "." (:key part))))
-      (:key (first rich-path))
-      (mapv (fn [[idx rich-part]]
-              {:part  rich-part
-               :last? (= last-idx idx)})
-            (rest (map-indexed vector rich-path))))))
+  (reduce
+    (fn [path-acc part]
+      (str path-acc
+           (cond
+             (:slice part) (str ":" (str/replace (:slice part) #"@" "_"))
+             (:poly part)  (str "." (:poly part))
+             :else         (str "." (:key part)))))
+    (:key (first rich-path))
+    (rest rich-path)))
 
 
 (defn slice-root? [id]
@@ -105,14 +115,36 @@
   (str/ends-with? (str id) "[x]"))
 
 
-(defmethod ed->zen #{:id} [{el-id :id}]
+;; StructureDefinition snapshot generator has a bug
+;; instead of id type it uses exension type
+;; https://chat.fhir.org/#narrow/stream/179283-Da-Vinci/topic/Type.20of.20id/near/232607087
+(def sd-type-ext-url "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type")
+
+
+(defn type-coding->type [{:keys [extension code]}]
+  (or (some-> (code-search :url [sd-type-ext-url] extension)
+              (poly-get :value))
+      code))
+
+
+(defmethod ed->zen #{::id-processing :id :type} [{el-id :id, el-type :type}]
   (when-not (str/blank? el-id)
-    (let [rich-path (rich-parse-path el-id)
-          attr-key  (when-not (or (poly-root? el-id) (slice-root? el-id))
-                      (some-> (take-last 1 rich-path)
-                              format-rich-path
-                              keyword))
-          parent    (some-> (butlast rich-path)
+    (let [rich-path   (rich-parse-path el-id)
+          poly-value? (some? (:poly-name (last rich-path)))
+          rich-path   (if-let [poly-key (and poly-value? (some-> el-type first type-coding->type))] ;; TODO: refactor
+                        (concat (butlast rich-path)
+                                [(assoc (last rich-path) :key poly-key)])
+                        rich-path)
+
+          attr-key    (cond
+                        (poly-root? el-id)
+                        (some-> rich-path last :poly keyword)
+
+                        (not (slice-root? el-id))
+                        (some-> (take-last 1 rich-path)
+                                format-rich-path
+                                keyword))
+          parent (some-> (butlast rich-path)
                             format-rich-path
                             symbol)]
       (utils/strip-nils
@@ -191,16 +223,8 @@
     time     zen/string})
 
 
-;; StructureDefinition snapshot generator has a bug
-;; instead of id type it uses exension type
-;; https://chat.fhir.org/#narrow/stream/179283-Da-Vinci/topic/Type.20of.20id/near/232607087
-(def sd-type-ext-url "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type")
-
-
-(defn ed-type->zen-type [{:keys [extension code]}]
-  (let [type-symbol (symbol (or (some-> (code-search :url [sd-type-ext-url] extension)
-                                        (poly-get :value))
-                                code))]
+(defn ed-type->zen-type [coding]
+  (let [type-symbol (symbol (type-coding->type coding))]
     (utils/strip-nils
       {:confirms #{type-symbol}
        :type     (when-let [zen-primitive (fhir-primitive->zen-primitive type-symbol)]
@@ -351,8 +375,7 @@
 
 
 (defn build-key [linked-schema]
-  (when-not (or (::poly linked-schema)
-                (::slice-name linked-schema))
+  (when-not (::slice-name linked-schema)
     {(::key linked-schema)
      {:confirms #{(::id linked-schema)}}}))
 
@@ -369,9 +392,6 @@
 
 (defn build-schema [schemas [schema-id schema]]
   (cond
-    (::poly schema)
-    {}
-
     (::collection? schema)
     (let [collection-keys [::collection? ::slicing? :minItems :maxItems #_:zen/desc] ;; TODO: must be configurable
           schema-id*      (symbol (str (name (::id schema)) ".*"))
@@ -421,6 +441,15 @@
           (mapcat (partial build-schema schemas)))
         schemas))
 
+
+(def safe-merge-with-into
+  (partial merge-with
+           (fn [x y]
+             (if (and (coll? x) (coll? y))
+               (into x y)
+               y))))
+
+
 (defn fold-schemas [schemas]
   (->> schemas
        keys
@@ -430,7 +459,9 @@
            (clojure.walk/postwalk
              (fn [x]
                (if (and (map? x) (contains? (:confirms x) schema-id))
-                 (merge-with into (update x :confirms disj schema-id) (get acc schema-id))
+                 (safe-merge-with-into
+                   (update x :confirms disj schema-id) ;; TODO: disj produces empty sets
+                   (get acc schema-id))
                  x))
              acc))
          schemas)))
