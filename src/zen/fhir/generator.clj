@@ -1,48 +1,8 @@
 (ns zen.fhir.generator
-  (:require [cheshire.core]
-            [clojure.pprint]
+  (:require [clojure.string :as str]
             [clojure.walk]
-            [com.rpl.specter :as sp]
-            [zen.utils :as utils]
-            [clojure.string :as str]
-            [zen.validation]))
-
-
-#_#_(def path "libs/zen-fhir/")
-
-
-(def types (cheshire.core/parse-string (slurp (str path "fhir/profiles-types.json")) keyword))
-
-
-(do ;; TODO: move to utils
-  (defn parse-int [s]
-    (when-let [x (re-matches #"[-+]?\d+" (str s))]
-      (Integer/parseInt x)))
-
-
-  (defn poly-get-all
-    "Gets all values by fhir polymorphic key[x]"
-    [m k]
-    (let [key-pat (name k)]
-      (sp/select [sp/ALL (comp #(str/starts-with? % key-pat) name first) sp/LAST]
-                 m)))
-
-
-  (defn poly-get
-    "Gets by fhir polymorphic key[x]"
-    [m k]
-    (first (poly-get-all m k)))
-
-
-  (defn code-search
-    "Finds code in vector of hmaps which is equal to one
-   of the values provided with descending prioty"
-    [code values coll]
-    (some (into {} (map (juxt code identity) coll))
-          values))
-
-  (defn disj-key [m k v]
-    (zen.utils/dissoc-when empty? (update m k disj v) k)))
+            [zen.fhir.utils :as utils]
+            [com.rpl.specter :as sp]))
 
 
 (defmulti ed->zen
@@ -125,8 +85,8 @@
 
 
 (defn type-coding->type [{:keys [extension code]}]
-  (or (some-> (code-search :url [sd-type-ext-url] extension)
-              (poly-get :value))
+  (or (some-> (utils/code-search :url [sd-type-ext-url] extension)
+              (utils/poly-get :value))
       code))
 
 
@@ -182,7 +142,7 @@
                    (not= "1" el-max)))
       {::collection? true
        :minItems     (when-not (= 0 el-min) el-min)
-       :maxItems     (when-not (= "*" el-max) (parse-int el-max))})))
+       :maxItems     (when-not (= "*" el-max) (utils/parse-int el-max))})))
 
 
 (defmethod ed->zen #{} [_]
@@ -330,7 +290,7 @@
                     (f (into (select-keys element rest-ks)
                              (map (fn [poly-key]
                                     (let [pk (keyword (name poly-key))]
-                                      {pk (poly-get element pk)})))
+                                      {pk (utils/poly-get element pk)})))
                              poly-ks)))))
         (methods ed->zen)))
 
@@ -441,14 +401,6 @@
         schemas))
 
 
-(def safe-merge-with-into
-  (partial merge-with
-           (fn [x y]
-             (if (and (coll? x) (coll? y))
-               (into x y)
-               y))))
-
-
 (defn fold-schemas [schemas]
   (->> schemas
        keys
@@ -458,9 +410,9 @@
            (clojure.walk/postwalk
              (fn [x]
                (if (and (map? x) (contains? (:confirms x) schema-id))
-                 (safe-merge-with-into
-                   (disj-key x :confirms schema-id)
-                   (-> (get acc schema-id) (disj-key :zen/tags 'zen/schema)))
+                 (utils/safe-merge-with-into
+                   (utils/disj-key x :confirms schema-id)
+                   (-> (get acc schema-id) (utils/disj-key :zen/tags 'zen/schema)))
                  x))
              acc))
          schemas)))
@@ -591,36 +543,18 @@
       remove-gen-keys? (map remove-gen-keys))))
 
 
-(defn structure-definitions->zen-project [zen-lib core-url deps-resources
-                                          & {:keys [remove-gen-keys? strict-deps
-                                                    fold-schemas? elements-mode]
-                                             :or   {remove-gen-keys? true
-                                                    strict-deps      true
-                                                    elements-mode    :snapshot
-                                                    fold-schemas?    false}}]
+(defn structure-definitions->zen-project
+  [zen-lib core-url deps-resources
+   & {:keys [remove-gen-keys? strict-deps
+             fold-schemas? elements-mode]
+      :or   {remove-gen-keys? true
+             strict-deps      true
+             elements-mode    :snapshot
+             fold-schemas?    false}}]
   (let [deps-resources-map (sp/transform [sp/MAP-VALS] first (group-by :url deps-resources))]
-    (structure-definitions->zen-project* zen-lib core-url deps-resources-map
-                                         :remove-gen-keys? remove-gen-keys?
-                                         :strict-deps      strict-deps
-                                         :fold-schemas?    fold-schemas?
-                                         :elements-mode    elements-mode)))
-
-
-(comment
-  (def plannet-pract
-    (-> "http://hl7.org/fhir/us/davinci-pdex-plan-net/STU1/StructureDefinition-plannet-Practitioner.json"
-        slurp
-        (cheshire.core/parse-string keyword)
-        (dissoc :differential :text #_:snapshot)))
-
-  (def us-core-pat
-    (-> "http://hl7.org/fhir/us/core/StructureDefinition-us-core-patient.json"
-        slurp
-        (cheshire.core/parse-string keyword)
-        (dissoc :differential :text #_:snapshot)))
-
-  (->> plannet-pract :snapshot :element)
-
-  (->> plannet-pract
-       (sp/select [:snapshot :element sp/ALL #(-> % :type first :code (= "http://hl7.org/fhirpath/System.String"))])
-       (map #(select-keys % [:path :id]))))
+    (structure-definitions->zen-project*
+      zen-lib core-url deps-resources-map
+      :remove-gen-keys? remove-gen-keys?
+      :strict-deps      strict-deps
+      :fold-schemas?    fold-schemas?
+      :elements-mode    elements-mode)))
