@@ -742,7 +742,23 @@
                         :zen/desc "Unit representation"}
                  :system {:confirms #{uri}
                           :zen/desc "System that defines coded unit form"}
-                 :code {:confirms #{code}}}}}]))
+                 :code {:confirms #{code}}}}}])
+
+    (t/testing "duration"
+      (def duration-sd (read-string (slurp (io/resource "zen/fhir/duration-sd.edn"))))
+
+      (matcho/match
+        (sut/structure-definitions->zen-project
+          'fhir.R4-test
+          "http://hl7.org/fhir/StructureDefinition/Duration"
+          [duration-sd]
+          :remove-gen-keys? true
+          :fold-schemas? true
+          :elements-mode :differential)
+        '[{Duration
+           {:zen/tags #{zen/schema complex-type fhir/profile}
+            :type zen/map
+            :confirms #{Quantity}}}])))
 
   (t/testing "resource"
     (def patient-sd (read-string (slurp (io/resource "zen/fhir/pt-sd.edn"))))

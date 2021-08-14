@@ -469,7 +469,7 @@
 
 (defn sd->profile-schema
   "Creates zen schema for root resource from StructureDefinition"
-  [{:keys [description type url kind baseDefinition]}]
+  [{:keys [description type url kind baseDefinition]} {:keys [elements-mode]}]
   (let [base (some-> (when-not (str/blank? baseDefinition) baseDefinition)
                      (str/split #"/")
                      last)]
@@ -482,8 +482,7 @@
                    :format             :aidbox
                    :validation-type    :open
                    :profile-definition url}
-                  (when (or (= "DomainResource" base)
-                            (= "Element" base))
+                  (when (= :differential elements-mode)
                     {:confirms (when-not (str/blank? base)
                                  #{(symbol base)})})
                   (when (= "DomainResource" base)
@@ -520,7 +519,7 @@
         zen-ns          (symbol (str (name zen-lib) "." (:id resource)))
         elements-key    elements-mode
         element-schemas (link-schemas (map element->zen (get-in resource [elements-key :element])))
-        resource-schema (sd->profile-schema resource)
+        resource-schema (sd->profile-schema resource {:elements-mode elements-mode})
         schemas         (update element-schemas resource-type safe-merge-with-into resource-schema)]
     (-> schemas
         build-schemas
