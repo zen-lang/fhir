@@ -280,7 +280,6 @@
   (cond
     (map? pattern)
     {:type 'zen/map
-     :validation-type :open
      :keys (into {}
                  (map (fn [[k v]] {k (pattern->zen v)}))
                  pattern)}

@@ -124,13 +124,11 @@
              {:system "sys",
               :code "code"}]}})
         '{:type zen/map
-          :validation-type :open
           :keys {:coding
                  {:type zen/vector
                   :slicing {:slices {"RESERVED-aidbox-array-pattern-slicing-0"
                                      {:filter {:engine :zen
                                                :zen {:type zen/map
-                                                     :validation-type :open
                                                      :keys {:system {:const {:value "http://terminology.hl7.org/CodeSystem/v2-0203"}}
                                                             :code {:const {:value "MB"}}}}}
                                       :schema {:type zen/vector
@@ -139,7 +137,6 @@
                                      "RESERVED-aidbox-array-pattern-slicing-1"
                                      {:filter {:engine :zen
                                                :zen {:type zen/map
-                                                     :validation-type :open
                                                      :keys {:system {:const {:value "sys"}}
                                                             :code {:const {:value "code"}}}}}
                                       :schema {:type zen/vector
