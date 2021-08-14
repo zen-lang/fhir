@@ -711,31 +711,6 @@
   (t/testing "complex-type"
     (def qsd (read-string (slurp (io/resource "zen/fhir/quantity-sd.edn"))))
 
-    (def qzs {'Quantity
-              {:zen/tags #{'zen/schema 'complex-type 'fhir/profile}
-               :zen/desc "A measured or measurable amount",
-               :confirms #{'Element} ;; [:baseDefinition]
-               #_:effects #_{'fhir/binding {:strength "extensible",
-                                            :description "Appropriate units for Duration.",
-                                            :valueSet "http://hl7.org/fhir/ValueSet/duration-units"}
-
-                             'fhir/constraint {"qty-3"
-                                               {:severity "error",
-                                                :human "If a code for the unit is present, the system SHALL also be present",
-                                                :expression "code.empty() or system.exists()",}}}
-               :type 'zen/map
-               :keys {:value {:confirms #{'decimal}
-                              :zen/desc "Numerical value (with implicit precision)"}
-                      :comparator {:type 'zen/string
-                                   ;; :fhir/isSummary true ;;TODO
-                                   ;; :fhir/isModifier true
-                                   }
-                      :unit {:type 'zen/string
-                             :zen/desc "Unit representation"}
-                      :system {:confirms #{'uri}
-                               :zen/desc "System that defines coded unit form"}
-                      :code {:confirms #{'code}}}}})
-
     (matcho/match
       (sut/structure-definitions->zen-project
         'fhir.R4-test
@@ -744,7 +719,30 @@
         :remove-gen-keys? true
         :fold-schemas? true
         :elements-mode :differential)
-      [qzs]))
+      '[{Quantity
+         {:zen/tags #{zen/schema complex-type fhir/profile}
+          :zen/desc "A measured or measurable amount",
+          :confirms #{Element} ;; [:baseDefinition]
+          #_:effects #_{fhir/binding {:strength "extensible",
+                                      :description "Appropriate units for Duration.",
+                                      :valueSet "http://hl7.org/fhir/ValueSet/duration-units"}
+
+                        fhir/constraint {"qty-3"
+                                         {:severity "error",
+                                          :human "If a code for the unit is present, the system SHALL also be present",
+                                          :expression "code.empty() or system.exists()",}}}
+          :type zen/map
+          :keys {:value {:confirms #{decimal}
+                         :zen/desc "Numerical value (with implicit precision)"}
+                 :comparator {:type zen/string
+                              ;; :fhir/isSummary true ;;TODO
+                              ;; :fhir/isModifier true
+                              }
+                 :unit {:type zen/string
+                        :zen/desc "Unit representation"}
+                 :system {:confirms #{uri}
+                          :zen/desc "System that defines coded unit form"}
+                 :code {:confirms #{code}}}}}]))
 
   (t/testing "resource"
     (def patient-sd (read-string (slurp (io/resource "zen/fhir/pt-sd.edn"))))
