@@ -17,137 +17,7 @@
 
 (t/deftest differential-schema
   (t/testing "complex-type"
-    (def qsd {:name "Quantity",
-              :abstract false,
-              :type "Quantity",
-              :resourceType "StructureDefinition",
-              :status "active",
-              :id "Quantity",
-              :kind "complex-type",
-              :url "http://hl7.org/fhir/StructureDefinition/Quantity",
-              :differential
-              {:element
-               [{:constraint
-                 [{:key "qty-3",
-                   :severity "error",
-                   :human
-                   "If a code for the unit is present, the system SHALL also be present",
-                   :expression "code.empty() or system.exists()",
-                   :xpath "not(exists(f:code)) or exists(f:system)"}],
-                 :path "Quantity",
-                 :min 0,
-                 :definition
-                 "A measured amount (or an amount that can potentially be measured). Note that measured amounts include amounts that are not precisely quantified, including amounts involving arbitrary units and floating currencies.",
-                 :short "A measured or measurable amount",
-                 :mapping
-                 [{:identity "v2", :map "SN (see also Range) or CQ"}
-                  {:identity "rim", :map "PQ, IVL<PQ>, MO, CO, depending on the values"}],
-                 :extension
-                 [{:url
-                   "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
-                   :valueCode "normative"}
-                  {:url
-                   "http://hl7.org/fhir/StructureDefinition/structuredefinition-normative-version",
-                   :valueCode "4.0.0"}],
-                 :max "*",
-                 :id "Quantity",
-                 :comment
-                 "The context of use may frequently define what kind of quantity this is and therefore what kind of units can be used. The context of use may also restrict the values for the comparator."}
-                {:path "Quantity.value",
-                 :requirements
-                 "Precision is handled implicitly in almost all cases of measurement.",
-                 :min 0,
-                 :definition
-                 "The value of the measured amount. The value includes an implicit precision in the presentation of the value.",
-                 :short "Numerical value (with implicit precision)",
-                 :mapping
-                 [{:identity "v2", :map "SN.2  / CQ - N/A"}
-                  {:identity "rim",
-                   :map
-                   "PQ.value, CO.value, MO.value, IVL.high or IVL.low depending on the value"}],
-                 :type [{:code "decimal"}],
-                 :max "1",
-                 :id "Quantity.value",
-                 :comment
-                 "The implicit precision in the value should always be honored. Monetary values have their own rules for handling precision (refer to standard accounting text books).",
-                 :isSummary true}
-                {:path "Quantity.comparator",
-                 :requirements
-                 "Need a framework for handling measures where the value is <5ug/L or >400mg/L due to the limitations of measuring methodology.",
-                 :min 0,
-                 :definition
-                 "How the value should be understood and represented - whether the actual value is greater or less than the stated value due to measurement issues; e.g. if the comparator is \"<\" , then the real value is < stated value.",
-                 :isModifier true,
-                 :short "< | <= | >= | > - how to understand the value",
-                 :mapping
-                 [{:identity "v2", :map "SN.1  / CQ.1"}
-                  {:identity "rim", :map "IVL properties"}],
-                 :type [{:code "code"}],
-                 :meaningWhenMissing
-                 "If there is no comparator, then there is no modification of the value",
-                 :binding
-                 {:extension
-                  [{:url
-                    "http://hl7.org/fhir/StructureDefinition/elementdefinition-bindingName",
-                    :valueString "QuantityComparator"}],
-                  :strength "required",
-                  :description "How the Quantity should be understood and represented.",
-                  :valueSet "http://hl7.org/fhir/ValueSet/quantity-comparator|4.0.1"},
-                 :max "1",
-                 :id "Quantity.comparator",
-                 :isModifierReason
-                 "This is labeled as \"Is Modifier\" because the comparator modifies the interpretation of the value significantly. If there is no comparator, then there is no modification of the value",
-                 :isSummary true}
-                {:path "Quantity.unit",
-                 :requirements
-                 "There are many representations for units of measure and in many contexts, particular representations are fixed and required. I.e. mcg for micrograms.",
-                 :min 0,
-                 :definition "A human-readable form of the unit.",
-                 :short "Unit representation",
-                 :mapping
-                 [{:identity "v2", :map "(see OBX.6 etc.) / CQ.2"}
-                  {:identity "rim", :map "PQ.unit"}],
-                 :type [{:code "string"}],
-                 :extension
-                 [{:url
-                   "http://hl7.org/fhir/StructureDefinition/elementdefinition-translatable",
-                   :valueBoolean true}],
-                 :max "1",
-                 :id "Quantity.unit",
-                 :isSummary true}
-                {:path "Quantity.system",
-                 :requirements
-                 "Need to know the system that defines the coded form of the unit.",
-                 :min 0,
-                 :definition
-                 "The identification of the system that provides the coded form of the unit.",
-                 :short "System that defines coded unit form",
-                 :mapping
-                 [{:identity "v2", :map "(see OBX.6 etc.) / CQ.2"}
-                  {:identity "rim", :map "CO.codeSystem, PQ.translation.codeSystem"}],
-                 :type [{:code "uri"}],
-                 :max "1",
-                 :id "Quantity.system",
-                 :condition ["qty-3"],
-                 :isSummary true}
-                {:path "Quantity.code",
-                 :requirements
-                 "Need a computable form of the unit that is fixed across all forms. UCUM provides this for quantities, but SNOMED CT provides many units of interest.",
-                 :min 0,
-                 :definition
-                 "A computer processable form of the unit in some unit representation system.",
-                 :short "Coded form of the unit",
-                 :mapping
-                 [{:identity "v2", :map "(see OBX.6 etc.) / CQ.2"}
-                  {:identity "rim", :map "PQ.code, MO.currency, PQ.translation.code"}],
-                 :type [{:code "code"}],
-                 :max "1",
-                 :id "Quantity.code",
-                 :comment
-                 "The preferred system is UCUM, but SNOMED CT can also be used (for customary units) or ISO 4217 for currency.  The context of use may additionally require a code from a particular system.",
-                 :isSummary true}]},
-              :contact [{:telecom [{:system "url", :value "http://hl7.org/fhir"}]}],
-              :baseDefinition "http://hl7.org/fhir/StructureDefinition/Element"})
+    (def qsd (read-string (slurp (io/resource "zen/fhir/quantity-sd.edn"))))
 
     (def qzs {'Quantity
               {:zen/tags #{'zen/schema 'complex-type 'fhir/profile}
@@ -186,8 +56,6 @@
 
   (t/testing "resource"
     (def patient-sd (read-string (slurp (io/resource "zen/fhir/pt-sd.edn"))))
-    (def patient-zs (read-string (slurp (io/resource "zen/fhir/pt-zs.edn"))))
-    (def patient-res (read-string (slurp (io/resource "zen/fhir/pt-res.edn"))))
 
     (def patient-proj
       (sut/structure-definitions->zen-project
@@ -198,17 +66,54 @@
         :fold-schemas? true
         :elements-mode :differential))
 
-    (matcho/match patient-proj [{'Patient patient-zs}])
+    (matcho/match
+      patient-proj
+      '[{Patient
+         {:zen/tags #{fhir/profile resource zen/schema}
+          :zen/desc "Demographics and other administrative information about an individual or animal receiving care or other health-related services."
+          #_"Information about an individual or animal receiving health care services",
+          :confirms #{DomainResource}
+          :type zen/map
+          :keys {:identifier {:type zen/vector
+                              #_#_:zen/desc "An identifier for this patient",
+                              :every {:confirms #{Identifier}
+                                      :zen/desc "An identifier for this patient",}}
+                 :active {:type zen/boolean}
+                 :name {:type zen/vector
+                        :every {:confirms #{HumanName}}}
+                 :telecom {:type zen/vector
+                           :every {:confirms #{ContactPoint}}}
+                 :gender  {:confirms #{code}
+                           #_#_:effects {fhir/binding {:strength "required",
+                                                       :description "The gender of a person used for administrative purposes.",
+                                                       :valueSet "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"}}}
+                 :birthDate {:confirms #{date}}
+                 :deceased {:type zen/map
+                            :exclusive-keys #{#{:boolean :dateTime}}
+                            :keys {:boolean {:type zen/boolean
+                                             :confirms #{boolean}}
+                                   :dateTime {:type zen/datetime
+                                              :confirms #{dateTime}}}}
+                 :contact {:type zen/vector
+                           :every {:type zen/map
+                                   :keys {:relationship
+                                          {:type zen/vector
+                                           :every {:confirms #{CodeableConcept}}}
+                                          :name {:confirms #{HumanName}}}}}
+                 :managingOrganization {:confirms #{Reference}}}}}])
 
-    #_#_#_(def zctx* (load-zen-project! patient-proj))
+    #_(testing "validating zen"
+      (def patient-res (read-string (slurp (io/resource "zen/fhir/pt-res.edn"))))
 
-    (matcho/match @zctx* {:errors empty?})
+      (def zctx* (load-zen-project! patient-proj))
 
-    (matcho/match (zen.core/validate
-                    zctx*
-                    #{'fhir.R4-test.Patient/Patient}
-                    patient-res)
-                  {:errors empty?})))
+      (matcho/match @zctx* {:errors empty?})
+
+      (matcho/match (zen.core/validate
+                      zctx*
+                      #{'fhir.R4-test.Patient/Patient}
+                      patient-res)
+                    {:errors empty?}))))
 
 
 (t/deftest structure-definition-conversion
