@@ -39,7 +39,10 @@
    of the values provided with descending prioty"
     [code values coll]
     (some (into {} (map (juxt code identity) coll))
-          values)))
+          values))
+
+  (defn disj-key [m k v]
+    (zen.utils/dissoc-when empty? (update m k disj v) k)))
 
 
 (defmulti ed->zen
@@ -456,11 +459,9 @@
            (clojure.walk/postwalk
              (fn [x]
                (if (and (map? x) (contains? (:confirms x) schema-id))
-                 (let [schema-to-be-included (get acc schema-id)
-                       this-schema (zen.utils/dissoc-when empty?
-                                                          (update x :confirms disj schema-id)
-                                                          :confirms)]
-                   (safe-merge-with-into this-schema schema-to-be-included))
+                 (safe-merge-with-into
+                   (disj-key x :confirms schema-id)
+                   (-> (get acc schema-id) (disj-key :zen/tags 'zen/schema)))
                  x))
              acc))
          schemas)))
