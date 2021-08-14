@@ -108,11 +108,11 @@
 
 
 (defn slice-root? [id]
-  (boolean (re-matches #".+(?<!\[x\]):[^.]+?$" (str id))))
+  (contains? (last (rich-parse-path id)) :slice))
 
 
 (defn poly-root? [id]
-  (str/ends-with? (str id) "[x]"))
+  (contains? (last (rich-parse-path id)) :poly))
 
 
 ;; StructureDefinition snapshot generator has a bug
@@ -236,8 +236,7 @@
 
 (defn ed-types->zen-type [id ed-types poly?]
   (if poly?
-    (let [[_ poly-key'] (re-matches #"^.+\.(.+?)\[x\]$" (str id))
-          poly-key      (or poly-key' "value")]
+    (let [poly-key (-> id rich-parse-path last (:poly "value"))]
       {::poly {:key  (keyword poly-key)
                :keys (into {}
                            (map (fn [{code :code :as poly-type}]
@@ -252,7 +251,7 @@
     (ed-types->zen-type id
                         el-types
                         (or (< 1 (count el-types))
-                            (str/ends-with? (str id) "[x]")))))
+                            (poly-root? id)))))
 
 
 (defmethod ed->zen #{:slicing :path :id} [{path :path, slicing :slicing, id :id}]
