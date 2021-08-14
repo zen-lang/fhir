@@ -347,7 +347,7 @@
          import #{fhir}
 
          Practitioner
-         {:zen/tags #{zen/schema fhir/profile}
+         {:zen/tags #{zen/schema fhir/profile fhir/resource}
           :type     zen/map
           :keys     {:resourceType {:type zen/string, :const {:value "Practitioner"}}}}}]))
 
@@ -404,7 +404,7 @@
          import #{fhir}
 
          Practitioner
-         {:zen/tags #{zen/schema fhir/profile}
+         {:zen/tags #{zen/schema fhir/profile fhir/resource}
           :type     zen/map
           :require  #{:id :name}
           :keys     {:resourceType {:type zen/string, :const {:value "Practitioner"}}
@@ -717,7 +717,7 @@
         :fold-schemas? true
         :elements-mode :differential)
       '[{Quantity
-         {:zen/tags #{zen/schema complex-type fhir/profile}
+         {:zen/tags #{zen/schema fhir/complex-type fhir/profile}
           :zen/desc "A measured or measurable amount",
           :confirms #{Element} ;; [:baseDefinition]
           #_:effects #_{fhir/binding {:strength "extensible",
@@ -753,7 +753,7 @@
           :fold-schemas? true
           :elements-mode :differential)
         '[{Duration
-           {:zen/tags #{zen/schema complex-type fhir/profile}
+           {:zen/tags #{zen/schema fhir/complex-type fhir/profile}
             :type zen/map
             :confirms #{Quantity}}}])))
 
@@ -772,7 +772,7 @@
     (matcho/match
       patient-proj
       '[{Patient
-         {:zen/tags #{fhir/profile resource zen/schema}
+         {:zen/tags #{fhir/profile fhir/resource zen/schema}
           :zen/desc "Demographics and other administrative information about an individual or animal receiving care or other health-related services."
           #_"Information about an individual or animal receiving health care services",
           :confirms #{DomainResource}

@@ -431,17 +431,17 @@
                    :zen/desc           description
                    :type               'zen/map
                    :format             :aidbox
-                   :validation-type    :open
                    :profile-definition url}
                   (when (= :differential elements-mode)
                     {:confirms (when-not (str/blank? base)
                                  #{(symbol base)})})
-                  (when (= "DomainResource" base)
-                    {:zen/tags #{'resource}})
+                  (when (= :snapshot elements-mode)
+                    {:validation-type :open})
                   (when (= "complex-type" kind)
-                    {:zen/tags #{'complex-type}})
+                    {:zen/tags #{'fhir/complex-type}})
                   (when (= "resource" kind)
-                    {:severity "supported"
+                    {:zen/tags #{'fhir/resource}
+                     :severity "supported"
                      :resourceType type
                      :keys         {:resourceType {:type 'zen/string, :const {:value type}}}})))))
 

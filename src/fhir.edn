@@ -1,5 +1,9 @@
 {ns fhir
 
+ resource       {:zen/tags #{zen/tag}}
+ primitive-type {:zen/tags #{zen/tag}}
+ complex-type   {:zen/tags #{zen/tag}}
+
  profile
  {:zen/tags #{zen/tag zen/schema}
   :type     zen/map
