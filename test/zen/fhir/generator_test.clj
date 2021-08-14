@@ -38,48 +38,73 @@
                                     {:poly "value"}]))))
 
   (t/testing "id sanitization"
-    (t/is (= [#_"Resource.field.Complex.value.primitive"
-              "Resource.field.Complex.value"
-              "Resource.value"
-              "Resource.value"
-              "Resource"
-              nil
-              nil]
-             (mapv (comp sut/format-rich-id sut/rich-parse-path)
-                   [#_"Resource.field[x]:fieldComplex.value[x]:valuePrimitive" ;; NOTE: this assert can't be done without type
-                    "Resource.field[x]:fieldComplex.value[x]"
-                    "Resource.value[x]"
-                    "Resource.value"
-                    "Resource"
-                    ""
-                    nil]))))
+    #_(t/is (= "Resource.field.Complex.value.primitive" ;; NOTE: this assert can't be done without type
+               (-> "Resource.field[x]:fieldComplex.value[x]:valuePrimitive"
+                   sut/rich-parse-path sut/format-rich-id)))
+
+    (t/is (= "Resource.field.Complex.value"
+             (-> "Resource.field[x]:fieldComplex.value[x]"
+                 sut/rich-parse-path sut/format-rich-id)))
+
+    (t/is (= "Resource.value" (-> "Resource.value[x]" sut/rich-parse-path sut/format-rich-id)))
+    (t/is (= "Resource.value" (-> "Resource.value" sut/rich-parse-path sut/format-rich-id)))
+    (t/is (= "Resource"       (-> "Resource" sut/rich-parse-path sut/format-rich-id)))
+    (t/is (= nil              (-> "" sut/rich-parse-path sut/format-rich-id)))
+    (t/is (= nil              (-> nil sut/rich-parse-path sut/format-rich-id))))
 
   (t/testing "various root ids"
-    (t/is (= [[0 [true false false]]
-              [1 [true false false]]
-              [2 [true false false]]
-              [3 [false false false]]
-              [4 [false false true]]
-              [5 [false false false]]
-              [6 [false true false]]
-              [7 [false false false]]
-              [8 [false false false]]
-              [9 [false false false]]]
-             (->> [nil
-                   ""
-                   "Element"
-                   "Element.foo"
-                   "Element.foo:bar"
-                   "Element.foo:bar.baz"
-                   "Element.foo:bar.baz.quux[x]"
-                   "Element.foo:bar.baz.quux[x]:quuxCode"
-                   "Element.foo:bar.baz.quux[x]:quuxCodeableConcept"
-                   "Element.foo:bar.baz.quux[x]:quuxCodeableConcept.code"]
-                  (mapv (juxt sut/root-element? sut/poly-root? sut/slice-root?))
-                  (map-indexed vector)))))
-
+    (def jxt (juxt sut/root-element? sut/poly-root? sut/slice-root?))
+    (t/is (= [true  false false] (jxt nil)))
+    (t/is (= [true  false false] (jxt "")))
+    (t/is (= [true  false false] (jxt "Element")))
+    (t/is (= [false false false] (jxt "Element.foo")))
+    (t/is (= [false false true]  (jxt "Element.foo:bar")))
+    (t/is (= [false false false] (jxt "Element.foo:bar.baz")))
+    (t/is (= [false true  false] (jxt "Element.foo:bar.baz.quux[x]")))
+    (t/is (= [false false false] (jxt "Element.foo:bar.baz.quux[x]:quuxCode")))
+    (t/is (= [false false false] (jxt "Element.foo:bar.baz.quux[x]:quuxCodeableConcept")))
+    (t/is (= [false false false] (jxt "Element.foo:bar.baz.quux[x]:quuxCodeableConcept.code"))))
 
   (t/testing "element -> zen"
+    (t/testing "multimethod"
+      (defmethod sut/ed->zen [:foo :baz] [arg] {:zen/foo arg})
+
+      (defmethod sut/ed->zen [:tar] [arg] {:zen/tar arg})
+
+      (matcho/match
+        (sut/element->zen {:foo "bar", :baz "taz", :tar "mar"})
+        {:zen/foo {:foo "bar", :baz "taz"}
+         :zen/tar {:tar "mar"}})
+
+      (remove-method sut/ed->zen [:tar])
+      (remove-method sut/ed->zen [:foo :baz])
+
+      (t/testing "fhir primitive types"
+        (matcho/match (sut/element->zen {:type [{:code "id"}]})
+                      {:confirms #{'id}})
+
+        (matcho/match (sut/element->zen {:type [{:code      "http://hl7.org/fhirpath/System.String"
+                                                 :extension [{:url      "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type"
+                                                              :valueUrl "uri"}]}]})
+                      {:confirms #{'uri}})
+
+        (matcho/match (sut/element->zen {:type [{:code "HumanName"}]})
+                      '{:confirms #{HumanName}}))
+
+      (t/testing "fhir polymorphic types"
+        (matcho/match (sut/element->zen {:type [{:code "url"} {:code "code"} {:code "id"}]})
+                      {::sut/poly
+                       {:key  :value
+                        :keys {:url  {:confirms #{'url}}
+                               :code {:confirms #{'code}}
+                               :id   {:confirms #{'id}}}}})
+
+        (matcho/match (sut/element->zen {:id "foo.bar.baz[x]"
+                                         :type [{:code "type"}]})
+                      {::sut/poly
+                       {:key  :baz
+                        :keys {:type {:confirms #{'type}}}}})))
+
     (t/testing "pattern -> zen"
       (matcho/match
         (sut/pattern->zen
@@ -119,45 +144,6 @@
                                                             :code {:const {:value "code"}}}}}
                                       :schema {:type zen/vector
                                                :minItems 1}}}}}}}))
-
-    (t/testing "multimethod"
-      (defmethod sut/ed->zen [:foo :baz] [arg] {:zen/foo arg})
-
-      (defmethod sut/ed->zen [:tar] [arg] {:zen/tar arg})
-
-      (matcho/match
-        (sut/element->zen {:foo "bar", :baz "taz", :tar "mar"})
-        {:zen/foo {:foo "bar", :baz "taz"}
-         :zen/tar {:tar "mar"}})
-
-      (remove-method sut/ed->zen [:tar])
-      (remove-method sut/ed->zen [:foo :baz])
-
-      (t/testing "fhir primitive types"
-        (matcho/match (sut/element->zen {:type [{:code "id"}]})
-                      {:confirms #{'id}})
-
-        (matcho/match (sut/element->zen {:type [{:code      "http://hl7.org/fhirpath/System.String"
-                                                 :extension [{:url      "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type"
-                                                              :valueUrl "uri"}]}]})
-                      {:confirms #{'uri}})
-
-        (matcho/match (sut/element->zen {:type [{:code "HumanName"}]})
-                      '{:confirms #{HumanName}}))
-
-      (t/testing "fhir polymorphic types"
-        (matcho/match (sut/element->zen {:type [{:code "url"} {:code "code"} {:code "id"}]})
-                      {::sut/poly
-                       {:key  :value
-                        :keys {:url  {:confirms #{'url}}
-                               :code {:confirms #{'code}}
-                               :id   {:confirms #{'id}}}}})
-
-        (matcho/match (sut/element->zen {:id "foo.bar.baz[x]"
-                                         :type [{:code "type"}]})
-                      {::sut/poly
-                       {:key  :baz
-                        :keys {:type {:confirms #{'type}}}}})))
 
 
     (t/testing "id"
@@ -201,7 +187,6 @@
          #::sut{:collection? not, :required? not}
          #::sut{:collection? not, :required? not}
          {::sut/collection? true?, :maxItems 2, :minItems 1}])))
-
 
   (t/testing "links"
     (matcho/match (mapv sut/element->zen
@@ -256,7 +241,6 @@
                    #::sut{:id     'Extension.extension:daysOfWeek.url
                           :key    :url
                           :parent 'Extension.extension:daysOfWeek}]))
-
 
   (t/testing "link schemas"
     (matcho/match
