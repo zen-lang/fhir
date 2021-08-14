@@ -15,107 +15,6 @@
     zctx*))
 
 
-(t/deftest differential-schema
-  (t/testing "complex-type"
-    (def qsd (read-string (slurp (io/resource "zen/fhir/quantity-sd.edn"))))
-
-    (def qzs {'Quantity
-              {:zen/tags #{'zen/schema 'complex-type 'fhir/profile}
-               :zen/desc "A measured or measurable amount",
-               :confirms #{'Element} ;; [:baseDefinition]
-               #_:effects #_{'fhir/binding {:strength "extensible",
-                                            :description "Appropriate units for Duration.",
-                                            :valueSet "http://hl7.org/fhir/ValueSet/duration-units"}
-
-                             'fhir/constraint {"qty-3"
-                                               {:severity "error",
-                                                :human "If a code for the unit is present, the system SHALL also be present",
-                                                :expression "code.empty() or system.exists()",}}}
-               :type 'zen/map
-               :keys {:value {:confirms #{'decimal}
-                              :zen/desc "Numerical value (with implicit precision)"}
-                      :comparator {:type 'zen/string
-                                   ;; :fhir/isSummary true ;;TODO
-                                   ;; :fhir/isModifier true
-                                   }
-                      :unit {:type 'zen/string
-                             :zen/desc "Unit representation"}
-                      :system {:confirms #{'uri}
-                               :zen/desc "System that defines coded unit form"}
-                      :code {:confirms #{'code}}}}})
-
-    (matcho/match
-      (sut/structure-definitions->zen-project
-        'fhir.R4-test
-        "http://hl7.org/fhir/StructureDefinition/Quantity"
-        [qsd]
-        :remove-gen-keys? true
-        :fold-schemas? true
-        :elements-mode :differential)
-      [qzs]))
-
-  (t/testing "resource"
-    (def patient-sd (read-string (slurp (io/resource "zen/fhir/pt-sd.edn"))))
-
-    (def patient-proj
-      (sut/structure-definitions->zen-project
-        'fhir.R4-test
-        "http://hl7.org/fhir/StructureDefinition/Patient"
-        [patient-sd]
-        :remove-gen-keys? true
-        :fold-schemas? true
-        :elements-mode :differential))
-
-    (matcho/match
-      patient-proj
-      '[{Patient
-         {:zen/tags #{fhir/profile resource zen/schema}
-          :zen/desc "Demographics and other administrative information about an individual or animal receiving care or other health-related services."
-          #_"Information about an individual or animal receiving health care services",
-          :confirms #{DomainResource}
-          :type zen/map
-          :keys {:identifier {:type zen/vector
-                              #_#_:zen/desc "An identifier for this patient",
-                              :every {:confirms #{Identifier}
-                                      :zen/desc "An identifier for this patient",}}
-                 :active {:type zen/boolean}
-                 :name {:type zen/vector
-                        :every {:confirms #{HumanName}}}
-                 :telecom {:type zen/vector
-                           :every {:confirms #{ContactPoint}}}
-                 :gender  {:confirms #{code}
-                           #_#_:effects {fhir/binding {:strength "required",
-                                                       :description "The gender of a person used for administrative purposes.",
-                                                       :valueSet "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"}}}
-                 :birthDate {:confirms #{date}}
-                 :deceased {:type zen/map
-                            :exclusive-keys #{#{:boolean :dateTime}}
-                            :keys {:boolean {:type zen/boolean
-                                             :confirms #{boolean}}
-                                   :dateTime {:type zen/datetime
-                                              :confirms #{dateTime}}}}
-                 :contact {:type zen/vector
-                           :every {:type zen/map
-                                   :keys {:relationship
-                                          {:type zen/vector
-                                           :every {:confirms #{CodeableConcept}}}
-                                          :name {:confirms #{HumanName}}}}}
-                 :managingOrganization {:confirms #{Reference}}}}}])
-
-    #_(testing "validating zen"
-      (def patient-res (read-string (slurp (io/resource "zen/fhir/pt-res.edn"))))
-
-      (def zctx* (load-zen-project! patient-proj))
-
-      (matcho/match @zctx* {:errors empty?})
-
-      (matcho/match (zen.core/validate
-                      zctx*
-                      #{'fhir.R4-test.Patient/Patient}
-                      patient-res)
-                    {:errors empty?}))))
-
-
 (t/deftest structure-definition-conversion
   (t/testing "rich parsed path"
     (t/is (= [{:key "Element"}
@@ -822,3 +721,104 @@
                     #{'us-core.test.pediatric-bmi-for-age/Observation}
                     (update bmi-obs :valueQuantity dissoc :system))
                   {:errors seq})))
+
+
+(t/deftest differential-schema
+  (t/testing "complex-type"
+    (def qsd (read-string (slurp (io/resource "zen/fhir/quantity-sd.edn"))))
+
+    (def qzs {'Quantity
+              {:zen/tags #{'zen/schema 'complex-type 'fhir/profile}
+               :zen/desc "A measured or measurable amount",
+               :confirms #{'Element} ;; [:baseDefinition]
+               #_:effects #_{'fhir/binding {:strength "extensible",
+                                            :description "Appropriate units for Duration.",
+                                            :valueSet "http://hl7.org/fhir/ValueSet/duration-units"}
+
+                             'fhir/constraint {"qty-3"
+                                               {:severity "error",
+                                                :human "If a code for the unit is present, the system SHALL also be present",
+                                                :expression "code.empty() or system.exists()",}}}
+               :type 'zen/map
+               :keys {:value {:confirms #{'decimal}
+                              :zen/desc "Numerical value (with implicit precision)"}
+                      :comparator {:type 'zen/string
+                                   ;; :fhir/isSummary true ;;TODO
+                                   ;; :fhir/isModifier true
+                                   }
+                      :unit {:type 'zen/string
+                             :zen/desc "Unit representation"}
+                      :system {:confirms #{'uri}
+                               :zen/desc "System that defines coded unit form"}
+                      :code {:confirms #{'code}}}}})
+
+    (matcho/match
+      (sut/structure-definitions->zen-project
+        'fhir.R4-test
+        "http://hl7.org/fhir/StructureDefinition/Quantity"
+        [qsd]
+        :remove-gen-keys? true
+        :fold-schemas? true
+        :elements-mode :differential)
+      [qzs]))
+
+  (t/testing "resource"
+    (def patient-sd (read-string (slurp (io/resource "zen/fhir/pt-sd.edn"))))
+
+    (def patient-proj
+      (sut/structure-definitions->zen-project
+        'fhir.R4-test
+        "http://hl7.org/fhir/StructureDefinition/Patient"
+        [patient-sd]
+        :remove-gen-keys? true
+        :fold-schemas? true
+        :elements-mode :differential))
+
+    (matcho/match
+      patient-proj
+      '[{Patient
+         {:zen/tags #{fhir/profile resource zen/schema}
+          :zen/desc "Demographics and other administrative information about an individual or animal receiving care or other health-related services."
+          #_"Information about an individual or animal receiving health care services",
+          :confirms #{DomainResource}
+          :type zen/map
+          :keys {:identifier {:type zen/vector
+                              #_#_:zen/desc "An identifier for this patient",
+                              :every {:confirms #{Identifier}
+                                      :zen/desc "An identifier for this patient",}}
+                 :active {:type zen/boolean}
+                 :name {:type zen/vector
+                        :every {:confirms #{HumanName}}}
+                 :telecom {:type zen/vector
+                           :every {:confirms #{ContactPoint}}}
+                 :gender  {:confirms #{code}
+                           #_#_:effects {fhir/binding {:strength "required",
+                                                       :description "The gender of a person used for administrative purposes.",
+                                                       :valueSet "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"}}}
+                 :birthDate {:confirms #{date}}
+                 :deceased {:type zen/map
+                            :exclusive-keys #{#{:boolean :dateTime}}
+                            :keys {:boolean {:type zen/boolean
+                                             :confirms #{boolean}}
+                                   :dateTime {:type zen/datetime
+                                              :confirms #{dateTime}}}}
+                 :contact {:type zen/vector
+                           :every {:type zen/map
+                                   :keys {:relationship
+                                          {:type zen/vector
+                                           :every {:confirms #{CodeableConcept}}}
+                                          :name {:confirms #{HumanName}}}}}
+                 :managingOrganization {:confirms #{Reference}}}}}])
+
+    #_(testing "validating zen"
+      (def patient-res (read-string (slurp (io/resource "zen/fhir/pt-res.edn"))))
+
+      (def zctx* (load-zen-project! patient-proj))
+
+      (matcho/match @zctx* {:errors empty?})
+
+      (matcho/match (zen.core/validate
+                      zctx*
+                      #{'fhir.R4-test.Patient/Patient}
+                      patient-res)
+                    {:errors empty?}))))
