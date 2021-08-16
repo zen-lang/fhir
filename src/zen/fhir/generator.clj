@@ -435,32 +435,40 @@
   (let [base (some-> (when-not (str/blank? baseDefinition) baseDefinition)
                      (str/split #"/")
                      last)
-        fhir-base? (str/starts-with? (str baseDefinition) "http://hl7.org/fhir/StructureDefinition")]
+        fhir-base? (str/starts-with? (str baseDefinition) "http://hl7.org/fhir/StructureDefinition")
+        ]
     (utils/strip-nils
       (merge-with into
-                  {::collection?       false ;; in some profiles there is * cardinality for the root resource
-                   :zen/tags           #{'zen/schema 'fhir/profile}
-                   :zen/desc           description
-                   :type               'zen/map
-                   :format             :aidbox
-                   :profile-definition url}
+                  {::collection?        false ;; in some profiles there is * cardinality for the root resource
+                   :zen/tags            #{'zen/schema 'fhir/structure-definition}
+                   :zen/desc            description
+                   :type                'zen/map
+                   :aidbox/data-format  :aidbox
+                   :fhir/type           type
+                   :fhir/definition-url url}
                   (when-not (str/blank? derivation)
-                    {:zen/tags #{(symbol "fhir" derivation)}})
+                    (cond (= "specialization" derivation)
+                          {:zen/tags '#{fhir/base}}
+
+                          (= "constraint" derivation)
+                          {:zen/tags '#{fhir/profile}}))
+
                   (when (and (= :differential elements-mode)
                              (not (str/blank? base))
                              fhir-base?)
                     {:confirms #{(if (some? fhir-lib)
                                    (symbol (name fhir-lib) base)
                                    (symbol base))}})
+
                   (when (= :snapshot elements-mode)
                     {:validation-type :open})
+
                   (when (= "complex-type" kind)
                     {:zen/tags #{'fhir/complex-type}})
+
                   (when (= "resource" kind)
                     {:zen/tags #{'fhir/resource}
-                     :severity "supported"
-                     :resourceType type
-                     :keys         {:resourceType {:type 'zen/string, :const {:value type}}}})))))
+                     :keys     {:resourceType {:type 'zen/string, :const {:value type}}}})))))
 
 
 (defn order-zen-ns [zen-ns-map]

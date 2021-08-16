@@ -359,7 +359,7 @@
          import #{fhir}
 
          Practitioner
-         {:zen/tags #{zen/schema fhir/profile fhir/resource}
+         {:zen/tags #{zen/schema fhir/structure-definition fhir/resource}
           :type     zen/map
           :keys     {:resourceType {:type zen/string, :const {:value "Practitioner"}}}}}]))
 
@@ -417,7 +417,7 @@
          import #{fhir}
 
          Practitioner
-         {:zen/tags #{zen/schema fhir/profile fhir/resource}
+         {:zen/tags #{zen/schema fhir/structure-definition fhir/resource}
           :type     zen/map
           :require  #{:id :name}
           :keys     {:resourceType {:type zen/string, :const {:value "Practitioner"}}
@@ -524,7 +524,7 @@
       plannet-practitioner-zen-project
       '[{Extension
          {:type    zen/map
-          :format  :aidbox
+          :aidbox/data-format  :aidbox
           :require #{:value}
           :keys    {:value {:type           zen/map
                             :exclusive-keys #{#{:code :id :url}}
@@ -679,7 +679,7 @@
   (matcho/match
     us-bmi-obs-zen-project
     '[{Observation
-       {:format :aidbox
+       {:aidbox/data-format :aidbox
         :keys {:value
                {:type zen/map
                 :keys {:Quantity
@@ -746,25 +746,25 @@
        import #{fhir}
 
        #_#_boolean
-       {:zen/tags     #{zen/schema fhir/primitive-type fhir/specialization}
+       {:zen/tags     #{zen/schema fhir/primitive-type fhir/base}
         :zen/desc     "Base StructureDefinition for boolean Type: Value of \"true\" or \"false\""
         #_#_:confirms #{fhir.R4-test/Element}
         :type         zen/boolean}
 
        Identifier
-       {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/specialization}
+       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
         :type     zen/map
         :keys     {:type   {:confirms #{fhir.R4-test/CodeableConcept}}
                    :system {:confirms #{fhir.R4-test/uri}}
                    :value  {:confirms #{fhir.R4-test/string}}}}
 
        Quantity
-       {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/specialization}
+       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
         :type     zen/map
         :keys     {:value {:confirms #{fhir.R4-test/decimal}}}}
 
        Range
-       {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/specialization}
+       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
         :type     zen/map
         :keys     {:low  {:confirms #{fhir.R4-test/Quantity, fhir.R4-test.SimpleQuantity/Quantity}}
                    :high {:confirms #{fhir.R4-test/Quantity, fhir.R4-test.SimpleQuantity/Quantity}}}}}
@@ -773,7 +773,7 @@
        import #{fhir fhir.R4-test}
 
        Quantity
-       {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/constraint}
+       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/profile}
         :type     zen/map
         :keys     {:comparator {:zen/desc "Not allowed to be used in this context"
                                 :const {:value nil}}}}}]))
@@ -796,7 +796,7 @@
          import #{fhir fhir.R4-test}
 
          Quantity
-         {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/specialization}
+         {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
           :zen/desc "Base StructureDefinition for Quantity Type: A measured amount (or an amount that can potentially be measured). Note that measured amounts include amounts that are not precisely quantified, including amounts involving arbitrary units and floating currencies.",
           :confirms #{fhir.R4-test/Element}
           #_:effects #_{fhir/binding {:strength "extensible",
@@ -836,7 +836,7 @@
            import #{fhir fhir.R4-test}
 
            Duration
-           {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/specialization}
+           {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
             :type zen/map
             :confirms #{fhir.R4-test/Quantity}}}])))
 
@@ -856,7 +856,7 @@
     (matcho/match
       patient-proj
       '[{Patient
-         {:zen/tags #{fhir/profile fhir/resource zen/schema fhir/specialization}
+         {:zen/tags #{fhir/structure-definition fhir/resource zen/schema fhir/base}
           :zen/desc "Demographics and other administrative information about an individual or animal receiving care or other health-related services."
           #_"Information about an individual or animal receiving health care services",
           :confirms #{fhir.R4-test/DomainResource}
