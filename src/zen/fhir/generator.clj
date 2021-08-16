@@ -597,5 +597,7 @@
                            core-urls)
         project-ns (-> (apply merge project-nses)
                        (assoc 'ns zen-lib)
-                       (utils/disj-key 'import zen-lib))]
-    (cons project-ns deps-projects)))
+                       (utils/disj-key 'import zen-lib))
+        projects (cons project-ns deps-projects)]
+    (cond->> projects
+      remove-gen-keys? (map remove-gen-keys))))
