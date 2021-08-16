@@ -581,6 +581,11 @@
                        :strict-deps      (or strict-deps true)
                        :elements-mode    (or elements-mode :differential)
                        :fold-schemas?    (or fold-schemas? true)})
-        deps-resources-map (utils/index-by :url deps-resources)]
-    ::TODO
-    ))
+        deps-resources-map (utils/index-by :url deps-resources)
+        project-nses (mapv (fn [url]
+                             (structure-definition->zen-ns zen-lib (get deps-resources-map url) params))
+                           core-urls)
+        project-ns (-> (apply merge project-nses)
+                       (assoc 'ns zen-lib)
+                       (utils/disj-key 'import zen-lib))]
+    [project-ns]))

@@ -720,7 +720,7 @@
       ["http://hl7.org/fhir/StructureDefinition/Identifier"
        "http://hl7.org/fhir/StructureDefinition/Quantity"
        #_"http://hl7.org/fhir/StructureDefinition/boolean"]
-      [identifier-sd quantity-sd #_boolean-sd]
+      [identifier-sd quantity-sd boolean-sd]
       {:remove-gen-keys? true
        :fold-schemas?    true
        :elements-mode    :differential
@@ -729,7 +729,7 @@
   (matcho/match
     fhir-proj
     [{'ns 'fhir.R4-test
-      'include #{'fhir}
+      'import #{'fhir}
 
       #_#_boolean
       {:zen/tags #{'zen/schema 'fhir/primitive-type}
@@ -738,7 +738,7 @@
        :type 'zen/boolean}
 
       'Identifier
-      {:zen/tags #{'zen/schema 'fhir/complex-type}
+      {:zen/tags #{'zen/schema 'fhir/complex-type 'fhir/profile}
        :type 'zen/map
        :confirms #{'fhir.R4-test/Element}
        :keys {:type {:confirms #{'fhir.R4-test/CodeableConcept}}
@@ -746,7 +746,7 @@
               :value {:confirms #{'fhir.R4-test/string}}}}
 
       'Quantity
-      {:zen/tags #{'zen/schema 'fhir/complex-type}
+      {:zen/tags #{'zen/schema 'fhir/complex-type 'fhir/profile}
        :type 'zen/map
        :confirms #{'fhir.R4-test/Element}
        :keys {:value {:confirms #{'fhir.R4-test/decimal}}}}}
