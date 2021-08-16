@@ -164,3 +164,9 @@
         (let [k (f x)]
           (assoc! ret k x)))
       (transient {}) coll)))
+
+
+(def MAP-MAPS
+  (sp/recursive-path [] p
+   (sp/if-path map?
+    (sp/continue-then-stay sp/MAP-VALS p))))

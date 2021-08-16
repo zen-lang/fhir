@@ -1,6 +1,7 @@
 (ns zen.fhir.generator
   (:require [clojure.string :as str]
             [clojure.walk]
+            [clojure.set]
             [zen.fhir.utils :as utils]
             [com.rpl.specter :as sp]))
 
@@ -231,9 +232,9 @@
 
 (defmethod ed->zen #{:type} [{el-type :type}]
   (let [tp (first el-type)]
-    (when (:profile tp)
+    (when (:profile tp) ;; TODO: multiple profile support
       {::confirms-profile {:urls   (:profile tp)
-                           :symbol (symbol (:code tp))}})))
+                           :symbol (some-> tp :profile first str (str/split #"/") last symbol)}})))
 
 
 ;; NOTE: we can't convert sliceName to keyword because
@@ -435,8 +436,7 @@
   (let [base (some-> (when-not (str/blank? baseDefinition) baseDefinition)
                      (str/split #"/")
                      last)
-        fhir-base? (str/starts-with? (str baseDefinition) "http://hl7.org/fhir/StructureDefinition")
-        ]
+        fhir-base? (str/starts-with? (str baseDefinition) "http://hl7.org/fhir/StructureDefinition")]
     (utils/strip-nils
       (merge-with into
                   {::collection?        false ;; in some profiles there is * cardinality for the root resource
@@ -463,6 +463,9 @@
                   (when (= :snapshot elements-mode)
                     {:validation-type :open})
 
+                  (when (= "primitive-type" kind)
+                    {:zen/tags #{'fhir/primitive-type}})
+
                   (when (= "complex-type" kind)
                     {:zen/tags #{'fhir/complex-type}})
 
@@ -483,6 +486,7 @@
     ordered-zen-ns-map))
 
 
+;; TODO: support primitive attributes additional element info starting with _
 (defn structure-definition->zen-ns
   "Converts StructureDefinition to zen namespace
   :fold-schemas? true -- to inline attributes into single schema
@@ -493,6 +497,7 @@
                         :or {elements-mode :differential
                              fold-schemas? true}}]]
   (let [resource-type   (symbol (:type resource))
+        schema-name     (symbol (or (:name resource) (:type resource)))
         zen-ns          (symbol (str (name zen-lib) "." (:id resource)))
         elements-key    elements-mode
         element-schemas (->> (get-in resource [elements-key :element])
@@ -500,10 +505,22 @@
                              link-schemas)
         resource-schema (sd->profile-schema resource #::{:elements-mode elements-mode
                                                          :fhir-lib fhir-lib})
-        schemas         (update element-schemas resource-type utils/safe-merge-with-into resource-schema)]
-    (-> schemas
-        build-schemas
+        schemas'         (update element-schemas resource-type utils/safe-merge-with-into resource-schema)
+        schemas         (if (contains? (:zen/tags resource-schema) 'fhir/primitive-type)
+                          (let [value-symbol (symbol (str (name resource-type) ".value"))
+                                schema-zen-sym (symbol (name zen-lib) (name resource-type))]
+                            (-> schemas'
+                                (dissoc value-symbol)
+                                (update resource-type merge (select-keys (get schemas' value-symbol) [:type]))
+                                (update resource-type utils/disj-key :confirms
+                                        schema-zen-sym)
+                                (update resource-type utils/disj-key ::links
+                                        value-symbol)))
+                          schemas')
+        built-schemas (build-schemas schemas)]
+    (-> built-schemas
         (cond-> fold-schemas? (-> fold-schemas (select-keys [resource-type])))
+        (clojure.set/rename-keys {resource-type schema-name})
         (assoc 'ns     zen-ns
                'import #{'fhir})
         (cond-> (some? fhir-lib)
@@ -521,17 +538,20 @@
        set))
 
 
-(defn resolve-confirms-profile [zen-lib deps-resources {::keys [confirms-profile] :as sch}]
+(defn resolve-confirms-profile [zen-lib deps-resources {::keys [confirms-profile] :as sch} {::keys [uni-project?]}]
   (if-let [dep (and confirms-profile (some deps-resources (:urls confirms-profile)))]
     (utils/safe-merge-with-into
       sch
-      {:confirms #{(symbol (str (name zen-lib) \. (:id dep) \/ (:symbol confirms-profile)))}})
+      {:confirms #{(symbol (str (name zen-lib)
+                                (when-not uni-project?
+                                  (str \. (:id dep)))
+                                \/ (:symbol confirms-profile)))}})
     sch))
 
 
 (defn collect-imports [zen-lib core-ns deps-resources]
   (->> core-ns
-       (sp/select [sp/MAP-VALS map? ::confirms-profile])
+       (sp/select [utils/MAP-MAPS ::confirms-profile])
        (map (fn [confirms-profile]
               {:dep-resource (some deps-resources (:urls confirms-profile))
                :symbol       (:symbol confirms-profile)}))
@@ -539,12 +559,12 @@
        (map #(symbol (str (name zen-lib) \. (get-in % [:dep-resource :id]))))))
 
 
-(defn resolve-deps [zen-lib core-ns deps-resources]
+(defn resolve-deps [zen-lib core-ns deps-resources & [params]]
   (let [deps-imports (collect-imports zen-lib core-ns deps-resources)
         resolved-ns  (clojure.walk/postwalk
                        (fn [x]
                          (if (and (map? x) (contains? x ::confirms-profile))
-                           (resolve-confirms-profile zen-lib deps-resources x)
+                           (resolve-confirms-profile zen-lib deps-resources x params)
                            x))
                        core-ns)]
     (update resolved-ns 'import into deps-imports)))
@@ -608,19 +628,17 @@
         deps-sds-urls (->> core-urls
                            (map deps-resources-map)
                            (mapcat #(get-deps-urls % elements-mode)))
-        deps-projects
-        (mapcat (fn [url]
-                  (when (some? (get deps-resources-map url))
-                    (structure-definitions->zen-project* zen-lib url deps-resources-map params)))
-                deps-sds-urls)
         project-nses (mapv (fn [url]
                              (as-> nil zen-ns
                                (structure-definition->zen-ns zen-lib (get deps-resources-map url) params)
-                               (resolve-deps zen-lib zen-ns deps-resources-map)))
+                               (resolve-deps zen-lib zen-ns deps-resources-map {::uni-project? true})))
                            core-urls)
-        project-ns (-> (apply merge project-nses)
-                       (assoc 'ns zen-lib)
-                       (utils/disj-key 'import zen-lib))
-        projects (cons project-ns deps-projects)]
-    (cond->> projects
-      remove-gen-keys? (map remove-gen-keys))))
+        deps-projects (mapcat (fn [url]
+                                (when (some? (get deps-resources-map url))
+                                  (structure-definitions->zen-project* zen-lib url deps-resources-map params)))
+                              deps-sds-urls)
+        project (-> (apply merge (concat project-nses deps-projects))
+                    (assoc 'ns zen-lib)
+                    (utils/disj-key 'import zen-lib))]
+    (cond->> project
+      remove-gen-keys? remove-gen-keys)))

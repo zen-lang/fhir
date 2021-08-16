@@ -7,7 +7,7 @@
    [clojure.test :as t]))
 
 
-(defn load-zen-project! [proj]
+(defn load-zen-projects! [proj]
   (let [proj-map (into {} (map #(-> [(get % 'ns) %])) proj)
         zctx* (zen.core/new-context {:memory-store proj-map})]
     (zen.core/read-ns zctx* 'fhir)
@@ -364,7 +364,7 @@
           :keys     {:resourceType {:type zen/string, :const {:value "Practitioner"}}}}}]))
 
   (t/testing "validating resource type"
-    (def zctx* (load-zen-project! plannet-practitioner-zen-project))
+    (def zctx* (load-zen-projects! plannet-practitioner-zen-project))
 
     (matcho/match @zctx* {:errors empty?})
 
@@ -719,7 +719,7 @@
                   {:errors seq})))
 
 
-(t/deftest ^:kaocha/pending fhir-type-uni-project
+(t/deftest fhir-type-uni-project
   (def identifier-sd (read-string (slurp (io/resource "zen/fhir/identifier-sd.edn"))))
   (def quantity-sd (read-string (slurp (io/resource "zen/fhir/quantity-sd.edn"))))
   (def boolean-sd (read-string (slurp (io/resource "zen/fhir/boolean-sd.edn"))))
@@ -731,7 +731,7 @@
       'fhir.R4-test
       ["http://hl7.org/fhir/StructureDefinition/Identifier"
        "http://hl7.org/fhir/StructureDefinition/Quantity"
-       #_"http://hl7.org/fhir/StructureDefinition/boolean"
+       "http://hl7.org/fhir/StructureDefinition/boolean"
        "http://hl7.org/fhir/StructureDefinition/Range"]
       [identifier-sd quantity-sd boolean-sd range-sd simple-quantity-sd]
       {:remove-gen-keys? true
@@ -739,44 +739,39 @@
        :elements-mode    :differential
        :fhir-lib         'fhir.R4-test}))
 
-
   (matcho/match
     fhir-proj
-    '[{ns     fhir.R4-test
-       import #{fhir}
+    '{ns     fhir.R4-test
+      import #{fhir}
 
-       #_#_boolean
-       {:zen/tags     #{zen/schema fhir/primitive-type fhir/base}
-        :zen/desc     "Base StructureDefinition for boolean Type: Value of \"true\" or \"false\""
-        #_#_:confirms #{fhir.R4-test/Element}
-        :type         zen/boolean}
+      boolean
+      {:zen/tags     #{zen/schema fhir/structure-definition fhir/primitive-type fhir/base}
+       :zen/desc     "Base StructureDefinition for boolean Type: Value of \"true\" or \"false\""
+       :type         zen/boolean}
 
-       Identifier
-       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
-        :type     zen/map
-        :keys     {:type   {:confirms #{fhir.R4-test/CodeableConcept}}
-                   :system {:confirms #{fhir.R4-test/uri}}
-                   :value  {:confirms #{fhir.R4-test/string}}}}
+      Identifier
+      {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
+       :type     zen/map
+       :keys     {:type   {:confirms #{fhir.R4-test/CodeableConcept}}
+                  :system {:confirms #{fhir.R4-test/uri}}
+                  :value  {:confirms #{fhir.R4-test/string}}}}
 
-       Quantity
-       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
-        :type     zen/map
-        :keys     {:value {:confirms #{fhir.R4-test/decimal}}}}
+      Quantity
+      {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
+       :type     zen/map
+       :keys     {:value {:confirms #{fhir.R4-test/decimal}}}}
 
-       Range
-       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
-        :type     zen/map
-        :keys     {:low  {:confirms #{fhir.R4-test/Quantity, fhir.R4-test.SimpleQuantity/Quantity}}
-                   :high {:confirms #{fhir.R4-test/Quantity, fhir.R4-test.SimpleQuantity/Quantity}}}}}
+      Range
+      {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
+       :type     zen/map
+       :keys     {:low  {:confirms #{fhir.R4-test/Quantity, fhir.R4-test/SimpleQuantity}}
+                  :high {:confirms #{fhir.R4-test/Quantity, fhir.R4-test/SimpleQuantity}}}}
 
-      {ns     fhir.R4-test.SimpleQuantity
-       import #{fhir fhir.R4-test}
-
-       Quantity
-       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/profile}
-        :type     zen/map
-        :keys     {:comparator {:zen/desc "Not allowed to be used in this context"
-                                :const {:value nil}}}}}]))
+      SimpleQuantity
+      {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/profile}
+       :type     zen/map
+       :keys     {:comparator {:zen/desc "Not allowed to be used in this context"
+                               :const {:value nil}}}}}))
 
 
 (t/deftest differential-schema
