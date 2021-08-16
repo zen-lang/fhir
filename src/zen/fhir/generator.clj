@@ -615,15 +615,14 @@
 
 
 (defn structure-definitions->uni-zen-project
-  [zen-lib core-urls deps-resources
-   & [{:as   params
-       :keys [remove-gen-keys? strict-deps
-              fold-schemas? elements-mode]}]]
-  (let [params (merge {:remove-gen-keys? true
-                       :strict-deps      true
-                       :elements-mode    :differential
-                       :fold-schemas?    true}
-                      params)
+  [zen-lib core-urls deps-resources & [params]]
+  (let [{:as params, :keys [remove-gen-keys? elements-mode]}
+        (merge {:remove-gen-keys?     true
+                :strict-deps          true
+                :elements-mode        :differential
+                :fold-schemas?        true}
+               params)
+
         deps-resources-map (utils/index-by :url deps-resources)
         deps-sds-urls (->> core-urls
                            (map deps-resources-map)
