@@ -487,6 +487,8 @@
         (cond-> fold-schemas? (-> fold-schemas (select-keys [resource-type])))
         (assoc 'ns     zen-ns
                'import #{'fhir})
+        (cond-> (some? fhir-lib)
+          (update 'import conj fhir-lib))
         order-zen-ns)))
 
 

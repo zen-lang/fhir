@@ -723,7 +723,7 @@
         :elements-mode    :differential
         :fhir-lib         'fhir.R4-test)
       '[{ns fhir.R4-test.Quantity
-         import #{fhir}
+         import #{fhir fhir.R4-test}
 
          Quantity
          {:zen/tags #{zen/schema fhir/complex-type fhir/profile}
@@ -763,7 +763,7 @@
           :elements-mode :differential
           :fhir-lib      'fhir.R4-test)
         '[{ns fhir.R4-test.Duration
-           import #{fhir}
+           import #{fhir fhir.R4-test}
 
            Duration
            {:zen/tags #{zen/schema fhir/complex-type fhir/profile}
