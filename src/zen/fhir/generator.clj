@@ -431,7 +431,7 @@
 
 (defn sd->profile-schema
   "Creates zen schema for root resource from StructureDefinition"
-  [{:keys [description type url kind baseDefinition]} {::keys [fhir-lib elements-mode]}]
+  [{:keys [description type url kind baseDefinition derivation]} {::keys [fhir-lib elements-mode]}]
   (let [base (some-> (when-not (str/blank? baseDefinition) baseDefinition)
                      (str/split #"/")
                      last)
@@ -444,6 +444,8 @@
                    :type               'zen/map
                    :format             :aidbox
                    :profile-definition url}
+                  (when-not (str/blank? derivation)
+                    {:zen/tags #{(symbol "fhir" derivation)}})
                   (when (and (= :differential elements-mode)
                              (not (str/blank? base))
                              fhir-base?)

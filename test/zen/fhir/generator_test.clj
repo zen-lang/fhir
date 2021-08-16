@@ -739,13 +739,14 @@
        :elements-mode    :differential
        :fhir-lib         'fhir.R4-test}))
 
+
   (matcho/match
     fhir-proj
     '[{ns     fhir.R4-test
        import #{fhir}
 
        #_#_boolean
-       {:zen/tags     #{zen/schema fhir/primitive-type}
+       {:zen/tags     #{zen/schema fhir/primitive-type fhir/specialization}
         :zen/desc     "Base StructureDefinition for boolean Type: Value of \"true\" or \"false\""
         #_#_:confirms #{fhir.R4-test/Element}
         :type         zen/boolean}
@@ -769,7 +770,7 @@
                    :high {:confirms #{fhir.R4-test/Quantity, fhir.R4-test.SimpleQuantity/Quantity}}}}}
 
       {ns     fhir.R4-test.SimpleQuantity
-       import #{fhir.R4-test}
+       import #{fhir fhir.R4-test}
 
        Quantity
        {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/constraint}
@@ -795,8 +796,8 @@
          import #{fhir fhir.R4-test}
 
          Quantity
-         {:zen/tags #{zen/schema fhir/complex-type fhir/profile}
-          :zen/desc "A measured or measurable amount",
+         {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/specialization}
+          :zen/desc "Base StructureDefinition for Quantity Type: A measured amount (or an amount that can potentially be measured). Note that measured amounts include amounts that are not precisely quantified, including amounts involving arbitrary units and floating currencies.",
           :confirms #{fhir.R4-test/Element}
           #_:effects #_{fhir/binding {:strength "extensible",
                                       :description "Appropriate units for Duration.",
@@ -835,7 +836,7 @@
            import #{fhir fhir.R4-test}
 
            Duration
-           {:zen/tags #{zen/schema fhir/complex-type fhir/profile}
+           {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/specialization}
             :type zen/map
             :confirms #{fhir.R4-test/Quantity}}}])))
 
@@ -855,7 +856,7 @@
     (matcho/match
       patient-proj
       '[{Patient
-         {:zen/tags #{fhir/profile fhir/resource zen/schema}
+         {:zen/tags #{fhir/profile fhir/resource zen/schema fhir/specialization}
           :zen/desc "Demographics and other administrative information about an individual or animal receiving care or other health-related services."
           #_"Information about an individual or animal receiving health care services",
           :confirms #{fhir.R4-test/DomainResource}
