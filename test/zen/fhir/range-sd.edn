@@ -1,0 +1,230 @@
+{:description
+ "Base StructureDefinition for Range Type: A set of ordered Quantities defined by a low and high limit.",
+ :date "2019-11-01T09:29:23+11:00",
+ :derivation "specialization",
+ :meta {:lastUpdated "2019-11-01T09:29:23.356+11:00"},
+ :publisher "HL7 FHIR Standard",
+ :fhirVersion "4.0.1",
+ :purpose "Need to be able to specify ranges of values.",
+ :name "Range",
+ :mapping
+ [{:identity "v2", :uri "http://hl7.org/v2", :name "HL7 v2 Mapping"}
+  {:identity "rim", :uri "http://hl7.org/v3", :name "RIM Mapping"}],
+ :abstract false,
+ :type "Range",
+ :resourceType "StructureDefinition",
+ :extension
+ [{:url
+   "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+   :valueCode "normative"}
+  {:url
+   "http://hl7.org/fhir/StructureDefinition/structuredefinition-normative-version",
+   :valueCode "4.0.0"}],
+ :snapshot
+ {:element
+  [{:constraint
+    [{:key "ele-1",
+      :severity "error",
+      :human "All FHIR elements must have a @value or children",
+      :expression "hasValue() or (children().count() > id.count())",
+      :xpath "@value|f:*|h:div",
+      :source "http://hl7.org/fhir/StructureDefinition/Element"}
+     {:key "rng-2",
+      :severity "error",
+      :human "If present, low SHALL have a lower value than high",
+      :expression "low.empty() or high.empty() or (low <= high)",
+      :xpath
+      "not(exists(f:low/f:value/@value)) or not(exists(f:high/f:value/@value)) or (number(f:low/f:value/@value) <= number(f:high/f:value/@value))"}],
+    :path "Range",
+    :min 0,
+    :definition
+    "A set of ordered Quantities defined by a low and high limit.",
+    :isModifier false,
+    :short "Set of values bounded by low and high",
+    :mapping
+    [{:identity "rim", :map "n/a"}
+     {:identity "v2",
+      :map "NR and also possibly SN (but see also quantity)"}
+     {:identity "rim",
+      :map
+      "IVL<QTY[not(type=\"TS\")]> [lowClosed=\"true\" and highClosed=\"true\"]or URG<QTY[not(type=\"TS\")]>"}],
+    :extension
+    [{:url
+      "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+      :valueCode "normative"}
+     {:url
+      "http://hl7.org/fhir/StructureDefinition/structuredefinition-normative-version",
+      :valueCode "4.0.0"}],
+    :max "*",
+    :id "Range",
+    :condition ["ele-1"],
+    :comment
+    "The stated low and high value are assumed to have arbitrarily high precision when it comes to determining which values are in the range. I.e. 1.99 is not in the range 2 -> 3.",
+    :base {:path "Range", :min 0, :max "*"}}
+   {:path "Range.id",
+    :min 0,
+    :definition
+    "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+    :isModifier false,
+    :short "Unique id for inter-element referencing",
+    :mapping [{:identity "rim", :map "n/a"}],
+    :type
+    [{:extension
+      [{:url
+        "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type",
+        :valueUrl "string"}],
+      :code "http://hl7.org/fhirpath/System.String"}],
+    :representation ["xmlAttr"],
+    :max "1",
+    :id "Range.id",
+    :base {:path "Element.id", :min 0, :max "1"},
+    :isSummary false}
+   {:constraint
+    [{:key "ele-1",
+      :severity "error",
+      :human "All FHIR elements must have a @value or children",
+      :expression "hasValue() or (children().count() > id.count())",
+      :xpath "@value|f:*|h:div",
+      :source "http://hl7.org/fhir/StructureDefinition/Element"}
+     {:key "ext-1",
+      :severity "error",
+      :human "Must have either extensions or value[x], not both",
+      :expression "extension.exists() != value.exists()",
+      :xpath
+      "exists(f:extension)!=exists(f:*[starts-with(local-name(.), \"value\")])",
+      :source "http://hl7.org/fhir/StructureDefinition/Extension"}],
+    :path "Range.extension",
+    :min 0,
+    :definition
+    "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+    :isModifier false,
+    :short "Additional content defined by implementations",
+    :mapping [{:identity "rim", :map "n/a"}],
+    :slicing
+    {:discriminator [{:type "value", :path "url"}],
+     :description "Extensions are always sliced by (at least) url",
+     :rules "open"},
+    :type [{:code "Extension"}],
+    :alias ["extensions" "user content"],
+    :max "*",
+    :id "Range.extension",
+    :comment
+    "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+    :base {:path "Element.extension", :min 0, :max "*"},
+    :isSummary false}
+   {:constraint
+    [{:key "ele-1",
+      :severity "error",
+      :human "All FHIR elements must have a @value or children",
+      :expression "hasValue() or (children().count() > id.count())",
+      :xpath "@value|f:*|h:div",
+      :source "http://hl7.org/fhir/StructureDefinition/Element"}],
+    :path "Range.low",
+    :min 0,
+    :definition "The low limit. The boundary is inclusive.",
+    :isModifier false,
+    :short "Low limit",
+    :mapping
+    [{:identity "v2", :map "NR.1"} {:identity "rim", :map "./low"}],
+    :type
+    [{:code "Quantity",
+      :profile
+      ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]}],
+    :max "1",
+    :id "Range.low",
+    :comment
+    "If the low element is missing, the low boundary is not known.",
+    :base {:path "Range.low", :min 0, :max "1"},
+    :isSummary true}
+   {:constraint
+    [{:key "ele-1",
+      :severity "error",
+      :human "All FHIR elements must have a @value or children",
+      :expression "hasValue() or (children().count() > id.count())",
+      :xpath "@value|f:*|h:div",
+      :source "http://hl7.org/fhir/StructureDefinition/Element"}],
+    :path "Range.high",
+    :min 0,
+    :definition "The high limit. The boundary is inclusive.",
+    :isModifier false,
+    :short "High limit",
+    :mapping
+    [{:identity "v2", :map "NR.2"} {:identity "rim", :map "./high"}],
+    :type
+    [{:code "Quantity",
+      :profile
+      ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]}],
+    :max "1",
+    :id "Range.high",
+    :comment
+    "If the high element is missing, the high boundary is not known.",
+    :base {:path "Range.high", :min 0, :max "1"},
+    :isSummary true}]},
+ :status "active",
+ :id "Range",
+ :kind "complex-type",
+ :url "http://hl7.org/fhir/StructureDefinition/Range",
+ :version "4.0.1",
+ :differential
+ {:element
+  [{:constraint
+    [{:key "rng-2",
+      :severity "error",
+      :human "If present, low SHALL have a lower value than high",
+      :expression "low.empty() or high.empty() or (low <= high)",
+      :xpath
+      "not(exists(f:low/f:value/@value)) or not(exists(f:high/f:value/@value)) or (number(f:low/f:value/@value) <= number(f:high/f:value/@value))"}],
+    :path "Range",
+    :min 0,
+    :definition
+    "A set of ordered Quantities defined by a low and high limit.",
+    :short "Set of values bounded by low and high",
+    :mapping
+    [{:identity "v2",
+      :map "NR and also possibly SN (but see also quantity)"}
+     {:identity "rim",
+      :map
+      "IVL<QTY[not(type=\"TS\")]> [lowClosed=\"true\" and highClosed=\"true\"]or URG<QTY[not(type=\"TS\")]>"}],
+    :extension
+    [{:url
+      "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+      :valueCode "normative"}
+     {:url
+      "http://hl7.org/fhir/StructureDefinition/structuredefinition-normative-version",
+      :valueCode "4.0.0"}],
+    :max "*",
+    :id "Range",
+    :comment
+    "The stated low and high value are assumed to have arbitrarily high precision when it comes to determining which values are in the range. I.e. 1.99 is not in the range 2 -> 3."}
+   {:path "Range.low",
+    :min 0,
+    :definition "The low limit. The boundary is inclusive.",
+    :short "Low limit",
+    :mapping
+    [{:identity "v2", :map "NR.1"} {:identity "rim", :map "./low"}],
+    :type
+    [{:code "Quantity",
+      :profile
+      ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]}],
+    :max "1",
+    :id "Range.low",
+    :comment
+    "If the low element is missing, the low boundary is not known.",
+    :isSummary true}
+   {:path "Range.high",
+    :min 0,
+    :definition "The high limit. The boundary is inclusive.",
+    :short "High limit",
+    :mapping
+    [{:identity "v2", :map "NR.2"} {:identity "rim", :map "./high"}],
+    :type
+    [{:code "Quantity",
+      :profile
+      ["http://hl7.org/fhir/StructureDefinition/SimpleQuantity"]}],
+    :max "1",
+    :id "Range.high",
+    :comment
+    "If the high element is missing, the high boundary is not known.",
+    :isSummary true}]},
+ :contact [{:telecom [{:system "url", :value "http://hl7.org/fhir"}]}],
+ :baseDefinition "http://hl7.org/fhir/StructureDefinition/Element"}

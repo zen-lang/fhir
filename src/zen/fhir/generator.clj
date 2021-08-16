@@ -582,10 +582,20 @@
                        :elements-mode    (or elements-mode :differential)
                        :fold-schemas?    (or fold-schemas? true)})
         deps-resources-map (utils/index-by :url deps-resources)
+        deps-sds-urls (->> core-urls
+                           (map deps-resources-map)
+                           (mapcat #(get-deps-urls % elements-mode)))
+        deps-projects
+        (mapcat (fn [url]
+                  (when (some? (get deps-resources-map url))
+                    (structure-definitions->zen-project* zen-lib url deps-resources-map params)))
+                deps-sds-urls)
         project-nses (mapv (fn [url]
-                             (structure-definition->zen-ns zen-lib (get deps-resources-map url) params))
+                             (as-> nil zen-ns
+                               (structure-definition->zen-ns zen-lib (get deps-resources-map url) params)
+                               (resolve-deps zen-lib zen-ns deps-resources-map)))
                            core-urls)
         project-ns (-> (apply merge project-nses)
                        (assoc 'ns zen-lib)
                        (utils/disj-key 'import zen-lib))]
-    [project-ns]))
+    (cons project-ns deps-projects)))

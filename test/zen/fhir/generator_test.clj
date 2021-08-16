@@ -714,14 +714,17 @@
   (def identifier-sd (read-string (slurp (io/resource "zen/fhir/identifier-sd.edn"))))
   (def quantity-sd (read-string (slurp (io/resource "zen/fhir/quantity-sd.edn"))))
   (def boolean-sd (read-string (slurp (io/resource "zen/fhir/boolean-sd.edn"))))
+  (def range-sd (read-string (slurp (io/resource "zen/fhir/range-sd.edn"))))
+  (def simple-quantity-sd (read-string (slurp (io/resource "zen/fhir/simple-quantity-sd.edn"))))
 
   (def fhir-proj
     (sut/structure-definitions->uni-zen-project
       'fhir.R4-test
       ["http://hl7.org/fhir/StructureDefinition/Identifier"
        "http://hl7.org/fhir/StructureDefinition/Quantity"
-       #_"http://hl7.org/fhir/StructureDefinition/boolean"]
-      [identifier-sd quantity-sd boolean-sd]
+       #_"http://hl7.org/fhir/StructureDefinition/boolean"
+       "http://hl7.org/fhir/StructureDefinition/Range"]
+      [identifier-sd quantity-sd boolean-sd range-sd simple-quantity-sd]
       {:remove-gen-keys? true
        :fold-schemas?    true
        :elements-mode    :differential
@@ -751,7 +754,7 @@
        :type 'zen/map
        :confirms #{'fhir.R4-test/Element}
        :keys {:value {:confirms #{'fhir.R4-test/decimal}}}}}
-     nil]))
+     ]))
 
 
 (t/deftest differential-schema
