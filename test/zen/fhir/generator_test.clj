@@ -401,7 +401,7 @@
             {:id "Practitioner.name.given", :path "Practitioner.name.given", :min 1, :max "*", :type [{:code "string"}]}
             {:id "Practitioner.meta", :path "Practitioner.meta", :min 0, :max "1", :type [{:code "Meta"}]}
             {:id "Practitioner.meta.profile", :path "Practitioner.meta.profile", :min 0, :max "*", :type [{:code "canonical"}]}]}}]
-        :fold-schemas? false))
+        {:fold-schemas? false}))
 
     (matcho/match
       plannet-practitioner-zen-project
@@ -509,7 +509,7 @@
                                 :max  "1",
                                 :type [{:code "url"} {:code "code"} {:code "id"}]
                                 :base {:path "Extension.value[x]", :min 0, :max "1"}}]}}]
-        :fold-schemas? true))
+        {:fold-schemas? true}))
 
     (matcho/match
       plannet-practitioner-zen-project
@@ -662,9 +662,9 @@
                               :max       "1",
                               :id        "Observation.value[x]:valueQuantity.code",
                               :base      {:path "Quantity.code", :min 0, :max "1"}}]}}]
-      :fold-schemas? true
-      :remove-gen-keys? true
-      :strict-deps false))
+      {:fold-schemas? true
+       :remove-gen-keys? true
+       :strict-deps false}))
 
   (matcho/match
     us-bmi-obs-zen-project
@@ -718,10 +718,10 @@
         'fhir.R4-test
         "http://hl7.org/fhir/StructureDefinition/Quantity"
         [qsd]
-        :remove-gen-keys? true
-        :fold-schemas?    true
-        :elements-mode    :differential
-        :fhir-lib         'fhir.R4-test)
+        {:remove-gen-keys? true
+         :fold-schemas?    true
+         :elements-mode    :differential
+         :fhir-lib         'fhir.R4-test})
       '[{ns fhir.R4-test.Quantity
          import #{fhir fhir.R4-test}
 
@@ -758,10 +758,10 @@
           'fhir.R4-test
           "http://hl7.org/fhir/StructureDefinition/Duration"
           [duration-sd]
-          :remove-gen-keys? true
-          :fold-schemas? true
-          :elements-mode :differential
-          :fhir-lib      'fhir.R4-test)
+          {:remove-gen-keys? true
+           :fold-schemas? true
+           :elements-mode :differential
+           :fhir-lib      'fhir.R4-test})
         '[{ns fhir.R4-test.Duration
            import #{fhir fhir.R4-test}
 
@@ -778,10 +778,10 @@
         'fhir.R4-test
         "http://hl7.org/fhir/StructureDefinition/Patient"
         [patient-sd]
-        :remove-gen-keys? true
-        :fold-schemas?    true
-        :elements-mode    :differential
-        :fhir-lib         'fhir.R4-test))
+        {:remove-gen-keys? true
+         :fold-schemas?    true
+         :elements-mode    :differential
+         :fhir-lib         'fhir.R4-test}))
 
     (matcho/match
       patient-proj
@@ -819,7 +819,7 @@
                                           :name {:confirms #{fhir.R4-test/HumanName}}}}}
                  :managingOrganization {:confirms #{fhir.R4-test/Reference}}}}}])
 
-    #_(testing "validating zen"
+    #_(t/testing "validating zen"
       (def patient-res (read-string (slurp (io/resource "zen/fhir/pt-res.edn"))))
 
       (def zctx* (load-zen-project! patient-proj))

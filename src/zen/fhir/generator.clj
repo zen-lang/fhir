@@ -538,7 +538,9 @@
       zen-projects)))
 
 
-(defn structure-definitions->zen-project* [zen-lib core-url deps-resources-map & {:as params, :keys [remove-gen-keys? strict-deps fhir-lib]}]
+(defn structure-definitions->zen-project*
+  [zen-lib core-url deps-resources-map
+   & [{:as params, :keys [remove-gen-keys? strict-deps]}]]
   (when strict-deps
     (assert (contains? deps-resources-map core-url)
             (str "Couldn't find dependency: " core-url)))
@@ -547,12 +549,7 @@
         deps-sds-urls    (get-deps-urls core-resource)
         deps-projects    (mapcat (fn [url]
                                    (when (some? (get deps-resources-map url))
-                                     (structure-definitions->zen-project*
-                                       zen-lib url deps-resources-map
-                                       :fhir-lib         fhir-lib
-                                       :strict-deps      strict-deps
-                                       :fhir-lib         fhir-lib
-                                       :remove-gen-keys? remove-gen-keys?)))
+                                     (structure-definitions->zen-project* zen-lib url deps-resources-map params)))
                                  deps-sds-urls)
         resolved-core-ns (resolve-deps zen-lib core-ns deps-resources-map)
         projects         (cons resolved-core-ns deps-projects)]
@@ -562,18 +559,13 @@
 
 (defn structure-definitions->zen-project
   [zen-lib core-url deps-resources
-   & {:keys [remove-gen-keys? strict-deps
-             fold-schemas? elements-mode
-             fhir-lib]
-      :or   {remove-gen-keys? true
-             strict-deps      true
-             elements-mode    :snapshot
-             fold-schemas?    false}}]
-  (let [deps-resources-map (sp/transform [sp/MAP-VALS] first (group-by :url deps-resources))]
-    (structure-definitions->zen-project*
-      zen-lib core-url deps-resources-map
-      :fhir-lib         fhir-lib
-      :remove-gen-keys? remove-gen-keys?
-      :strict-deps      strict-deps
-      :fold-schemas?    fold-schemas?
-      :elements-mode    elements-mode)))
+   & [{:as   params
+       :keys [remove-gen-keys? strict-deps
+              fold-schemas? elements-mode]}]]
+  (let [params (merge params
+                      {:remove-gen-keys? (or remove-gen-keys? true)
+                       :strict-deps      (or strict-deps true)
+                       :elements-mode    (or elements-mode :snapshot)
+                       :fold-schemas?    (or fold-schemas? false)})
+        deps-resources-map (utils/index-by :url deps-resources)]
+    (structure-definitions->zen-project* zen-lib core-url deps-resources-map params)))
