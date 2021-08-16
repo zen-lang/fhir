@@ -345,7 +345,9 @@
           :type     "Practitioner"
           :url      "http://fhir.domain/plannet-Practitioner"
           :kind     "resource"
-          :snapshot {:element [{:id "Practitioner" :path "Practitioner" :max "*"}]}}]))
+          :snapshot {:element [{:id "Practitioner" :path "Practitioner" :max "*"}]}}]
+        {:fold-schemas? false
+         :elements-mode :snapshot}))
 
     (matcho/match
       plannet-practitioner-zen-project
@@ -402,7 +404,8 @@
             {:id "Practitioner.name.given", :path "Practitioner.name.given", :min 1, :max "*", :type [{:code "string"}]}
             {:id "Practitioner.meta", :path "Practitioner.meta", :min 0, :max "1", :type [{:code "Meta"}]}
             {:id "Practitioner.meta.profile", :path "Practitioner.meta.profile", :min 0, :max "*", :type [{:code "canonical"}]}]}}]
-        {:fold-schemas? false}))
+        {:elements-mode :snapshot
+         :fold-schemas? false}))
 
     (matcho/match
       plannet-practitioner-zen-project
@@ -510,7 +513,8 @@
                                 :max  "1",
                                 :type [{:code "url"} {:code "code"} {:code "id"}]
                                 :base {:path "Extension.value[x]", :min 0, :max "1"}}]}}]
-        {:fold-schemas? true}))
+        {:elements-mode :snapshot
+         :fold-schemas? true}))
 
     (matcho/match
       plannet-practitioner-zen-project
@@ -663,7 +667,8 @@
                               :max       "1",
                               :id        "Observation.value[x]:valueQuantity.code",
                               :base      {:path "Quantity.code", :min 0, :max "1"}}]}}]
-      {:fold-schemas? true
+      {:elements-mode :snapshot
+       :fold-schemas? true
        :remove-gen-keys? true
        :strict-deps false}))
 

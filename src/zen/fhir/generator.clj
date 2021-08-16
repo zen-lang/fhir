@@ -471,8 +471,8 @@
   [zen-lib resource & [{:keys [fold-schemas?
                                elements-mode
                                fhir-lib]
-                        :or {elements-mode :snapshot
-                             fold-schemas? false}}]]
+                        :or {elements-mode :differential
+                             fold-schemas? true}}]]
   (let [resource-type   (symbol (:type resource))
         zen-ns          (symbol (str (name zen-lib) "." (:id resource)))
         elements-key    elements-mode
@@ -562,11 +562,11 @@
    & [{:as   params
        :keys [remove-gen-keys? strict-deps
               fold-schemas? elements-mode]}]]
-  (let [params (merge params
-                      {:remove-gen-keys? (or remove-gen-keys? true)
-                       :strict-deps      (or strict-deps true)
-                       :elements-mode    (or elements-mode :snapshot)
-                       :fold-schemas?    (or fold-schemas? false)})
+  (let [params (merge {:remove-gen-keys? true
+                       :strict-deps      true
+                       :elements-mode    :differential
+                       :fold-schemas?    false}
+                      params)
         deps-resources-map (utils/index-by :url deps-resources)]
     (structure-definitions->zen-project* zen-lib core-url deps-resources-map params)))
 
@@ -576,11 +576,11 @@
    & [{:as   params
        :keys [remove-gen-keys? strict-deps
               fold-schemas? elements-mode]}]]
-  (let [params (merge params
-                      {:remove-gen-keys? (or remove-gen-keys? true)
-                       :strict-deps      (or strict-deps true)
-                       :elements-mode    (or elements-mode :differential)
-                       :fold-schemas?    (or fold-schemas? true)})
+  (let [params (merge {:remove-gen-keys? true
+                       :strict-deps      true
+                       :elements-mode    :differential
+                       :fold-schemas?    true}
+                      params)
         deps-resources-map (utils/index-by :url deps-resources)
         deps-sds-urls (->> core-urls
                            (map deps-resources-map)
