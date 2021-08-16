@@ -80,30 +80,35 @@
       (remove-method sut/ed->zen [:foo :baz])
 
       (t/testing "fhir primitive types"
-        (matcho/match (sut/element->zen {:type [{:code "id"}]})
-                      {:confirms #{'id}})
+        (matcho/match (sut/element->zen {:type [{:code "id"}]}
+                                        {::sut/fhir-lib 'fhir.test})
+                      {:confirms #{'fhir.test/id}})
 
         (matcho/match (sut/element->zen {:type [{:code      "http://hl7.org/fhirpath/System.String"
                                                  :extension [{:url      "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type"
-                                                              :valueUrl "uri"}]}]})
-                      {:confirms #{'uri}})
+                                                              :valueUrl "uri"}]}]}
+                                        {::sut/fhir-lib 'fhir.test})
+                      {:confirms #{'fhir.test/uri}})
 
-        (matcho/match (sut/element->zen {:type [{:code "HumanName"}]})
-                      '{:confirms #{HumanName}}))
+        (matcho/match (sut/element->zen {:type [{:code "HumanName"}]}
+                                        {::sut/fhir-lib 'fhir.test})
+                      '{:confirms #{fhir.test/HumanName}}))
 
       (t/testing "fhir polymorphic types"
-        (matcho/match (sut/element->zen {:type [{:code "url"} {:code "code"} {:code "id"}]})
+        (matcho/match (sut/element->zen {:type [{:code "url"} {:code "code"} {:code "id"}]}
+                                        {::sut/fhir-lib 'fhir.test})
                       {::sut/poly
                        {:key  :value
-                        :keys {:url  {:confirms #{'url}}
-                               :code {:confirms #{'code}}
-                               :id   {:confirms #{'id}}}}})
+                        :keys {:url  {:confirms #{'fhir.test/url}}
+                               :code {:confirms #{'fhir.test/code}}
+                               :id   {:confirms #{'fhir.test/id}}}}})
 
         (matcho/match (sut/element->zen {:id "foo.bar.baz[x]"
-                                         :type [{:code "type"}]})
+                                         :type [{:code "type"}]}
+                                        {::sut/fhir-lib 'fhir.test})
                       {::sut/poly
                        {:key  :baz
-                        :keys {:type {:confirms #{'type}}}}})))
+                        :keys {:type {:confirms #{'fhir.test/type}}}}})))
 
     (t/testing "pattern -> zen"
       (matcho/match
@@ -714,11 +719,16 @@
         "http://hl7.org/fhir/StructureDefinition/Quantity"
         [qsd]
         :remove-gen-keys? true
-        :fold-schemas? true
-        :elements-mode :differential)
-      '[{Quantity
+        :fold-schemas?    true
+        :elements-mode    :differential
+        :fhir-lib         'fhir.R4-test)
+      '[{ns fhir.R4-test.Quantity
+         import #{fhir}
+
+         Quantity
          {:zen/tags #{zen/schema fhir/complex-type fhir/profile}
           :zen/desc "A measured or measurable amount",
+          #_#_:confirms #{fhir.R4-test/Element} ;; TODO: should be namespaced
           :confirms #{Element} ;; [:baseDefinition]
           #_:effects #_{fhir/binding {:strength "extensible",
                                       :description "Appropriate units for Duration.",
@@ -729,7 +739,7 @@
                                           :human "If a code for the unit is present, the system SHALL also be present",
                                           :expression "code.empty() or system.exists()",}}}
           :type zen/map
-          :keys {:value {:confirms #{decimal}
+          :keys {:value {:confirms #{fhir.R4-test/decimal}
                          :zen/desc "Numerical value (with implicit precision)"}
                  :comparator {:type zen/string
                               ;; :fhir/isSummary true ;;TODO
@@ -737,9 +747,9 @@
                               }
                  :unit {:type zen/string
                         :zen/desc "Unit representation"}
-                 :system {:confirms #{uri}
+                 :system {:confirms #{fhir.R4-test/uri}
                           :zen/desc "System that defines coded unit form"}
-                 :code {:confirms #{code}}}}}])
+                 :code {:confirms #{fhir.R4-test/code}}}}}])
 
     (t/testing "duration"
       (def duration-sd (read-string (slurp (io/resource "zen/fhir/duration-sd.edn"))))
@@ -751,10 +761,15 @@
           [duration-sd]
           :remove-gen-keys? true
           :fold-schemas? true
-          :elements-mode :differential)
-        '[{Duration
+          :elements-mode :differential
+          :fhir-lib      'fhir.R4-test)
+        '[{ns fhir.R4-test.Duration
+           import #{fhir}
+
+           Duration
            {:zen/tags #{zen/schema fhir/complex-type fhir/profile}
             :type zen/map
+            #_#_:confirms #{fhir.R4-test/Quantity} ;; TODO
             :confirms #{Quantity}}}])))
 
   (t/testing "resource"
@@ -766,8 +781,9 @@
         "http://hl7.org/fhir/StructureDefinition/Patient"
         [patient-sd]
         :remove-gen-keys? true
-        :fold-schemas? true
-        :elements-mode :differential))
+        :fold-schemas?    true
+        :elements-mode    :differential
+        :fhir-lib         'fhir.R4-test))
 
     (matcho/match
       patient-proj
@@ -775,35 +791,36 @@
          {:zen/tags #{fhir/profile fhir/resource zen/schema}
           :zen/desc "Demographics and other administrative information about an individual or animal receiving care or other health-related services."
           #_"Information about an individual or animal receiving health care services",
+          #_#_:confirms #{fhir.R4-test/DomainResource} ;; TODO
           :confirms #{DomainResource}
           :type zen/map
           :keys {:identifier {:type zen/vector
                               #_#_:zen/desc "An identifier for this patient",
-                              :every {:confirms #{Identifier}
+                              :every {:confirms #{fhir.R4-test/Identifier}
                                       :zen/desc "An identifier for this patient",}}
                  :active {:type zen/boolean}
                  :name {:type zen/vector
-                        :every {:confirms #{HumanName}}}
+                        :every {:confirms #{fhir.R4-test/HumanName}}}
                  :telecom {:type zen/vector
-                           :every {:confirms #{ContactPoint}}}
-                 :gender  {:confirms #{code}
+                           :every {:confirms #{fhir.R4-test/ContactPoint}}}
+                 :gender  {:confirms #{fhir.R4-test/code}
                            #_#_:effects {fhir/binding {:strength "required",
                                                        :description "The gender of a person used for administrative purposes.",
                                                        :valueSet "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"}}}
-                 :birthDate {:confirms #{date}}
+                 :birthDate {:confirms #{fhir.R4-test/date}}
                  :deceased {:type zen/map
                             :exclusive-keys #{#{:boolean :dateTime}}
                             :keys {:boolean {:type zen/boolean
-                                             :confirms #{boolean}}
+                                             :confirms #{fhir.R4-test/boolean}}
                                    :dateTime {:type zen/datetime
-                                              :confirms #{dateTime}}}}
+                                              :confirms #{fhir.R4-test/dateTime}}}}
                  :contact {:type zen/vector
                            :every {:type zen/map
                                    :keys {:relationship
                                           {:type zen/vector
-                                           :every {:confirms #{CodeableConcept}}}
-                                          :name {:confirms #{HumanName}}}}}
-                 :managingOrganization {:confirms #{Reference}}}}}])
+                                           :every {:confirms #{fhir.R4-test/CodeableConcept}}}
+                                          :name {:confirms #{fhir.R4-test/HumanName}}}}}
+                 :managingOrganization {:confirms #{fhir.R4-test/Reference}}}}}])
 
     #_(testing "validating zen"
       (def patient-res (read-string (slurp (io/resource "zen/fhir/pt-res.edn"))))

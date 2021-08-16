@@ -186,35 +186,37 @@
     time     zen/string})
 
 
-(defn ed-type->zen-type [coding]
-  (let [type-symbol (symbol (type-coding->type coding))]
+(defn ed-type->zen-type [coding & [{::keys [fhir-lib]}]]
+  (let [nm          (when (utils/nameable? fhir-lib) (name fhir-lib))
+        tp          (type-coding->type coding)
+        type-symbol (if (str/blank? nm)
+                      (symbol tp)
+                      (symbol nm tp))]
     (utils/strip-nils
       {:confirms #{type-symbol}
-       :type     (when-let [zen-primitive (fhir-primitive->zen-primitive type-symbol)]
+       :type     (when-let [zen-primitive (fhir-primitive->zen-primitive (symbol tp))]
                    zen-primitive)})))
 
-;; TODO: zen: parse namespaced keywords of current ns
-;; TODO: generator: generate fhir
 
-
-(defn ed-types->zen-type [id ed-types poly?]
+(defn ed-types->zen-type [id ed-types {::keys [poly? fhir-lib]}]
   (if poly?
     (let [poly-key (-> id rich-parse-path last (:poly "value"))]
       {::poly {:key  (keyword poly-key)
                :keys (into {}
                            (map (fn [{code :code :as poly-type}]
                                   (assert code "Code should be defined for polymorphic type")
-                                  {(keyword code) (ed-type->zen-type poly-type)}))
+                                  {(keyword code) (ed-type->zen-type poly-type {::fhir-lib fhir-lib})}))
                            ed-types)}})
-    (ed-type->zen-type (first ed-types))))
+    (ed-type->zen-type (first ed-types) {::fhir-lib fhir-lib})))
 
 
-(defmethod ed->zen #{:type :id} [{el-types :type, :keys [id]}]
+(defmethod ed->zen #{:type :id ::fhir-lib} [{el-types :type, id :id, fhir-lib ::fhir-lib}]
   (when (seq el-types)
     (ed-types->zen-type id
                         el-types
-                        (or (< 1 (count el-types))
-                            (poly-root? id)))))
+                        #::{:poly?    (or (< 1 (count el-types))
+                                       (poly-root? id))
+                            :fhir-lib fhir-lib})))
 
 
 (defmethod ed->zen #{:slicing :path :id} [{path :path, slicing :slicing, id :id}]
@@ -283,11 +285,11 @@
   "Converts ElementDefinition to zen schema
   Result is without :keys field for :type zen/map,
   they will be added later after linking"
-  [element]
+  [element & [{::keys [fhir-lib]}]]
   (into {}
         (mapcat (fn [[ks f]]
                   (let [{poly-ks "poly", rest-ks nil} (group-by (comp #{"poly"} namespace) ks)]
-                    (f (into (select-keys element rest-ks)
+                    (f (into (-> element (assoc ::fhir-lib fhir-lib) (select-keys rest-ks))
                              (map (fn [poly-key]
                                     (let [pk (keyword (name poly-key))]
                                       {pk (utils/poly-get element pk)})))
@@ -434,7 +436,7 @@
                    :profile-definition url}
                   (when (= :differential elements-mode)
                     {:confirms (when-not (str/blank? base)
-                                 #{(symbol base)})})
+                                 #{(symbol base)})}) ;; TODO: fhir version
                   (when (= :snapshot elements-mode)
                     {:validation-type :open})
                   (when (= "complex-type" kind)
@@ -463,15 +465,18 @@
   :fold-schemas? true -- to inline attributes into single schema
   :elements-mode :snapshot|:differential to choose where elements are located"
   [zen-lib resource & [{:keys [fold-schemas?
-                               elements-mode]
+                               elements-mode
+                               fhir-lib]
                         :or {elements-mode :snapshot
                              fold-schemas? false}}]]
   (let [resource-type   (symbol (:type resource))
         zen-ns          (symbol (str (name zen-lib) "." (:id resource)))
         elements-key    elements-mode
-        element-schemas (link-schemas (map element->zen (get-in resource [elements-key :element])))
+        element-schemas (->> (get-in resource [elements-key :element])
+                             (map #(element->zen % {::fhir-lib fhir-lib}))
+                             link-schemas)
         resource-schema (sd->profile-schema resource {:elements-mode elements-mode})
-        schemas         (update element-schemas resource-type safe-merge-with-into resource-schema)]
+        schemas         (update element-schemas resource-type utils/safe-merge-with-into resource-schema)]
     (-> schemas
         build-schemas
         (cond-> fold-schemas? (-> fold-schemas (select-keys [resource-type])))
@@ -526,7 +531,7 @@
       zen-projects)))
 
 
-(defn structure-definitions->zen-project* [zen-lib core-url deps-resources-map & {:as params, :keys [remove-gen-keys? strict-deps]}]
+(defn structure-definitions->zen-project* [zen-lib core-url deps-resources-map & {:as params, :keys [remove-gen-keys? strict-deps fhir-lib]}]
   (when strict-deps
     (assert (contains? deps-resources-map core-url)
             (str "Couldn't find dependency: " core-url)))
@@ -535,7 +540,7 @@
         deps-sds-urls    (get-deps-urls core-resource)
         deps-projects    (mapcat (fn [url]
                                    (when (some? (get deps-resources-map url))
-                                     (structure-definitions->zen-project* zen-lib url deps-resources-map)))
+                                     (structure-definitions->zen-project* zen-lib url deps-resources-map :fhir-lib fhir-lib)))
                                  deps-sds-urls)
         resolved-core-ns (resolve-deps zen-lib core-ns deps-resources-map)
         projects         (cons resolved-core-ns deps-projects)]
@@ -546,7 +551,8 @@
 (defn structure-definitions->zen-project
   [zen-lib core-url deps-resources
    & {:keys [remove-gen-keys? strict-deps
-             fold-schemas? elements-mode]
+             fold-schemas? elements-mode
+             fhir-lib]
       :or   {remove-gen-keys? true
              strict-deps      true
              elements-mode    :snapshot
@@ -554,6 +560,7 @@
   (let [deps-resources-map (sp/transform [sp/MAP-VALS] first (group-by :url deps-resources))]
     (structure-definitions->zen-project*
       zen-lib core-url deps-resources-map
+      :fhir-lib         fhir-lib
       :remove-gen-keys? remove-gen-keys?
       :strict-deps      strict-deps
       :fold-schemas?    fold-schemas?

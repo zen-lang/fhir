@@ -150,3 +150,8 @@
              (if (and (coll? x) (coll? y))
                (into x y)
                y))))
+
+
+(defn nameable? [obj]
+  (or (instance? clojure.lang.Named obj)
+      (string? obj)))
