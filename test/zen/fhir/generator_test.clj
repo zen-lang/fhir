@@ -709,6 +709,50 @@
                   {:errors seq})))
 
 
+(t/deftest ^:kaocha/pending fhir-type-uni-project
+  (def identifier-sd (read-string (slurp (io/resource "zen/fhir/identifier-sd.edn"))))
+  (def quantity-sd (read-string (slurp (io/resource "zen/fhir/quantity-sd.edn"))))
+  (def boolean-sd (read-string (slurp (io/resource "zen/fhir/boolean-sd.edn"))))
+
+  (def fhir-proj
+    (sut/structure-definitions->uni-zen-project
+      'fhir.R4-test
+      ["http://hl7.org/fhir/StructureDefinition/Identifier"
+       "http://hl7.org/fhir/StructureDefinition/Quantity"
+       #_"http://hl7.org/fhir/StructureDefinition/boolean"]
+      [identifier-sd quantity-sd #_boolean-sd]
+      {:remove-gen-keys? true
+       :fold-schemas?    true
+       :elements-mode    :differential
+       :fhir-lib         'fhir.R4-test}))
+
+  (matcho/match
+    fhir-proj
+    [{'ns 'fhir.R4-test
+      'include #{'fhir}
+
+      #_#_boolean
+      {:zen/tags #{'zen/schema 'fhir/primitive-type}
+       :zen/desc "Base StructureDefinition for boolean Type: Value of \"true\" or \"false\""
+       #_#_:confirms #{'fhir.R4-test/Element}
+       :type 'zen/boolean}
+
+      'Identifier
+      {:zen/tags #{'zen/schema 'fhir/complex-type}
+       :type 'zen/map
+       :confirms #{'fhir.R4-test/Element}
+       :keys {:type {:confirms #{'fhir.R4-test/CodeableConcept}}
+              :system {:confirms #{'fhir.R4-test/uri}}
+              :value {:confirms #{'fhir.R4-test/string}}}}
+
+      'Quantity
+      {:zen/tags #{'zen/schema 'fhir/complex-type}
+       :type 'zen/map
+       :confirms #{'fhir.R4-test/Element}
+       :keys {:value {:confirms #{'fhir.R4-test/decimal}}}}}
+     nil]))
+
+
 (t/deftest differential-schema
   (t/testing "complex-type"
     (def qsd (read-string (slurp (io/resource "zen/fhir/quantity-sd.edn"))))

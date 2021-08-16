@@ -569,3 +569,18 @@
                        :fold-schemas?    (or fold-schemas? false)})
         deps-resources-map (utils/index-by :url deps-resources)]
     (structure-definitions->zen-project* zen-lib core-url deps-resources-map params)))
+
+
+(defn structure-definitions->uni-zen-project
+  [zen-lib core-urls deps-resources
+   & [{:as   params
+       :keys [remove-gen-keys? strict-deps
+              fold-schemas? elements-mode]}]]
+  (let [params (merge params
+                      {:remove-gen-keys? (or remove-gen-keys? true)
+                       :strict-deps      (or strict-deps true)
+                       :elements-mode    (or elements-mode :differential)
+                       :fold-schemas?    (or fold-schemas? true)})
+        deps-resources-map (utils/index-by :url deps-resources)]
+    ::TODO
+    ))
