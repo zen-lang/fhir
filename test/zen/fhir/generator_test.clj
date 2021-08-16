@@ -734,10 +734,11 @@
        "http://hl7.org/fhir/StructureDefinition/boolean"
        "http://hl7.org/fhir/StructureDefinition/Range"]
       [identifier-sd quantity-sd boolean-sd range-sd simple-quantity-sd]
-      {:remove-gen-keys? true
-       :fold-schemas?    true
-       :elements-mode    :differential
-       :fhir-lib         'fhir.R4-test}))
+      {:remove-gen-keys?     true
+       :fold-schemas?        true
+       :elements-mode        :differential
+       :drop-out-current-ns? true
+       :fhir-lib             'fhir.R4-test}))
 
   (matcho/match
     fhir-proj
@@ -752,20 +753,20 @@
       Identifier
       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
        :type     zen/map
-       :keys     {:type   {:confirms #{fhir.R4-test/CodeableConcept}}
-                  :system {:confirms #{fhir.R4-test/uri}}
-                  :value  {:confirms #{fhir.R4-test/string}}}}
+       :keys     {:type   {:confirms #{CodeableConcept}}
+                  :system {:confirms #{uri}}
+                  :value  {:confirms #{string}}}}
 
       Quantity
       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
        :type     zen/map
-       :keys     {:value {:confirms #{fhir.R4-test/decimal}}}}
+       :keys     {:value {:confirms #{decimal}}}}
 
       Range
       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
        :type     zen/map
-       :keys     {:low  {:confirms #{fhir.R4-test/Quantity, fhir.R4-test/SimpleQuantity}}
-                  :high {:confirms #{fhir.R4-test/Quantity, fhir.R4-test/SimpleQuantity}}}}
+       :keys     {:low  {:confirms #{Quantity, SimpleQuantity}}
+                  :high {:confirms #{Quantity, SimpleQuantity}}}}
 
       SimpleQuantity
       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/profile}

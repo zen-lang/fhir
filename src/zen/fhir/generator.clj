@@ -581,9 +581,20 @@
       zen-projects)))
 
 
+(defn drop-out-current-ns [current-ns zen-projects]
+  (let [current-ns-name (name current-ns)]
+    (clojure.walk/postwalk
+      (fn [x]
+        (if (and (qualified-symbol? x)
+                 (= current-ns-name (namespace x)))
+          (symbol (name x))
+          x))
+      zen-projects)))
+
+
 (defn structure-definitions->zen-project*
   [zen-lib core-url deps-resources-map
-   & [{:as params, :keys [remove-gen-keys? strict-deps elements-mode]}]]
+   & [{:as params, :keys [remove-gen-keys? drop-out-current-ns? strict-deps elements-mode]}]]
   (when strict-deps
     (assert (contains? deps-resources-map core-url)
             (str "Couldn't find dependency: " core-url)))
@@ -597,18 +608,17 @@
         resolved-core-ns (resolve-deps zen-lib core-ns deps-resources-map)
         projects         (cons resolved-core-ns deps-projects)]
     (cond->> projects
-      remove-gen-keys? (map remove-gen-keys))))
+      remove-gen-keys?     (map remove-gen-keys)
+      drop-out-current-ns? (map (partial drop-out-current-ns zen-lib)))))
 
 
 (defn structure-definitions->zen-project
-  [zen-lib core-url deps-resources
-   & [{:as   params
-       :keys [remove-gen-keys? strict-deps
-              fold-schemas? elements-mode]}]]
-  (let [params (merge {:remove-gen-keys? true
-                       :strict-deps      true
-                       :elements-mode    :differential
-                       :fold-schemas?    false}
+  [zen-lib core-url deps-resources & [params]]
+  (let [params (merge {:remove-gen-keys?    true
+                       :strict-deps         true
+                       :elements-mode       :differential
+                       :fold-schemas?       false
+                       :drop-out-current-ns false}
                       params)
         deps-resources-map (utils/index-by :url deps-resources)]
     (structure-definitions->zen-project* zen-lib core-url deps-resources-map params)))
@@ -616,11 +626,12 @@
 
 (defn structure-definitions->uni-zen-project
   [zen-lib core-urls deps-resources & [params]]
-  (let [{:as params, :keys [remove-gen-keys? elements-mode]}
+  (let [{:as params, :keys [remove-gen-keys? drop-out-current-ns? elements-mode]}
         (merge {:remove-gen-keys?     true
                 :strict-deps          true
                 :elements-mode        :differential
-                :fold-schemas?        true}
+                :fold-schemas?        true
+                :drop-out-current-ns? true}
                params)
 
         deps-resources-map (utils/index-by :url deps-resources)
@@ -640,4 +651,5 @@
                     (assoc 'ns zen-lib)
                     (utils/disj-key 'import zen-lib))]
     (cond->> project
-      remove-gen-keys? remove-gen-keys)))
+      remove-gen-keys?     remove-gen-keys
+      drop-out-current-ns? (drop-out-current-ns zen-lib))))
