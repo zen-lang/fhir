@@ -732,29 +732,40 @@
 
   (matcho/match
     fhir-proj
-    [{'ns 'fhir.R4-test
-      'import #{'fhir}
+    '[{ns     fhir.R4-test
+       import #{fhir}
 
-      #_#_boolean
-      {:zen/tags #{'zen/schema 'fhir/primitive-type}
-       :zen/desc "Base StructureDefinition for boolean Type: Value of \"true\" or \"false\""
-       #_#_:confirms #{'fhir.R4-test/Element}
-       :type 'zen/boolean}
+       #_#_boolean
+       {:zen/tags     #{zen/schema fhir/primitive-type}
+        :zen/desc     "Base StructureDefinition for boolean Type: Value of \"true\" or \"false\""
+        #_#_:confirms #{fhir.R4-test/Element}
+        :type         zen/boolean}
 
-      'Identifier
-      {:zen/tags #{'zen/schema 'fhir/complex-type 'fhir/profile}
-       :type 'zen/map
-       :confirms #{'fhir.R4-test/Element}
-       :keys {:type {:confirms #{'fhir.R4-test/CodeableConcept}}
-              :system {:confirms #{'fhir.R4-test/uri}}
-              :value {:confirms #{'fhir.R4-test/string}}}}
+       Identifier
+       {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/specialization}
+        :type     zen/map
+        :keys     {:type   {:confirms #{fhir.R4-test/CodeableConcept}}
+                   :system {:confirms #{fhir.R4-test/uri}}
+                   :value  {:confirms #{fhir.R4-test/string}}}}
 
-      'Quantity
-      {:zen/tags #{'zen/schema 'fhir/complex-type 'fhir/profile}
-       :type 'zen/map
-       :confirms #{'fhir.R4-test/Element}
-       :keys {:value {:confirms #{'fhir.R4-test/decimal}}}}}
-     ]))
+       Quantity
+       {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/specialization}
+        :type     zen/map
+        :keys     {:value {:confirms #{fhir.R4-test/decimal}}}}
+
+       Range
+       {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/specialization}
+        :type     zen/map
+        :keys     {:low  {:confirms #{fhir.R4-test/Quantity, fhir.R4-test.SimpleQuantity/Quantity}}
+                   :high {:confirms #{fhir.R4-test/Quantity, fhir.R4-test.SimpleQuantity/Quantity}}}}}
+
+      {ns     fhir.R4-test.SimpleQuantity
+       import #{fhir.R4-test}
+
+       Quantity
+       {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/constraint}
+        :type     zen/map
+        :keys     {:comparator {:zen/desc "Not allowed to be used in this context"}}}}]))
 
 
 (t/deftest differential-schema
