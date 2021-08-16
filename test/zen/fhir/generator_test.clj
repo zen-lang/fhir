@@ -309,7 +309,8 @@
                    {:type [{:code "ContactPoint"}]}
                    {:type [{:code "Extension"}]}
                    {:type [{:code "uri"}]}
-                   {:type [{:code "Extension" :profile ["pr"]}]}]}}))))
+                   {:type [{:code "Extension" :profile ["pr"]}]}]}}
+               :snapshot))))
 
   (t/testing "resolve-deps"
     (matcho/match (sut/resolve-deps

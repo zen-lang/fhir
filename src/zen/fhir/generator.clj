@@ -492,9 +492,9 @@
         order-zen-ns)))
 
 
-(defn get-deps-urls [core-ns]
-  (->> core-ns
-       :snapshot
+(defn get-deps-urls [sd elements-key]
+  (->> sd
+       elements-key
        :element
        (mapcat :type)
        (mapcat :profile)
@@ -540,13 +540,13 @@
 
 (defn structure-definitions->zen-project*
   [zen-lib core-url deps-resources-map
-   & [{:as params, :keys [remove-gen-keys? strict-deps]}]]
+   & [{:as params, :keys [remove-gen-keys? strict-deps elements-mode]}]]
   (when strict-deps
     (assert (contains? deps-resources-map core-url)
             (str "Couldn't find dependency: " core-url)))
   (let [core-resource    (get deps-resources-map core-url)
         core-ns          (structure-definition->zen-ns zen-lib core-resource params)
-        deps-sds-urls    (get-deps-urls core-resource)
+        deps-sds-urls    (get-deps-urls core-resource elements-mode)
         deps-projects    (mapcat (fn [url]
                                    (when (some? (get deps-resources-map url))
                                      (structure-definitions->zen-project* zen-lib url deps-resources-map params)))
