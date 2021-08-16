@@ -897,3 +897,30 @@
                       #{'fhir.R4-test.Patient/Patient}
                       patient-res)
                     {:errors empty?}))))
+
+
+(comment
+  (require '[clojure.pprint]
+           '[cheshire.core]
+           '[com.rpl.specter :as sp])
+
+  (defn format-zen-ns [zen-ns-map]
+    (clojure.pprint/write (sut/order-zen-ns zen-ns-map) :stream nil))
+
+  (def type-profiles-json (slurp "fhir/profiles-types.json"))
+  (def type-profiles-bundle (cheshire.core/parse-string type-profiles-json keyword))
+  (def type-profiles (sp/select [sp/ALL :resource] (:entry type-profiles-bundle)))
+  (def type-urls (sp/select [sp/ALL :url] type-profiles))
+  (def type-proj
+    (sut/structure-definitions->uni-zen-project
+      'fhir.r4
+      type-urls
+      type-profiles
+      {:remove-gen-keys? true
+       :fold-schemas?    true
+       :elements-mode    :differential
+       :fhir-lib         'fhir.r4}))
+
+  (spit "src/fhir/r4.edn" (format-zen-ns type-proj))
+
+  nil)
