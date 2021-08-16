@@ -219,24 +219,26 @@
                             :fhir-lib fhir-lib})))
 
 
-(defmethod ed->zen #{:slicing :path :id} [{path :path, slicing :slicing, id :id}]
-  (when slicing
-    {::slicing? true}))
+(defmethod ed->zen #{:slicing :path :id} [{slicing :slicing}]
+  (when slicing {::slicing? true}))
+
+
+(defmethod ed->zen #{:type} [{el-type :type}]
+  (let [tp (first el-type)]
+    (when (:profile tp)
+      {::confirms-profile {:urls   (:profile tp)
+                           :symbol (symbol (:code tp))}})))
 
 
 ;; NOTE: we can't convert sliceName to keyword because
 ;; by fhir it is string without any constraints
 ;; this can create invalid edn keywords
-(defmethod ed->zen #{:sliceName :type :id} [{slice-name :sliceName, el-type :type, id :id}]
-  (let [rich-path (rich-parse-path id)]
-    (when (:slice (last rich-path))
-      (merge {::slice-name (if (= "@default" slice-name)
-                             :slicing/rest
-                             slice-name)}
-             (when-let [tp (first el-type)]
-               {:type              'zen/map
-                ::confirms-profile {:urls   (:profile tp)
-                                    :symbol (symbol (:code tp))}})))))
+(defmethod ed->zen #{:sliceName :id} [{slice-name :sliceName, id :id}]
+  (when (:slice (last (rich-parse-path id)))
+    {::slice-name (if (= "@default" slice-name)
+                    :slicing/rest
+                    slice-name)}))
+
 
 (defn pattern->zen [pattern]
   (cond
@@ -286,15 +288,16 @@
   Result is without :keys field for :type zen/map,
   they will be added later after linking"
   [element & [{::keys [fhir-lib]}]]
-  (into {}
-        (mapcat (fn [[ks f]]
-                  (let [{poly-ks "poly", rest-ks nil} (group-by (comp #{"poly"} namespace) ks)]
-                    (f (into (-> element (assoc ::fhir-lib fhir-lib) (select-keys rest-ks))
-                             (map (fn [poly-key]
-                                    (let [pk (keyword (name poly-key))]
-                                      {pk (utils/poly-get element pk)})))
-                             poly-ks)))))
-        (methods ed->zen)))
+  (->> (methods ed->zen)
+       (mapcat (fn [[ks f]]
+                 (let [{poly-ks "poly", rest-ks nil} (group-by (comp #{"poly"} namespace) ks)]
+                   (f (into (-> element (assoc ::fhir-lib fhir-lib) (select-keys rest-ks))
+                            (map (fn [poly-key]
+                                   (let [pk (keyword (name poly-key))]
+                                     {pk (utils/poly-get element pk)})))
+                            poly-ks)))))
+       (map (partial apply hash-map))  ;; TODO: refactor
+       (apply utils/safe-merge-with-into)))
 
 
 (defn link-schemas
@@ -502,11 +505,12 @@
        set))
 
 
-(defn resolve-confirms-profile [zen-lib deps-resources]
-  (fn [{::keys [confirms-profile] :as sch}]
-    (if-let [dep (and confirms-profile (some deps-resources (:urls confirms-profile)))]
-      (assoc sch :confirms #{(symbol (str (name zen-lib) \. (:id dep) \/ (:symbol confirms-profile)))})
-      sch)))
+(defn resolve-confirms-profile [zen-lib deps-resources {::keys [confirms-profile] :as sch}]
+  (if-let [dep (and confirms-profile (some deps-resources (:urls confirms-profile)))]
+    (utils/safe-merge-with-into
+      sch
+      {:confirms #{(symbol (str (name zen-lib) \. (:id dep) \/ (:symbol confirms-profile)))}})
+    sch))
 
 
 (defn collect-imports [zen-lib core-ns deps-resources]
@@ -521,9 +525,12 @@
 
 (defn resolve-deps [zen-lib core-ns deps-resources]
   (let [deps-imports (collect-imports zen-lib core-ns deps-resources)
-        resolved-ns  (sp/transform [sp/MAP-VALS map? #(contains? % ::confirms-profile)]
-                                   (resolve-confirms-profile zen-lib deps-resources)
-                                   core-ns)]
+        resolved-ns  (clojure.walk/postwalk
+                       (fn [x]
+                         (if (and (map? x) (contains? x ::confirms-profile))
+                           (resolve-confirms-profile zen-lib deps-resources x)
+                           x))
+                       core-ns)]
     (update resolved-ns 'import into deps-imports)))
 
 
