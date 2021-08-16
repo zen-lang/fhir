@@ -728,8 +728,7 @@
          Quantity
          {:zen/tags #{zen/schema fhir/complex-type fhir/profile}
           :zen/desc "A measured or measurable amount",
-          #_#_:confirms #{fhir.R4-test/Element} ;; TODO: should be namespaced
-          :confirms #{Element} ;; [:baseDefinition]
+          :confirms #{fhir.R4-test/Element}
           #_:effects #_{fhir/binding {:strength "extensible",
                                       :description "Appropriate units for Duration.",
                                       :valueSet "http://hl7.org/fhir/ValueSet/duration-units"}
@@ -769,8 +768,7 @@
            Duration
            {:zen/tags #{zen/schema fhir/complex-type fhir/profile}
             :type zen/map
-            #_#_:confirms #{fhir.R4-test/Quantity} ;; TODO
-            :confirms #{Quantity}}}])))
+            :confirms #{fhir.R4-test/Quantity}}}])))
 
   (t/testing "resource"
     (def patient-sd (read-string (slurp (io/resource "zen/fhir/pt-sd.edn"))))
@@ -791,8 +789,7 @@
          {:zen/tags #{fhir/profile fhir/resource zen/schema}
           :zen/desc "Demographics and other administrative information about an individual or animal receiving care or other health-related services."
           #_"Information about an individual or animal receiving health care services",
-          #_#_:confirms #{fhir.R4-test/DomainResource} ;; TODO
-          :confirms #{DomainResource}
+          :confirms #{fhir.R4-test/DomainResource}
           :type zen/map
           :keys {:identifier {:type zen/vector
                               #_#_:zen/desc "An identifier for this patient",

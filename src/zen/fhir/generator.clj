@@ -422,10 +422,11 @@
 
 (defn sd->profile-schema
   "Creates zen schema for root resource from StructureDefinition"
-  [{:keys [description type url kind baseDefinition]} {:keys [elements-mode]}]
+  [{:keys [description type url kind baseDefinition]} {::keys [fhir-lib elements-mode]}]
   (let [base (some-> (when-not (str/blank? baseDefinition) baseDefinition)
                      (str/split #"/")
-                     last)]
+                     last)
+        fhir-base? (str/starts-with? (str baseDefinition) "http://hl7.org/fhir/StructureDefinition")]
     (utils/strip-nils
       (merge-with into
                   {::collection?       false ;; in some profiles there is * cardinality for the root resource
@@ -434,9 +435,12 @@
                    :type               'zen/map
                    :format             :aidbox
                    :profile-definition url}
-                  (when (= :differential elements-mode)
-                    {:confirms (when-not (str/blank? base)
-                                 #{(symbol base)})}) ;; TODO: fhir version
+                  (when (and (= :differential elements-mode)
+                             (not (str/blank? base))
+                             fhir-base?)
+                    {:confirms #{(if (some? fhir-lib)
+                                   (symbol (name fhir-lib) base)
+                                   (symbol base))}})
                   (when (= :snapshot elements-mode)
                     {:validation-type :open})
                   (when (= "complex-type" kind)
@@ -475,7 +479,8 @@
         element-schemas (->> (get-in resource [elements-key :element])
                              (map #(element->zen % {::fhir-lib fhir-lib}))
                              link-schemas)
-        resource-schema (sd->profile-schema resource {:elements-mode elements-mode})
+        resource-schema (sd->profile-schema resource #::{:elements-mode elements-mode
+                                                         :fhir-lib fhir-lib})
         schemas         (update element-schemas resource-type utils/safe-merge-with-into resource-schema)]
     (-> schemas
         build-schemas
