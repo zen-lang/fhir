@@ -94,7 +94,7 @@
   (when-not (str/blank? el-id)
     (let [rich-path   (rich-parse-path el-id)
           poly-value? (some? (:poly-name (last rich-path)))
-          rich-path   (if-let [poly-key (and poly-value? (some-> el-type first type-coding->type))] ;; TODO: refactor
+          rich-path   (if-let [poly-key (and poly-value? (some-> el-type first type-coding->type))]
                         (concat (butlast rich-path)
                                 [(assoc (last rich-path) :key poly-key)])
                         rich-path)
@@ -354,7 +354,7 @@
 (defn build-schema [schemas [schema-id schema]]
   (cond
     (::collection? schema)
-    (let [collection-keys [::collection? ::slicing? :minItems :maxItems #_:zen/desc] ;; TODO: must be configurable
+    (let [collection-keys [::collection? ::slicing? :minItems :maxItems #_:zen/desc]
           schema-id*      (symbol (str (name (::id schema)) ".*"))
           coll            {schema-id
                            (->> (merge (select-keys schema collection-keys)
@@ -547,7 +547,12 @@
         deps-sds-urls    (get-deps-urls core-resource)
         deps-projects    (mapcat (fn [url]
                                    (when (some? (get deps-resources-map url))
-                                     (structure-definitions->zen-project* zen-lib url deps-resources-map :fhir-lib fhir-lib)))
+                                     (structure-definitions->zen-project*
+                                       zen-lib url deps-resources-map
+                                       :fhir-lib         fhir-lib
+                                       :strict-deps      strict-deps
+                                       :fhir-lib         fhir-lib
+                                       :remove-gen-keys? remove-gen-keys?)))
                                  deps-sds-urls)
         resolved-core-ns (resolve-deps zen-lib core-ns deps-resources-map)
         projects         (cons resolved-core-ns deps-projects)]
