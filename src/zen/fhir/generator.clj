@@ -134,15 +134,21 @@
 (defmethod ed->zen #{:id :min :max :base}
   [{id :id, el-min :min, el-max :max, {base-max :max} :base}]
   (utils/strip-nils
-    (when (and (or (some? base-max)
-                   (some? el-max))
-               (not (root-element? id))
-               (not= "1" base-max)
+    (when (and (not (root-element? id))
                (or (some? base-max)
-                   (not= "1" el-max)))
-      {::collection? true
-       :minItems     (when-not (= 0 el-min) el-min)
-       :maxItems     (when-not (= "*" el-max) (utils/parse-int el-max))})))
+                   (some? el-max)))
+      (if (and (not= "1" base-max)
+               (not= "0" base-max)
+               (or (some? base-max)
+                   (and (not= "1" el-max)
+                        (not= "0" el-max))))
+        {::collection? true
+         :minItems     (when-not (= 0 el-min) el-min)
+         :maxItems     (when-not (= "*" el-max) (utils/parse-int el-max))}
+        (when (or (= "0" el-max)
+                  (and (nil? el-max)
+                       (= "0" base-max)))
+          {:const {:value nil}})))))
 
 
 (defmethod ed->zen #{} [_]

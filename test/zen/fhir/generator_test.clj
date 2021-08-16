@@ -180,7 +180,9 @@
                {:id "a.b", :path "a.b", :min 0, :max "*"}
                {:id "a.b.c", :path "a.b.c", :min 0}
                {:id "a.b.e", :path "a.b.e", :min 0, :max "1"}
-               {:id "a.b.d", :path "a.b.d", :min 1, :max "2", :base {:max "*"}}])
+               {:id "a.b.d", :path "a.b.d", :min 1, :max "2", :base {:max "*"}}
+               {:id "a.b.d", :path "a.b.d", :max "0", :base {:max "*"}}
+               {:id "a.b.d", :path "a.b.d", :max "0", :base {:max "1"}}])
         [#::sut{:collection? not, :required? true?}
          #::sut{:collection? not, :required? true?}
          #::sut{:collection? not, :required? true?}
@@ -188,7 +190,9 @@
          #::sut{:collection? true?, :required? not}
          #::sut{:collection? not, :required? not}
          #::sut{:collection? not, :required? not}
-         {::sut/collection? true?, :maxItems 2, :minItems 1}])))
+         {::sut/collection? true?, :maxItems 2, :minItems 1}
+         {::sut/collection? true?, :maxItems 0}
+         {::sut/collection? not :const {:value nil}}])))
 
   (t/testing "links"
     (matcho/match (mapv sut/element->zen
@@ -770,7 +774,8 @@
        Quantity
        {:zen/tags #{zen/schema fhir/complex-type fhir/profile fhir/constraint}
         :type     zen/map
-        :keys     {:comparator {:zen/desc "Not allowed to be used in this context"}}}}]))
+        :keys     {:comparator {:zen/desc "Not allowed to be used in this context"
+                                :const {:value nil}}}}}]))
 
 
 (t/deftest differential-schema
