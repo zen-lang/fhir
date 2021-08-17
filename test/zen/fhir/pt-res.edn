@@ -1,59 +1,68 @@
-{:resourceType "Patient",
+{:address
+ [{:use "home",
+   :city "Amsterdam",
+   :line ["Bos en Lommerplein 280"],
+   :country "NLD",
+   :postalCode "1055RW"}],
+ :meta
+ {:lastUpdated "2021-08-17T06:43:38.646797Z",
+  :createdAt "2021-08-17T06:43:38.646797Z",
+  :versionId "590"},
+ :managingOrganization
+ {:id
+  "f201",
+  :display "AUMC",
+  :resourceType "Organization"},
+ :name
+ [{:use "official",
+   :text "Roel",
+   :given ["Roelof Olaf"],
+   :family "Bor",
+   :prefix ["Drs."],
+   :suffix ["PDEng."]}],
+ :birthDate "1960-03-13",
+ :resourceType "Patient",
+ :multipleBirth {:boolean false},
+ :deceased {:boolean false},
+ :photo [{:url "Binary/f006", :contentType "image/jpeg"}],
+ :active true,
+ :communication
+ [{:language
+   {:coding
+    [{:code "nl-NL", :system "urn:ietf:bcp:47", :display "Dutch"}]},
+   :preferred true}],
  :id "f201",
  :identifier
  [{:use "official",
    :type {:text "BSN"},
-   :system "urn:oid:2.16.840.1.113883.2.4.6.3",
-   :value "123456789"}
+   :value "123456789",
+   :system "urn:oid:2.16.840.1.113883.2.4.6.3"}
   {:use "official",
    :type {:text "BSN"},
-   :system "urn:oid:2.16.840.1.113883.2.4.6.3",
-   :value "123456789"}],
- :active true,
- :name
- [{:use "official",
-   :text "Roel",
-   :family "Bor",
-   :given ["Roelof Olaf"],
-   :prefix ["Drs."],
-   :suffix ["PDEng."]}],
+   :value "123456789",
+   :system "urn:oid:2.16.840.1.113883.2.4.6.3"}],
  :telecom
- [{:system "phone", :value "+31612345678", :use "mobile"}
-  {:system "phone", :value "+31201234567", :use "home"}],
+ [{:use "mobile", :value "+31612345678", :system "phone"}
+  {:use "home", :value "+31201234567", :system "phone"}],
  :gender "male",
- :birthDate "1960-03-13",
- :deceasedBoolean false,
- :address
- [{:use "home",
-   :line ["Bos en Lommerplein 280"],
-   :city "Amsterdam",
-   :postalCode "1055RW",
-   :country "NLD"}],
  :maritalStatus
  {:coding
-  [{:system "http://snomed.info/sct",
-    :code "36629006",
+  [{:code "36629006",
+    :system "http://snomed.info/sct",
     :display "Legally married"}
-   {:system "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus",
-    :code "M"}]},
- :multipleBirthBoolean false,
- :photo [{:contentType "image/jpeg", :url "Binary/f006"}],
+   {:code "M",
+    :system
+    "http://terminology.hl7.org/CodeSystem/v3-MaritalStatus"}]},
  :contact
- [{:relationship
+ [{:name {:use "usual", :text "Ariadne Bor-Jansma"},
+   :telecom [{:use "home", :value "+31201234567", :system "phone"}],
+   :relationship
    [{:coding
-     [{:system "http://snomed.info/sct",
-       :code "127850001",
+     [{:code "127850001",
+       :system "http://snomed.info/sct",
        :display "Wife"}
-      {:system "http://terminology.hl7.org/CodeSystem/v2-0131",
-       :code "N"}
-      {:system "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
-       :code "WIFE"}]}],
-   :name {:use "usual", :text "Ariadne Bor-Jansma"},
-   :telecom [{:system "phone", :value "+31201234567", :use "home"}]}],
- :communication
- [{:language
-   {:coding
-    [{:system "urn:ietf:bcp:47", :code "nl-NL", :display "Dutch"}]},
-   :preferred true}],
- :managingOrganization
- {:reference "Organization/f201", :display "AUMC"}}
+      {:code "N",
+       :system "http://terminology.hl7.org/CodeSystem/v2-0131"}
+      {:code "WIFE",
+       :system
+       "http://terminology.hl7.org/CodeSystem/v3-RoleCode"}]}]}]}
