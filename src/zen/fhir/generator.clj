@@ -596,15 +596,17 @@
       zen-projects)))
 
 
-(defn drop-out-current-ns [current-ns zen-projects]
-  (let [current-ns-name (name current-ns)]
-    (clojure.walk/postwalk
-      (fn [x]
-        (if (and (qualified-symbol? x)
-                 (= current-ns-name (namespace x)))
-          (symbol (name x))
-          x))
-      zen-projects)))
+(defn drop-out-current-ns [zen-project]
+  (if-let [proj-ns (get zen-project 'ns)]
+    (let [current-ns-name (name proj-ns)]
+      (clojure.walk/postwalk
+       (fn [x]
+         (if (and (qualified-symbol? x)
+                  (= current-ns-name (namespace x)))
+           (symbol (name x))
+           x))
+       zen-project))
+    zen-project))
 
 
 (defn structure-definitions->zen-project*
@@ -624,7 +626,7 @@
         projects         (cons resolved-core-ns deps-projects)]
     (cond->> projects
       remove-gen-keys?     (map remove-gen-keys)
-      drop-out-current-ns? (map (partial drop-out-current-ns zen-lib)))))
+      drop-out-current-ns? (map drop-out-current-ns))))
 
 
 (defn structure-definitions->zen-project
@@ -667,4 +669,4 @@
                     (utils/disj-key 'import zen-lib))]
     (cond->> project
       remove-gen-keys?     remove-gen-keys
-      drop-out-current-ns? (drop-out-current-ns zen-lib))))
+      drop-out-current-ns? drop-out-current-ns)))
