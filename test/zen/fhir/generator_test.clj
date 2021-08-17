@@ -887,28 +887,28 @@
                                             {:type zen/vector
                                              :every {:confirms #{fhir.R4-test/CodeableConcept}}}
                                             :name {:confirms #{fhir.R4-test/HumanName}}}}}
-                   :managingOrganization {:confirms #{fhir.R4-test/Reference}}}}}]))
+                   :managingOrganization {:confirms #{fhir.R4-test/Reference}}}}}]))))
 
-    (t/testing "generating types & resources"
-      (def type-profiles-bundle (read-string (slurp (io/resource "zen/fhir/profiles-types.edn"))))
-      (zen.fhir.loader/generate-profiles-types-uni-project 'fhir.R4-test type-profiles-bundle "test-temp-zrc")
 
-      (def zctx* (zen.core/new-context))
-      (zen.core/read-ns zctx* 'fhir)
-      (zen.core/read-ns zctx* 'fhir.R4-test)
+(t/deftest fhir
+  (t/testing "generating types & resources"
+    (def type-profiles-bundle (read-string (slurp (io/resource "zen/fhir/profiles-types.edn"))))
+    (def resource-profiles-bundle (read-string (slurp (io/resource "zen/fhir/profiles-resources.edn"))))
 
-      (matcho/match @zctx* {:errors empty?})
-      #_(:errors @zctx*))
+    (zen.fhir.loader/generate-profiles-types-uni-project 'fhir.R4-test type-profiles-bundle resource-profiles-bundle "test-temp-zrc")
 
-    (t/testing "validating zen"
-      (load-zen-projects! zctx* patient-proj)
-      (matcho/match @zctx* {:errors empty?})
-      #_(:errors @zctx*)
+    (def zctx* (zen.core/new-context))
+    (zen.core/read-ns zctx* 'fhir)
+    (zen.core/read-ns zctx* 'fhir.R4-test)
 
-      (def patient-res (read-string (slurp (io/resource "zen/fhir/pt-res.edn"))))
+    (matcho/match @zctx* {:errors empty?})
+    #_(:errors @zctx*))
 
-      (matcho/match (zen.core/validate
-                      zctx*
-                      #{'fhir.R4-test.Patient/Patient}
-                      patient-res)
-                    {:errors empty?}))))
+  (t/testing "validating zen"
+    (def patient-res (read-string (slurp (io/resource "zen/fhir/pt-res.edn"))))
+
+    (matcho/match (zen.core/validate
+                    zctx*
+                    #{'fhir.R4-test/Patient}
+                    patient-res)
+                  {:errors empty?})))
