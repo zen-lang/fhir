@@ -440,7 +440,7 @@
     (utils/strip-nils
       (merge-with into
                   {::collection?        false ;; in some profiles there is * cardinality for the root resource
-                   :zen/tags            #{'zen/schema 'fhir/structure-definition}
+                   :zen/tags            #{'zen/schema 'zen-fhir/structure-definition}
                    :zen/desc            description
                    :type                'zen/map
                    :aidbox/data-format  :aidbox
@@ -448,10 +448,10 @@
                    :fhir/definition-url url}
                   (when-not (str/blank? derivation)
                     (cond (= "specialization" derivation)
-                          {:zen/tags '#{fhir/base}}
+                          {:zen/tags '#{zen-fhir/base}}
 
                           (= "constraint" derivation)
-                          {:zen/tags '#{fhir/profile}}))
+                          {:zen/tags '#{zen-fhir/profile}}))
 
                   (when (and (= :differential elements-mode)
                              (not (str/blank? base))
@@ -464,19 +464,19 @@
                     {:validation-type :open})
 
                   (when (= "primitive-type" kind)
-                    {:zen/tags #{'fhir/primitive-type}})
+                    {:zen/tags #{'zen-fhir/primitive-type}})
 
                   (when (= "complex-type" kind)
-                    {:zen/tags #{'fhir/complex-type}})
+                    {:zen/tags #{'zen-fhir/complex-type}})
 
                   (when (= "resource" kind)
-                    {:zen/tags #{'fhir/resource}})
+                    {:zen/tags #{'zen-fhir/resource}})
 
                   (when (= "logical" kind)
-                    {:zen/tags #{'fhir/logical}})
+                    {:zen/tags #{'zen-fhir/logical}})
 
                   (when (true? abstract)
-                    {:zen/tags #{'fhir/abstract}})
+                    {:zen/tags #{'zen-fhir/abstract}})
 
                   (when (and (not (true? abstract)) (= "resource" kind))
                     {:keys {:resourceType {:type 'zen/string, :const {:value type}}}})))))
@@ -487,11 +487,11 @@
         zen-import         (get zen-ns-map 'import)
         rest-zen-ns-map    (dissoc zen-ns-map 'ns 'import)
         ordered-zen-ns-map (cond->> (sort-by (juxt
-                                               (comp #(contains? % 'fhir/logical) :zen/tags val)
-                                               (comp #(contains? % 'fhir/resource) :zen/tags val)
-                                               (comp #(contains? % 'fhir/complex-type) :zen/tags val)
-                                               (comp #(contains? % 'fhir/primitive-type) :zen/tags val)
-                                               (comp #(not (contains? % 'fhir/abstract)) :zen/tags val)
+                                               (comp #(contains? % 'zen-fhir/logical) :zen/tags val)
+                                               (comp #(contains? % 'zen-fhir/resource) :zen/tags val)
+                                               (comp #(contains? % 'zen-fhir/complex-type) :zen/tags val)
+                                               (comp #(contains? % 'zen-fhir/primitive-type) :zen/tags val)
+                                               (comp #(not (contains? % 'zen-fhir/abstract)) :zen/tags val)
                                                (comp name key))
                                              rest-zen-ns-map)
                              (some? zen-import) (cons ['import zen-import])
@@ -521,7 +521,7 @@
         resource-schema (sd->profile-schema resource #::{:elements-mode elements-mode
                                                          :fhir-lib fhir-lib})
         schemas'         (update element-schemas resource-type utils/safe-merge-with-into resource-schema)
-        schemas         (if (contains? (:zen/tags resource-schema) 'fhir/primitive-type)
+        schemas         (if (contains? (:zen/tags resource-schema) 'zen-fhir/primitive-type)
                           (let [value-symbol   (symbol (str (name resource-type) ".value"))
                                 schema-zen-sym (symbol (name zen-lib) (name resource-type))
                                 element-sym    (symbol (name zen-lib) "Element")]
@@ -537,7 +537,7 @@
         (cond-> fold-schemas? (-> fold-schemas (select-keys [resource-type])))
         (clojure.set/rename-keys {resource-type schema-name})
         (assoc 'ns     zen-ns
-               'import #{'fhir})
+               'import #{'zen-fhir})
         (cond-> (some? fhir-lib)
           (update 'import conj fhir-lib))
         order-zen-ns)))

@@ -81,34 +81,34 @@
 
       (t/testing "fhir primitive types"
         (matcho/match (sut/element->zen {:type [{:code "id"}]}
-                                        {::sut/fhir-lib 'fhir.test})
-                      {:confirms #{'fhir.test/id}})
+                                        {::sut/fhir-lib 'zen-fhir.test})
+                      {:confirms #{'zen-fhir.test/id}})
 
         (matcho/match (sut/element->zen {:type [{:code      "http://hl7.org/fhirpath/System.String"
                                                  :extension [{:url      "http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type"
                                                               :valueUrl "uri"}]}]}
-                                        {::sut/fhir-lib 'fhir.test})
-                      {:confirms #{'fhir.test/uri}})
+                                        {::sut/fhir-lib 'zen-fhir.test})
+                      {:confirms #{'zen-fhir.test/uri}})
 
         (matcho/match (sut/element->zen {:type [{:code "HumanName"}]}
-                                        {::sut/fhir-lib 'fhir.test})
-                      '{:confirms #{fhir.test/HumanName}}))
+                                        {::sut/fhir-lib 'zen-fhir.test})
+                      '{:confirms #{zen-fhir.test/HumanName}}))
 
       (t/testing "fhir polymorphic types"
         (matcho/match (sut/element->zen {:type [{:code "url"} {:code "code"} {:code "id"}]}
-                                        {::sut/fhir-lib 'fhir.test})
+                                        {::sut/fhir-lib 'zen-fhir.test})
                       {::sut/poly
                        {:key  :value
-                        :keys {:url  {:confirms #{'fhir.test/url}}
-                               :code {:confirms #{'fhir.test/code}}
-                               :id   {:confirms #{'fhir.test/id}}}}})
+                        :keys {:url  {:confirms #{'zen-fhir.test/url}}
+                               :code {:confirms #{'zen-fhir.test/code}}
+                               :id   {:confirms #{'zen-fhir.test/id}}}}})
 
         (matcho/match (sut/element->zen {:id "foo.bar.baz[x]"
                                          :type [{:code "type"}]}
-                                        {::sut/fhir-lib 'fhir.test})
+                                        {::sut/fhir-lib 'zen-fhir.test})
                       {::sut/poly
                        {:key  :baz
-                        :keys {:type {:confirms #{'fhir.test/type}}}}})))
+                        :keys {:type {:confirms #{'zen-fhir.test/type}}}}})))
 
     (t/testing "pattern -> zen"
       (matcho/match
@@ -356,16 +356,16 @@
     (matcho/match
       plannet-practitioner-zen-project
       '[{ns     plannet.v1.plannet-Practitioner
-         import #{fhir}
+         import #{zen-fhir}
 
          Practitioner
-         {:zen/tags #{zen/schema fhir/structure-definition fhir/resource}
+         {:zen/tags #{zen/schema zen-fhir/structure-definition zen-fhir/resource}
           :type     zen/map
           :keys     {:resourceType {:type zen/string, :const {:value "Practitioner"}}}}}]))
 
   (t/testing "validating resource type"
     (def zctx* (zen.core/new-context))
-    (zen.core/read-ns zctx* 'fhir)
+    (zen.core/read-ns zctx* 'zen-fhir)
     (load-zen-projects! zctx* plannet-practitioner-zen-project)
 
     (matcho/match @zctx* {:errors empty?})
@@ -416,10 +416,10 @@
     (matcho/match
       plannet-practitioner-zen-project
       '[{ns     plannet.v1.plannet-Practitioner
-         import #{fhir}
+         import #{zen-fhir}
 
          Practitioner
-         {:zen/tags #{zen/schema fhir/structure-definition fhir/resource}
+         {:zen/tags #{zen/schema zen-fhir/structure-definition zen-fhir/resource}
           :type     zen/map
           :require  #{:id :name}
           :keys     {:resourceType {:type zen/string, :const {:value "Practitioner"}}
@@ -730,7 +730,7 @@
 
   (def fhir-proj
     (sut/structure-definitions->uni-zen-project
-      'fhir.R4-test
+      'zen-fhir.R4-test
       ["http://hl7.org/fhir/StructureDefinition/Identifier"
        "http://hl7.org/fhir/StructureDefinition/Quantity"
        "http://hl7.org/fhir/StructureDefinition/boolean"
@@ -740,39 +740,39 @@
        :fold-schemas?        true
        :elements-mode        :differential
        :drop-out-current-ns? true
-       :fhir-lib             'fhir.R4-test}))
+       :fhir-lib             'zen-fhir.R4-test}))
 
   (matcho/match
     fhir-proj
-    '{ns     fhir.R4-test
-      import #{fhir}
+    '{ns     zen-fhir.R4-test
+      import #{zen-fhir}
 
       boolean
-      {:zen/tags #{zen/schema fhir/structure-definition fhir/primitive-type fhir/base}
+      {:zen/tags #{zen/schema zen-fhir/structure-definition zen-fhir/primitive-type zen-fhir/base}
        :zen/desc "Base StructureDefinition for boolean Type: Value of \"true\" or \"false\""
        :confirms nil
        :type     zen/boolean}
 
       Identifier
-      {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
+      {:zen/tags #{zen/schema zen-fhir/complex-type zen-fhir/structure-definition zen-fhir/base}
        :type     zen/map
        :keys     {:type   {:confirms #{CodeableConcept}}
                   :system {:confirms #{uri}}
                   :value  {:confirms #{string}}}}
 
       Quantity
-      {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
+      {:zen/tags #{zen/schema zen-fhir/complex-type zen-fhir/structure-definition zen-fhir/base}
        :type     zen/map
        :keys     {:value {:confirms #{decimal}}}}
 
       Range
-      {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
+      {:zen/tags #{zen/schema zen-fhir/complex-type zen-fhir/structure-definition zen-fhir/base}
        :type     zen/map
        :keys     {:low  {:confirms #{Quantity, SimpleQuantity}}
                   :high {:confirms #{Quantity, SimpleQuantity}}}}
 
       SimpleQuantity
-      {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/profile}
+      {:zen/tags #{zen/schema zen-fhir/complex-type zen-fhir/structure-definition zen-fhir/profile}
        :type     zen/map
        :keys     {:comparator {:zen/desc "Not allowed to be used in this context"
                                :const {:value nil}}}}}))
@@ -784,20 +784,20 @@
 
     (matcho/match
       (sut/structure-definitions->zen-project
-        'fhir.R4-test
+        'zen-fhir.R4-test
         "http://hl7.org/fhir/StructureDefinition/Quantity"
         [qsd]
         {:remove-gen-keys? true
          :fold-schemas?    true
          :elements-mode    :differential
-         :fhir-lib         'fhir.R4-test})
-      '[{ns fhir.R4-test.Quantity
-         import #{fhir fhir.R4-test}
+         :fhir-lib         'zen-fhir.R4-test})
+      '[{ns zen-fhir.R4-test.Quantity
+         import #{zen-fhir zen-fhir.R4-test}
 
          Quantity
-         {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
+         {:zen/tags #{zen/schema zen-fhir/complex-type zen-fhir/structure-definition zen-fhir/base}
           :zen/desc "Base StructureDefinition for Quantity Type: A measured amount (or an amount that can potentially be measured). Note that measured amounts include amounts that are not precisely quantified, including amounts involving arbitrary units and floating currencies.",
-          :confirms #{fhir.R4-test/Element}
+          :confirms #{zen-fhir.R4-test/Element}
           #_:effects #_{fhir/binding {:strength "extensible",
                                       :description "Appropriate units for Duration.",
                                       :valueSet "http://hl7.org/fhir/ValueSet/duration-units"}
@@ -807,7 +807,7 @@
                                           :human "If a code for the unit is present, the system SHALL also be present",
                                           :expression "code.empty() or system.exists()",}}}
           :type zen/map
-          :keys {:value {:confirms #{fhir.R4-test/decimal}
+          :keys {:value {:confirms #{zen-fhir.R4-test/decimal}
                          :zen/desc "Numerical value (with implicit precision)"}
                  :comparator {:type zen/string
                               ;; :fhir/isSummary true ;;TODO
@@ -815,29 +815,29 @@
                               }
                  :unit {:type zen/string
                         :zen/desc "Unit representation"}
-                 :system {:confirms #{fhir.R4-test/uri}
+                 :system {:confirms #{zen-fhir.R4-test/uri}
                           :zen/desc "System that defines coded unit form"}
-                 :code {:confirms #{fhir.R4-test/code}}}}}])
+                 :code {:confirms #{zen-fhir.R4-test/code}}}}}])
 
     (t/testing "duration"
       (def duration-sd (read-string (slurp (io/resource "zen/fhir/duration-sd.edn"))))
 
       (matcho/match
         (sut/structure-definitions->zen-project
-          'fhir.R4-test
+          'zen-fhir.R4-test
           "http://hl7.org/fhir/StructureDefinition/Duration"
           [duration-sd]
           {:remove-gen-keys? true
            :fold-schemas? true
            :elements-mode :differential
-           :fhir-lib      'fhir.R4-test})
-        '[{ns fhir.R4-test.Duration
-           import #{fhir fhir.R4-test}
+           :fhir-lib      'zen-fhir.R4-test})
+        '[{ns zen-fhir.R4-test.Duration
+           import #{zen-fhir zen-fhir.R4-test}
 
            Duration
-           {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}
+           {:zen/tags #{zen/schema zen-fhir/complex-type zen-fhir/structure-definition zen-fhir/base}
             :type zen/map
-            :confirms #{fhir.R4-test/Quantity}}}])))
+            :confirms #{zen-fhir.R4-test/Quantity}}}])))
 
   (t/testing "resource"
     (t/testing "generating project"
@@ -845,49 +845,49 @@
 
       (def patient-proj
         (sut/structure-definitions->zen-project
-          'fhir.R4-test
+          'zen-fhir.R4-test
           "http://hl7.org/fhir/StructureDefinition/Patient"
           [patient-sd]
           {:remove-gen-keys? true
            :fold-schemas?    true
            :elements-mode    :differential
-           :fhir-lib         'fhir.R4-test}))
+           :fhir-lib         'zen-fhir.R4-test}))
 
       (matcho/match
         patient-proj
         '[{Patient
-           {:zen/tags #{fhir/structure-definition fhir/resource zen/schema fhir/base}
+           {:zen/tags #{zen-fhir/structure-definition zen-fhir/resource zen/schema zen-fhir/base}
             :zen/desc "Demographics and other administrative information about an individual or animal receiving care or other health-related services."
             #_"Information about an individual or animal receiving health care services",
-            :confirms #{fhir.R4-test/DomainResource}
+            :confirms #{zen-fhir.R4-test/DomainResource}
             :type zen/map
             :keys {:identifier {:type zen/vector
                                 #_#_:zen/desc "An identifier for this patient",
-                                :every {:confirms #{fhir.R4-test/Identifier}
+                                :every {:confirms #{zen-fhir.R4-test/Identifier}
                                         :zen/desc "An identifier for this patient",}}
                    :active {:type zen/boolean}
                    :name {:type zen/vector
-                          :every {:confirms #{fhir.R4-test/HumanName}}}
+                          :every {:confirms #{zen-fhir.R4-test/HumanName}}}
                    :telecom {:type zen/vector
-                             :every {:confirms #{fhir.R4-test/ContactPoint}}}
-                   :gender  {:confirms #{fhir.R4-test/code}
+                             :every {:confirms #{zen-fhir.R4-test/ContactPoint}}}
+                   :gender  {:confirms #{zen-fhir.R4-test/code}
                              #_#_:effects {fhir/binding {:strength "required",
                                                          :description "The gender of a person used for administrative purposes.",
                                                          :valueSet "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"}}}
-                   :birthDate {:confirms #{fhir.R4-test/date}}
+                   :birthDate {:confirms #{zen-fhir.R4-test/date}}
                    :deceased {:type zen/map
                               :exclusive-keys #{#{:boolean :dateTime}}
                               :keys {:boolean {:type zen/boolean
-                                               :confirms #{fhir.R4-test/boolean}}
+                                               :confirms #{zen-fhir.R4-test/boolean}}
                                      :dateTime {:type zen/datetime
-                                                :confirms #{fhir.R4-test/dateTime}}}}
+                                                :confirms #{zen-fhir.R4-test/dateTime}}}}
                    :contact {:type zen/vector
                              :every {:type zen/map
                                      :keys {:relationship
                                             {:type zen/vector
-                                             :every {:confirms #{fhir.R4-test/CodeableConcept}}}
-                                            :name {:confirms #{fhir.R4-test/HumanName}}}}}
-                   :managingOrganization {:confirms #{fhir.R4-test/Reference}}}}}]))))
+                                             :every {:confirms #{zen-fhir.R4-test/CodeableConcept}}}
+                                            :name {:confirms #{zen-fhir.R4-test/HumanName}}}}}
+                   :managingOrganization {:confirms #{zen-fhir.R4-test/Reference}}}}}]))))
 
 
 (t/deftest fhir
@@ -895,11 +895,11 @@
     (def type-profiles-bundle (read-string (slurp (io/resource "zen/fhir/profiles-types.edn"))))
     (def resource-profiles-bundle (read-string (slurp (io/resource "zen/fhir/profiles-resources.edn"))))
 
-    (zen.fhir.loader/generate-profiles-types-uni-project 'fhir.R4-test type-profiles-bundle resource-profiles-bundle "test-temp-zrc")
+    (zen.fhir.loader/generate-profiles-types-uni-project 'zen-fhir.R4-test type-profiles-bundle resource-profiles-bundle "test-temp-zrc")
 
     (def zctx* (zen.core/new-context))
-    (zen.core/read-ns zctx* 'fhir)
-    (zen.core/read-ns zctx* 'fhir.R4-test)
+    (zen.core/read-ns zctx* 'zen-fhir)
+    (zen.core/read-ns zctx* 'zen-fhir.R4-test)
 
     (matcho/match @zctx* {:errors empty?})
     #_(:errors @zctx*))
@@ -909,24 +909,24 @@
 
     (matcho/match (zen.core/validate
                     zctx*
-                    #{'fhir.R4-test/Patient}
+                    #{'zen-fhir.R4-test/Patient}
                     patient-res)
                   {:errors empty?})
 
     (matcho/match (zen.core/validate
                     zctx*
-                    #{'fhir.R4-test/Patient}
+                    #{'zen-fhir.R4-test/Patient}
                     {})
                   {:errors empty?})
 
     (matcho/match (zen.core/validate
                     zctx*
-                    #{'fhir.R4-test/Patient}
+                    #{'zen-fhir.R4-test/Patient}
                     {:resourceType "Observaiton"})
                   {:errors [{:path [:resourceType]}]})
 
     (matcho/match (zen.core/validate
                     zctx*
-                    #{'fhir.R4-test/Patient}
+                    #{'zen-fhir.R4-test/Patient}
                     {:name [{:given "Yurii"}]})
                   {:errors [{:path [:name 0 :given]}]})))

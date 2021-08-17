@@ -1,4 +1,4 @@
-{ns fhir
+{ns zen-fhir
 
  resource       {:zen/tags #{zen/tag}}
  primitive-type {:zen/tags #{zen/tag}}
