@@ -1,16 +1,16 @@
 (ns zen.fhir.generator-test
   (:require
    [zen.fhir.generator :as sut]
+   [zen.fhir.loader]
    [zen.core]
    [matcho.core :as matcho]
    [clojure.java.io :as io]
    [clojure.test :as t]))
 
 
-(defn load-zen-projects! [proj]
-  (let [proj-map (into {} (map #(-> [(get % 'ns) %])) proj)
-        zctx* (zen.core/new-context {:memory-store proj-map})]
-    (zen.core/read-ns zctx* 'fhir)
+(defn load-zen-projects! [zctx* proj]
+  (let [proj-map (into {} (map #(-> [(get % 'ns) %])) proj)]
+    (swap! zctx* update :memory-store merge proj-map)
     (run! (partial zen.core/load-ns zctx*) proj)
     zctx*))
 
@@ -364,7 +364,9 @@
           :keys     {:resourceType {:type zen/string, :const {:value "Practitioner"}}}}}]))
 
   (t/testing "validating resource type"
-    (def zctx* (load-zen-projects! plannet-practitioner-zen-project))
+    (def zctx* (zen.core/new-context))
+    (zen.core/read-ns zctx* 'fhir)
+    (load-zen-projects! zctx* plannet-practitioner-zen-project)
 
     (matcho/match @zctx* {:errors empty?})
 
