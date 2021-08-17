@@ -746,9 +746,10 @@
       import #{fhir}
 
       boolean
-      {:zen/tags     #{zen/schema fhir/structure-definition fhir/primitive-type fhir/base}
-       :zen/desc     "Base StructureDefinition for boolean Type: Value of \"true\" or \"false\""
-       :type         zen/boolean}
+      {:zen/tags #{zen/schema fhir/structure-definition fhir/primitive-type fhir/base}
+       :zen/desc "Base StructureDefinition for boolean Type: Value of \"true\" or \"false\""
+       :confirms nil
+       :type     zen/boolean}
 
       Identifier
       {:zen/tags #{zen/schema fhir/complex-type fhir/structure-definition fhir/base}

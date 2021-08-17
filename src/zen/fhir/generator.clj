@@ -507,15 +507,15 @@
                                                          :fhir-lib fhir-lib})
         schemas'         (update element-schemas resource-type utils/safe-merge-with-into resource-schema)
         schemas         (if (contains? (:zen/tags resource-schema) 'fhir/primitive-type)
-                          (let [value-symbol (symbol (str (name resource-type) ".value"))
-                                schema-zen-sym (symbol (name zen-lib) (name resource-type))]
+                          (let [value-symbol   (symbol (str (name resource-type) ".value"))
+                                schema-zen-sym (symbol (name zen-lib) (name resource-type))
+                                element-sym    (symbol (name zen-lib) "Element")]
                             (-> schemas'
                                 (dissoc value-symbol)
                                 (update resource-type merge (select-keys (get schemas' value-symbol) [:type]))
-                                (update resource-type utils/disj-key :confirms
-                                        schema-zen-sym)
-                                (update resource-type utils/disj-key ::links
-                                        value-symbol)))
+                                (update resource-type utils/disj-key :confirms element-sym)
+                                (update resource-type utils/disj-key :confirms schema-zen-sym)
+                                (update resource-type utils/disj-key ::links value-symbol)))
                           schemas')
         built-schemas (build-schemas schemas)]
     (-> built-schemas
