@@ -170,3 +170,12 @@
   (sp/recursive-path [] p
    (sp/if-path map?
     (sp/continue-then-stay sp/MAP-VALS p))))
+
+
+(defn invert-string-case [s]
+  (->> s
+       (map (fn [c]
+              (if (Character/isUpperCase c)
+                (Character/toLowerCase c)
+                (Character/toUpperCase c))))
+       (apply str)))

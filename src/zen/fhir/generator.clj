@@ -483,7 +483,7 @@
   (let [zen-ns             (get zen-ns-map 'ns)
         zen-import         (get zen-ns-map 'import)
         rest-zen-ns-map    (dissoc zen-ns-map 'ns 'import)
-        ordered-zen-ns-map (cond->> (sort-by key rest-zen-ns-map)
+        ordered-zen-ns-map (cond->> (sort-by (comp utils/invert-string-case name key) rest-zen-ns-map)
                              (some? zen-import) (cons ['import zen-import])
                              (some? zen-ns)     (cons ['ns zen-ns])
                              :always            flatten
