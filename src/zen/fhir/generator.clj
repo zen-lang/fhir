@@ -472,6 +472,9 @@
                   (when (= "resource" kind)
                     {:zen/tags #{'fhir/resource}})
 
+                  (when (= "logical" kind)
+                    {:zen/tags #{'fhir/logical}})
+
                   (when (true? abstract)
                     {:zen/tags #{'fhir/abstract}})
 

@@ -3,6 +3,7 @@
  resource       {:zen/tags #{zen/tag}}
  primitive-type {:zen/tags #{zen/tag}}
  complex-type   {:zen/tags #{zen/tag}}
+ logical        {:zen/tags #{zen/tag}}
 
  base    {:zen/tags #{zen/tag}
           :zen/desc "Sturcture Definition which add new elements (with derivation=specialization)"}
