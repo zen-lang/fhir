@@ -9,3 +9,5 @@ pom.xml.asc
 .cpcache/
 
 .lsp/
+
+/fhir/
