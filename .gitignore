@@ -11,3 +11,5 @@ pom.xml.asc
 .lsp/
 
 /fhir/
+
+/test-temp-zrc/
