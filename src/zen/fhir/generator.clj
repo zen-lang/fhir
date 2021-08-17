@@ -432,7 +432,7 @@
 
 (defn sd->profile-schema
   "Creates zen schema for root resource from StructureDefinition"
-  [{:keys [description type url kind baseDefinition derivation]} {::keys [fhir-lib elements-mode]}]
+  [{:keys [abstract description type url kind baseDefinition derivation]} {::keys [fhir-lib elements-mode]}]
   (let [base (some-> (when-not (str/blank? baseDefinition) baseDefinition)
                      (str/split #"/")
                      last)
@@ -470,8 +470,13 @@
                     {:zen/tags #{'fhir/complex-type}})
 
                   (when (= "resource" kind)
-                    {:zen/tags #{'fhir/resource}
-                     :keys     {:resourceType {:type 'zen/string, :const {:value type}}}})))))
+                    {:zen/tags #{'fhir/resource}})
+
+                  (when (true? abstract)
+                    {:zen/tags #{'fhir/abstract}})
+
+                  (when (and (not (true? abstract)) (= "resource" kind))
+                    {:keys {:resourceType {:type 'zen/string, :const {:value type}}}})))))
 
 
 (defn order-zen-ns [zen-ns-map]

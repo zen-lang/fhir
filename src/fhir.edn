@@ -9,6 +9,9 @@
  profile {:zen/tags #{zen/tag}
           :zen/desc "Sturcture Definition which constraints base profiles and can not add new elements (with derivation=constraint)"}
 
+ abstract {:zen/tags #{zen/tag}
+           :zen/desc "Whether structure this definition describes is abstract or not - that is, whether the structure is not intended to be instantiated."}
+
  structure-definition
  {:zen/tags #{zen/tag zen/schema}
   :zen/desc "Zen schema representing some fhir StructureDefinition"
