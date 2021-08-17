@@ -342,8 +342,10 @@
     (matcho/match
       (sut/drop-out-current-ns
         'foo
-        '[{ns foo, bar {:confirms #{foo/quux baz/taz}}}])
-      '[{ns foo, bar {:confirms #{quux baz/taz}}}])))
+        '[{ns foo, bar {:confirms #{foo/quux baz/taz}}}
+          {ns baz, bar {:confirms #{foo/quux baz/taz}}}])
+      '[{ns foo, bar {:confirms #{quux baz/taz}}}
+        {ns baz, bar {:confirms #{foo/quux taz}}}])))
 
 
 (t/deftest structure-definition-with-const
