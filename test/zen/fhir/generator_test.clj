@@ -911,4 +911,22 @@
                     zctx*
                     #{'fhir.R4-test/Patient}
                     patient-res)
-                  {:errors empty?})))
+                  {:errors empty?})
+
+    (matcho/match (zen.core/validate
+                    zctx*
+                    #{'fhir.R4-test/Patient}
+                    {})
+                  {:errors empty?})
+
+    (matcho/match (zen.core/validate
+                    zctx*
+                    #{'fhir.R4-test/Patient}
+                    {:resourceType "Observaiton"})
+                  {:errors [{:path [:resourceType]}]})
+
+    (matcho/match (zen.core/validate
+                    zctx*
+                    #{'fhir.R4-test/Patient}
+                    {:name [{:given "Yurii"}]})
+                  {:errors [{:path [:name 0 :given]}]})))
