@@ -840,90 +840,75 @@
             :confirms #{fhir.R4-test/Quantity}}}])))
 
   (t/testing "resource"
-    (def patient-sd (read-string (slurp (io/resource "zen/fhir/pt-sd.edn"))))
+    (t/testing "generating project"
+      (def patient-sd (read-string (slurp (io/resource "zen/fhir/pt-sd.edn"))))
 
-    (def patient-proj
-      (sut/structure-definitions->zen-project
-        'fhir.R4-test
-        "http://hl7.org/fhir/StructureDefinition/Patient"
-        [patient-sd]
-        {:remove-gen-keys? true
-         :fold-schemas?    true
-         :elements-mode    :differential
-         :fhir-lib         'fhir.R4-test}))
+      (def patient-proj
+        (sut/structure-definitions->zen-project
+          'fhir.R4-test
+          "http://hl7.org/fhir/StructureDefinition/Patient"
+          [patient-sd]
+          {:remove-gen-keys? true
+           :fold-schemas?    true
+           :elements-mode    :differential
+           :fhir-lib         'fhir.R4-test}))
 
-    (matcho/match
-      patient-proj
-      '[{Patient
-         {:zen/tags #{fhir/structure-definition fhir/resource zen/schema fhir/base}
-          :zen/desc "Demographics and other administrative information about an individual or animal receiving care or other health-related services."
-          #_"Information about an individual or animal receiving health care services",
-          :confirms #{fhir.R4-test/DomainResource}
-          :type zen/map
-          :keys {:identifier {:type zen/vector
-                              #_#_:zen/desc "An identifier for this patient",
-                              :every {:confirms #{fhir.R4-test/Identifier}
-                                      :zen/desc "An identifier for this patient",}}
-                 :active {:type zen/boolean}
-                 :name {:type zen/vector
-                        :every {:confirms #{fhir.R4-test/HumanName}}}
-                 :telecom {:type zen/vector
-                           :every {:confirms #{fhir.R4-test/ContactPoint}}}
-                 :gender  {:confirms #{fhir.R4-test/code}
-                           #_#_:effects {fhir/binding {:strength "required",
-                                                       :description "The gender of a person used for administrative purposes.",
-                                                       :valueSet "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"}}}
-                 :birthDate {:confirms #{fhir.R4-test/date}}
-                 :deceased {:type zen/map
-                            :exclusive-keys #{#{:boolean :dateTime}}
-                            :keys {:boolean {:type zen/boolean
-                                             :confirms #{fhir.R4-test/boolean}}
-                                   :dateTime {:type zen/datetime
-                                              :confirms #{fhir.R4-test/dateTime}}}}
-                 :contact {:type zen/vector
-                           :every {:type zen/map
-                                   :keys {:relationship
-                                          {:type zen/vector
-                                           :every {:confirms #{fhir.R4-test/CodeableConcept}}}
-                                          :name {:confirms #{fhir.R4-test/HumanName}}}}}
-                 :managingOrganization {:confirms #{fhir.R4-test/Reference}}}}}])
+      (matcho/match
+        patient-proj
+        '[{Patient
+           {:zen/tags #{fhir/structure-definition fhir/resource zen/schema fhir/base}
+            :zen/desc "Demographics and other administrative information about an individual or animal receiving care or other health-related services."
+            #_"Information about an individual or animal receiving health care services",
+            :confirms #{fhir.R4-test/DomainResource}
+            :type zen/map
+            :keys {:identifier {:type zen/vector
+                                #_#_:zen/desc "An identifier for this patient",
+                                :every {:confirms #{fhir.R4-test/Identifier}
+                                        :zen/desc "An identifier for this patient",}}
+                   :active {:type zen/boolean}
+                   :name {:type zen/vector
+                          :every {:confirms #{fhir.R4-test/HumanName}}}
+                   :telecom {:type zen/vector
+                             :every {:confirms #{fhir.R4-test/ContactPoint}}}
+                   :gender  {:confirms #{fhir.R4-test/code}
+                             #_#_:effects {fhir/binding {:strength "required",
+                                                         :description "The gender of a person used for administrative purposes.",
+                                                         :valueSet "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"}}}
+                   :birthDate {:confirms #{fhir.R4-test/date}}
+                   :deceased {:type zen/map
+                              :exclusive-keys #{#{:boolean :dateTime}}
+                              :keys {:boolean {:type zen/boolean
+                                               :confirms #{fhir.R4-test/boolean}}
+                                     :dateTime {:type zen/datetime
+                                                :confirms #{fhir.R4-test/dateTime}}}}
+                   :contact {:type zen/vector
+                             :every {:type zen/map
+                                     :keys {:relationship
+                                            {:type zen/vector
+                                             :every {:confirms #{fhir.R4-test/CodeableConcept}}}
+                                            :name {:confirms #{fhir.R4-test/HumanName}}}}}
+                   :managingOrganization {:confirms #{fhir.R4-test/Reference}}}}}]))
 
-    #_(t/testing "validating zen"
-      (def patient-res (read-string (slurp (io/resource "zen/fhir/pt-res.edn"))))
+    (t/testing "generating types & resources"
+      (def type-profiles-bundle (read-string (slurp (io/resource "zen/fhir/profiles-types.edn"))))
+      (zen.fhir.loader/generate-profiles-types-uni-project 'fhir.R4-test type-profiles-bundle "test-temp-zrc")
 
-      (def zctx* (load-zen-project! patient-proj))
+      (def zctx* (zen.core/new-context))
+      (zen.core/read-ns zctx* 'fhir)
+      (zen.core/read-ns zctx* 'fhir.R4-test)
 
       (matcho/match @zctx* {:errors empty?})
+      #_(:errors @zctx*))
+
+    (t/testing "validating zen"
+      (load-zen-projects! zctx* patient-proj)
+      (matcho/match @zctx* {:errors empty?})
+      #_(:errors @zctx*)
+
+      (def patient-res (read-string (slurp (io/resource "zen/fhir/pt-res.edn"))))
 
       (matcho/match (zen.core/validate
                       zctx*
                       #{'fhir.R4-test.Patient/Patient}
                       patient-res)
                     {:errors empty?}))))
-
-
-(comment
-  (require '[clojure.pprint]
-           '[cheshire.core]
-           '[com.rpl.specter :as sp])
-
-  (defn format-zen-ns [zen-ns-map]
-    (clojure.pprint/write (sut/order-zen-ns zen-ns-map) :stream nil))
-
-  (def type-profiles-json (slurp "fhir/profiles-types.json"))
-  (def type-profiles-bundle (cheshire.core/parse-string type-profiles-json keyword))
-  (def type-profiles (sp/select [sp/ALL :resource] (:entry type-profiles-bundle)))
-  (def type-urls (sp/select [sp/ALL :url] type-profiles))
-  (def type-proj
-    (sut/structure-definitions->uni-zen-project
-      'fhir.r4
-      type-urls
-      type-profiles
-      {:remove-gen-keys? true
-       :fold-schemas?    true
-       :elements-mode    :differential
-       :fhir-lib         'fhir.r4}))
-
-  (spit "src/fhir/r4.edn" (format-zen-ns type-proj))
-
-  nil)
