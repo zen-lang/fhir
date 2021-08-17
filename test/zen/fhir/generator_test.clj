@@ -336,7 +336,14 @@
                     import #{aidbox lib.baz lib.baz2}
                     baz    {:confirms #{lib.baz/Extension}}
                     baz2   {:confirms #{lib.baz2/Extension}}
-                    baz3   {:confirms nil}})))
+                    baz3   {:confirms nil}}))
+
+  (t/testing "drop-out current ns"
+    (matcho/match
+      (sut/drop-out-current-ns
+        'foo
+        '[{ns foo, bar {:confirms #{foo/quux baz/taz}}}])
+      '[{ns foo, bar {:confirms #{quux baz/taz}}}])))
 
 
 (t/deftest structure-definition-with-const
