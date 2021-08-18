@@ -91,7 +91,7 @@
       code))
 
 
-(defmethod ed->zen #{::id-processing :id :type} [{el-id :id, el-type :type}]
+(defmethod ed->zen {::id-processing #{:id :type}} [{el-id :id, el-type :type}]
   (when-not (str/blank? el-id)
     (let [rich-path   (rich-parse-path el-id)
           poly-value? (some? (:poly-name (last rich-path)))
@@ -127,12 +127,12 @@
   (not (str/includes? (str el-path) ".")))
 
 
-(defmethod ed->zen #{:min} [{el-min :min}]
+(defmethod ed->zen {::set-require #{:min}} [{el-min :min}]
   (when el-min
     {::required? (pos? (or el-min 0))}))
 
 
-(defmethod ed->zen #{:id :min :max :base}
+(defmethod ed->zen {::set-arity #{:id :min :max :base}}
   [{id :id, el-min :min, el-max :max, {base-max :max} :base}]
   (utils/strip-nils
     (when (and (not (root-element? id))
@@ -152,11 +152,11 @@
           {:const {:value nil}})))))
 
 
-(defmethod ed->zen #{} [_]
+(defmethod ed->zen {::schema-tag #{}} [_]
   {:zen/tags #{'zen/schema}})
 
 
-(defmethod ed->zen #{:definition :short} [{:keys [short definition]}]
+(defmethod ed->zen {::set-text-desc #{:definition :short}} [{:keys [short definition]}]
   (let [short      (when-not (str/blank? short) short)
         definition (when-not (str/blank? definition) definition)
 
@@ -217,7 +217,7 @@
     (ed-type->zen-type (first ed-types) {::fhir-lib fhir-lib})))
 
 
-(defmethod ed->zen #{:type :id ::fhir-lib} [{el-types :type, id :id, fhir-lib ::fhir-lib}]
+(defmethod ed->zen {::set-type #{:type :id ::fhir-lib}} [{el-types :type, id :id, fhir-lib ::fhir-lib}]
   (when (seq el-types)
     (ed-types->zen-type id
                         el-types
@@ -226,11 +226,11 @@
                             :fhir-lib fhir-lib})))
 
 
-(defmethod ed->zen #{:slicing :path :id} [{slicing :slicing}]
+(defmethod ed->zen {::set-slicing? #{:slicing :path :id}} [{slicing :slicing}]
   (when slicing {::slicing? true}))
 
 
-(defmethod ed->zen #{:type} [{el-type :type}]
+(defmethod ed->zen {::set-profiles #{:type}} [{el-type :type}]
   (let [tp (first el-type)]
     (when (:profile tp) ;; TODO: multiple profile support
       {::confirms-profile {:urls   (:profile tp)
@@ -240,7 +240,7 @@
 ;; NOTE: we can't convert sliceName to keyword because
 ;; by fhir it is string without any constraints
 ;; this can create invalid edn keywords
-(defmethod ed->zen #{:sliceName :id} [{slice-name :sliceName, id :id}]
+(defmethod ed->zen {::set-slice-part #{:sliceName :id}} [{slice-name :sliceName, id :id}]
   (when (:slice (last (rich-parse-path id)))
     {::slice-name (if (= "@default" slice-name)
                     :slicing/rest
@@ -269,7 +269,7 @@
     :else {:const {:value pattern}}))
 
 
-#_(defmethod ed->zen #{:binding :id} [{:keys [binding id]}]
+#_(defmethod ed->zen {::binding #{:id}} [{:keys [binding id]}]
   (when (and binding (= "required" (:strength binding)))
     (let [rich-path (rich-parse-path id)
           name      (some-> (format-rich-id rich-path)
@@ -280,12 +280,12 @@
                   :name name}})))
 
 
-(defmethod ed->zen #{:poly/pattern} [{:keys [pattern]}]
+(defmethod ed->zen {::set-pattern #{:poly/pattern}} [{:keys [pattern]}]
   (when (some? pattern)
     (pattern->zen pattern)))
 
 
-(defmethod ed->zen #{:poly/fixed} [{:keys [fixed]}]
+(defmethod ed->zen {::set-fixed #{:poly/fixed}} [{:keys [fixed]}]
   (when (some? fixed)
     {:const {:value fixed}}))
 
@@ -296,8 +296,9 @@
   they will be added later after linking"
   [element & [{::keys [fhir-lib]}]]
   (->> (methods ed->zen)
-       (mapcat (fn [[ks f]]
-                 (let [{poly-ks "poly", rest-ks nil} (group-by (comp #{"poly"} namespace) ks)]
+       (mapcat (fn [[d f]]
+                 (let [ks (val (first d))
+                       {poly-ks "poly", rest-ks nil} (group-by (comp #{"poly"} namespace) ks)]
                    (f (into (-> element (assoc ::fhir-lib fhir-lib) (select-keys rest-ks))
                             (map (fn [poly-key]
                                    (let [pk (keyword (name poly-key))]

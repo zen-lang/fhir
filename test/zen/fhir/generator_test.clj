@@ -67,17 +67,17 @@
 
   (t/testing "element -> zen"
     (t/testing "multimethod"
-      (defmethod sut/ed->zen [:foo :baz] [arg] {:zen/foo arg})
+      (defmethod sut/ed->zen {::test-method #{:foo :baz}} [arg] {:zen/foo arg})
 
-      (defmethod sut/ed->zen [:tar] [arg] {:zen/tar arg})
+      (defmethod sut/ed->zen {::test-method2 #{:tar}} [arg] {:zen/tar arg})
 
       (matcho/match
         (sut/element->zen {:foo "bar", :baz "taz", :tar "mar"})
         {:zen/foo {:foo "bar", :baz "taz"}
          :zen/tar {:tar "mar"}})
 
-      (remove-method sut/ed->zen [:tar])
-      (remove-method sut/ed->zen [:foo :baz])
+      (remove-method sut/ed->zen {::test-method #{:foo :baz}})
+      (remove-method sut/ed->zen {::test-method2 #{:tar}})
 
       (t/testing "fhir primitive types"
         (matcho/match (sut/element->zen {:type [{:code "id"}]}
