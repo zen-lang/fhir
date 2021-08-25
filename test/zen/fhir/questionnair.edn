@@ -1,0 +1,365 @@
+{:derivation "specialization",
+ :name "Questionnaire",
+ :abstract false,
+ :type "Questionnaire",
+ :resourceType "StructureDefinition",
+ :zen.fhir/package "hl7.fhir.r4.core",
+ :status "draft",
+ :id "Questionnaire",
+ :kind "resource",
+ :url "http://hl7.org/fhir/StructureDefinition/Questionnaire",
+ :zen.fhir/file "StructureDefinition-Questionnaire.json",
+ :version "4.0.1",
+ :differential
+ {:element
+  [{:path "Questionnaire",
+    :min 0,
+    :short "A structured set of questions",
+    :max "*"}
+   {:path "Questionnaire.url",
+    :min 0,
+    :short
+    "Canonical identifier for this questionnaire, represented as a URI (globally unique)",
+    :type [{:code "uri"}],
+    :max "1",
+    :isSummary true}
+   {:path "Questionnaire.identifier",
+    :min 0,
+    :short "Additional identifier for the questionnaire",
+    :type [{:code "Identifier"}],
+    :max "*",
+    :isSummary true}
+   {:path "Questionnaire.version",
+    :min 0,
+    :short "Business version of the questionnaire",
+    :type [{:code "string"}],
+    :max "1",
+    :isSummary true}
+   {:path "Questionnaire.name",
+    :min 0,
+    :short "Name for this questionnaire (computer friendly)",
+    :type [{:code "string"}],
+    :max "1",
+    :condition ["inv-0"],
+    :isSummary true}
+   {:path "Questionnaire.title",
+    :min 0,
+    :short "Name for this questionnaire (human friendly)",
+    :type [{:code "string"}],
+    :max "1",
+    :isSummary true}
+   {:path "Questionnaire.derivedFrom",
+    :min 0,
+    :short "Instantiates protocol or definition",
+    :type
+    [{:code "canonical",
+      :targetProfile
+      ["http://hl7.org/fhir/StructureDefinition/Questionnaire"]}],
+    :max "*"}
+   {:path "Questionnaire.status",
+    :min 1,
+    :isModifier true,
+    :short "draft | active | retired | unknown",
+    :type [{:code "code"}],
+    :binding
+    {:strength "required",
+     :description "The lifecycle status of an artifact.",
+     :valueSet "http://hl7.org/fhir/ValueSet/publication-status|4.0.1"},
+    :max "1",
+    :isModifierReason
+    "This is labeled as \"Is Modifier\" because applications should not use a retired {{title}} without due consideration",
+    :isSummary true}
+   {:path "Questionnaire.experimental",
+    :min 0,
+    :short "For testing purposes, not real usage",
+    :type [{:code "boolean"}],
+    :max "1",
+    :isSummary true}
+   {:path "Questionnaire.subjectType",
+    :min 0,
+    :short "Resource that can be subject of QuestionnaireResponse",
+    :type [{:code "code"}],
+    :binding
+    {:strength "required",
+     :description
+     "One of the resource types defined as part of this version of FHIR.",
+     :valueSet "http://hl7.org/fhir/ValueSet/resource-types|4.0.1"},
+    :max "*",
+    :isSummary true}
+   {:path "Questionnaire.date",
+    :min 0,
+    :short "Date last changed",
+    :type [{:code "dateTime"}],
+    :max "1",
+    :isSummary true}
+   {:path "Questionnaire.publisher",
+    :min 0,
+    :short "Name of the publisher (organization or individual)",
+    :type [{:code "string"}],
+    :max "1",
+    :isSummary true}
+   {:path "Questionnaire.contact",
+    :min 0,
+    :short "Contact details for the publisher",
+    :type [{:code "ContactDetail"}],
+    :max "*",
+    :isSummary true}
+   {:path "Questionnaire.description",
+    :min 0,
+    :short "Natural language description of the questionnaire",
+    :type [{:code "markdown"}],
+    :max "1"}
+   {:path "Questionnaire.useContext",
+    :min 0,
+    :short "The context that the content is intended to support",
+    :type [{:code "UsageContext"}],
+    :max "*",
+    :isSummary true}
+   {:path "Questionnaire.jurisdiction",
+    :min 0,
+    :short "Intended jurisdiction for questionnaire (if applicable)",
+    :type [{:code "CodeableConcept"}],
+    :binding
+    {:strength "extensible",
+     :description
+     "Countries and regions within which this artifact is targeted for use.",
+     :valueSet "http://hl7.org/fhir/ValueSet/jurisdiction"},
+    :max "*",
+    :isSummary true}
+   {:path "Questionnaire.purpose",
+    :min 0,
+    :short "Why this questionnaire is defined",
+    :type [{:code "markdown"}],
+    :max "1"}
+   {:path "Questionnaire.copyright",
+    :min 0,
+    :short "Use and/or publishing restrictions",
+    :type [{:code "markdown"}],
+    :max "1"}
+   {:path "Questionnaire.approvalDate",
+    :min 0,
+    :short "When the questionnaire was approved by publisher",
+    :type [{:code "date"}],
+    :max "1"}
+   {:path "Questionnaire.lastReviewDate",
+    :min 0,
+    :short "When the questionnaire was last reviewed",
+    :type [{:code "date"}],
+    :max "1"}
+   {:path "Questionnaire.effectivePeriod",
+    :min 0,
+    :short "When the questionnaire is expected to be used",
+    :type [{:code "Period"}],
+    :max "1",
+    :isSummary true}
+   {:path "Questionnaire.code",
+    :min 0,
+    :short "Concept that represents the overall questionnaire",
+    :type [{:code "Coding"}],
+    :binding
+    {:strength "example",
+     :description "Codes for questionnaires, groups and individual questions.",
+     :valueSet "http://hl7.org/fhir/ValueSet/questionnaire-questions"},
+    :max "*",
+    :isSummary true}
+   {:path "Questionnaire.item",
+    :min 0,
+    :short "Questions and sections within the Questionnaire",
+    :type [{:code "BackboneElement"}],
+    :max "*",
+    :condition ["que-3"]}
+   {:path "Questionnaire.item.linkId",
+    :min 1,
+    :short "Unique id for item in questionnaire",
+    :type [{:code "string"}],
+    :max "1"}
+   {:path "Questionnaire.item.definition",
+    :min 0,
+    :short "ElementDefinition - details for the item",
+    :type [{:code "uri"}],
+    :max "1"}
+   {:path "Questionnaire.item.code",
+    :min 0,
+    :short "Corresponding concept for this item in a terminology",
+    :type [{:code "Coding"}],
+    :binding
+    {:strength "example",
+     :description "Codes for questionnaires, groups and individual questions.",
+     :valueSet "http://hl7.org/fhir/ValueSet/questionnaire-questions"},
+    :max "*",
+    :condition ["que-3"]}
+   {:path "Questionnaire.item.prefix",
+    :min 0,
+    :short "E.g. \"1(a)\", \"2.5.3\"",
+    :type [{:code "string"}],
+    :max "1"}
+   {:path "Questionnaire.item.text",
+    :min 0,
+    :short "Primary text for the item",
+    :type [{:code "string"}],
+    :max "1"}
+   {:path "Questionnaire.item.type",
+    :min 1,
+    :short "group | display | boolean | decimal | integer | date | dateTime +",
+    :type [{:code "code"}],
+    :binding
+    {:strength "required",
+     :description
+     "Distinguishes groups from questions and display text and indicates data type for questions.",
+     :valueSet "http://hl7.org/fhir/ValueSet/item-type|4.0.1"},
+    :max "1"}
+   {:path "Questionnaire.item.enableWhen",
+    :min 0,
+    :isModifier true,
+    :short "Only allow data when",
+    :type [{:code "BackboneElement"}],
+    :max "*",
+    :isModifierReason
+    "If enableWhen is present and the condition evaluates to false, then the Questionnaire behaves as though the elements weren't actually present"}
+   {:path "Questionnaire.item.enableWhen.question",
+    :min 1,
+    :short "Question that determines whether item is enabled",
+    :type [{:code "string"}],
+    :max "1"}
+   {:path "Questionnaire.item.enableWhen.operator",
+    :min 1,
+    :short "exists | = | != | > | < | >= | <=",
+    :type [{:code "code"}],
+    :binding
+    {:strength "required",
+     :description "The criteria by which a question is enabled.",
+     :valueSet
+     "http://hl7.org/fhir/ValueSet/questionnaire-enable-operator|4.0.1"},
+    :max "1"}
+   {:path "Questionnaire.item.enableWhen.answer[x]",
+    :min 1,
+    :short "Value for question comparison based on operator",
+    :type
+    [{:code "boolean"}
+     {:code "decimal"}
+     {:code "integer"}
+     {:code "date"}
+     {:code "dateTime"}
+     {:code "time"}
+     {:code "string"}
+     {:code "Coding"}
+     {:code "Quantity"}
+     {:code "Reference",
+      :targetProfile ["http://hl7.org/fhir/StructureDefinition/Resource"]}],
+    :binding
+    {:strength "example",
+     :description "Allowed values to answer questions.",
+     :valueSet "http://hl7.org/fhir/ValueSet/questionnaire-answers"},
+    :max "1",
+    :condition ["que-7"]}
+   {:path "Questionnaire.item.enableBehavior",
+    :min 0,
+    :short "all | any",
+    :type [{:code "code"}],
+    :binding
+    {:strength "required",
+     :description
+     "Controls how multiple enableWhen values are interpreted -  whether all or any must be true.",
+     :valueSet
+     "http://hl7.org/fhir/ValueSet/questionnaire-enable-behavior|4.0.1"},
+    :max "1",
+    :condition ["que-12"]}
+   {:path "Questionnaire.item.required",
+    :min 0,
+    :short "Whether the item must be included in data results",
+    :type [{:code "boolean"}],
+    :meaningWhenMissing
+    "Items are generally assumed not to be required unless explicitly specified. Systems SHOULD always populate this value",
+    :max "1",
+    :condition ["que-6"]}
+   {:path "Questionnaire.item.repeats",
+    :min 0,
+    :short "Whether the item may repeat",
+    :type [{:code "boolean"}],
+    :meaningWhenMissing
+    "Items are generally assumed not to repeat unless explicitly specified. Systems SHOULD always populate this value",
+    :max "1",
+    :condition ["que-6"]}
+   {:path "Questionnaire.item.readOnly",
+    :min 0,
+    :short "Don't allow human editing",
+    :type [{:code "boolean"}],
+    :max "1",
+    :condition ["que-9"]}
+   {:path "Questionnaire.item.maxLength",
+    :min 0,
+    :short "No more than this many characters",
+    :type [{:code "integer"}],
+    :max "1",
+    :condition ["que-10"]}
+   {:path "Questionnaire.item.answerValueSet",
+    :min 0,
+    :short "Valueset containing permitted answers",
+    :type
+    [{:code "canonical",
+      :targetProfile ["http://hl7.org/fhir/StructureDefinition/ValueSet"]}],
+    :max "1",
+    :condition ["que-4" "que-5"]}
+   {:path "Questionnaire.item.answerOption",
+    :min 0,
+    :short "Permitted answer",
+    :type [{:code "BackboneElement"}],
+    :max "*",
+    :condition ["que-4" "que-5"]}
+   {:path "Questionnaire.item.answerOption.value[x]",
+    :min 1,
+    :short "Answer value",
+    :type
+    [{:code "integer"}
+     {:code "date"}
+     {:code "time"}
+     {:code "string"}
+     {:code "Coding"}
+     {:code "Reference",
+      :targetProfile ["http://hl7.org/fhir/StructureDefinition/Resource"]}],
+    :binding
+    {:strength "example",
+     :description "Allowed values to answer questions.",
+     :valueSet "http://hl7.org/fhir/ValueSet/questionnaire-answers"},
+    :max "1"}
+   {:path "Questionnaire.item.answerOption.initialSelected",
+    :min 0,
+    :short "Whether option is selected by default",
+    :type [{:code "boolean"}],
+    :meaningWhenMissing "Only selected items explicitly marked to be selected",
+    :max "1"}
+   {:path "Questionnaire.item.initial",
+    :min 0,
+    :short "Initial value(s) when item is first rendered",
+    :type [{:code "BackboneElement"}],
+    :max "*",
+    :condition ["que-8" "que-13"]}
+   {:path "Questionnaire.item.initial.value[x]",
+    :min 1,
+    :short "Actual value for initializing the question",
+    :type
+    [{:code "boolean"}
+     {:code "decimal"}
+     {:code "integer"}
+     {:code "date"}
+     {:code "dateTime"}
+     {:code "time"}
+     {:code "string"}
+     {:code "uri"}
+     {:code "Attachment"}
+     {:code "Coding"}
+     {:code "Quantity"}
+     {:code "Reference",
+      :targetProfile ["http://hl7.org/fhir/StructureDefinition/Resource"]}],
+    :binding
+    {:strength "example",
+     :description "Allowed values to answer questions.",
+     :valueSet "http://hl7.org/fhir/ValueSet/questionnaire-answers"},
+    :max "1"}
+   {:path "Questionnaire.item.item",
+    :min 0,
+    :short "Nested questionnaire items",
+    :contentReference "#Questionnaire.item",
+    :max "*",
+    :condition ["que-1"]}]},
+ :baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"}

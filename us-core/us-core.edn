@@ -1,0 +1,23 @@
+{ns us-core
+
+ import #{fhir}
+
+ race
+ {:zen/tags #{zen/schema fhir/extension}
+  :fhir/extension-url "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"
+  :type zen/map
+  :keys {:ombCategory {:type zen/vector
+                       :maxItems 5
+                       :every {:confirms #{fhir.r4/Coding}}}
+         :detailed    {:type zen/vector
+                       :every {:confirms #{fhir.r4/Coding}}}
+         :text        {:type zen/string}}}
+
+ Patient
+ {:zen/tags #{zen/schema fhir/profile}
+  :type zen/map
+  :keys {:race {:confirms #{race}}}}
+
+
+
+ }

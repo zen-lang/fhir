@@ -7,8 +7,15 @@
 
  base    {:zen/tags #{zen/tag}
           :zen/desc "Sturcture Definition which add new elements (with derivation=specialization)"}
+
  profile {:zen/tags #{zen/tag}
           :zen/desc "Sturcture Definition which constraints base profiles and can not add new elements (with derivation=constraint)"}
+
+ extension {:zen/tags #{zen/tag}
+            :zen/desc "Extension Definition"}
+
+ valueset  {:zen/tags #{zen/tag}
+            :zen/desc "Extension Definition"}
 
  abstract {:zen/tags #{zen/tag}
            :zen/desc "Whether structure this definition describes is abstract or not - that is, whether the structure is not intended to be instantiated."}

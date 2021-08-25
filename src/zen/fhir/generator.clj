@@ -13,7 +13,7 @@
   identity)
 
 
-(remove-all-methods ed->zen)  ;; To remove defmethods erased from code when re-eval a whole buffer in REPL
+;; (remove-all-methods ed->zen)  ;; To remove defmethods erased from code when re-eval a whole buffer in REPL
 
 
 (def poly-id-terminator "[x]")
@@ -671,3 +671,22 @@
     (cond->> project
       remove-gen-keys?     remove-gen-keys
       drop-out-current-ns? drop-out-current-ns)))
+
+
+;; * resources, types
+;;  -> sd (+deps => ctx)
+;;    ->  elements
+;;      -> element-> zen -> transformed element
+;;      -> element -> resolve to symbols
+;;      -> aggregate into zen tree - temp keys
+
+
+;; npm
+;; -> temp storage
+;;    by resourceType
+;;    SD{ulr {res} } => ctx
+
+;; res
+;;   -> shaping
+;;   1. treeify
+;;   2. vectorize (tree algorythm)
