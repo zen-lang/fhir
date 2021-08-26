@@ -73,8 +73,11 @@
 
 (defn build-fhir-poly-keys-mapping [poly-key types]
   (into {}
-        (map #(-> {(keyword (str poly-key (capitalize-first-letter %)))
-                   (keyword poly-key)}))
+        (map (fn [el-type]
+               (let [fhir-poly-key (str poly-key (capitalize-first-letter el-type))]
+                 (-> {(keyword fhir-poly-key)
+                      {:key (keyword poly-key)
+                       :type el-type}}))))
         types))
 
 

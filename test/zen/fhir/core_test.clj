@@ -66,8 +66,8 @@
      :kind           "resource",
      :type           "Observation"
      :derivation     "specialization",
-     :fhir-poly-keys {:valueQuantity :value
-                      :valueBoolean  :value}}))
+     :fhir-poly-keys {:valueQuantity {:key :value, :type "Quantity"}
+                      :valueBoolean  {:key :value, :type "boolean"}}}))
 
 (t/deftest test-zen-transformation
   (def ztx (zen.core/new-context {}))
