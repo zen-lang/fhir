@@ -3,7 +3,8 @@
             [cheshire.core]
             [clojure.java.io :as io]
             [fipp.edn]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [zen.fhir.utils :as utils]))
 
 ;; load resources into memory [rt id]
 ;; transform to zen (two phase?)
@@ -98,15 +99,33 @@
               (assoc :type tpc)))
         (throw (Exception. (pr-str el)))))))
 
-(defn normalize-cardinality [{mi :min mx :max :as el}]
-  (->
-    (cond
-      (not (= "1" mx))          (cond-> (assoc el :vector true)
-                                  (not (= 0 mi)) (assoc :minItems mi)
-                                  (and mx (not (= "*" mx))) (assoc :maxItems (Integer/parseInt mx)))
-      (and (= "1" mx) (= 1 mi)) (assoc el :required true)
-      :else                     el)
-    (dissoc :min :max)))
+(defn root-element? [el-path]
+  (not (str/includes? (str el-path) ".")))
+
+(defn normalize-require [{:as element, el-min :min}]
+  (merge element
+         {:required (pos? (or el-min 0))}))
+
+(defn normalize-arity
+  "The first ElementDefinition (root element) usually has max=* which may be treated as a collection
+  but we are treating StructureDefinition as a tool to validate a single resource"
+  [{:as element, id :id, el-min :min, el-max :max, {base-max :max} :base}]
+  (merge element
+         (when (and (not (root-element? id))
+                    (or (some? base-max)
+                        (some? el-max)))
+           (if (and (not= "1" base-max)
+                    (not= "0" base-max)
+                    (or (some? base-max)
+                        (and (not= "1" el-max)
+                             (not= "0" el-max))))
+             {:vector       true
+              :minItems     (when-not (= 0 el-min) el-min)
+              :maxItems     (when-not (= "*" el-max) (utils/parse-int el-max))}
+             (when (or (= "0" el-max)
+                       (and (nil? el-max)
+                            (= "0" base-max)))
+               {:prohibited true})))))
 
 (defn normalize-binding [el]
   (if-let [bn (:binding el)]
@@ -120,7 +139,8 @@
               :mapping :constraint :extension :comment :comments :requirements :definition :alias
               :meaningWhenMissing :isModifierReason)
       (normalize-binding)
-      (normalize-cardinality)
+      (normalize-require)
+      (normalize-arity)
       (normalize-polymorphic)))
 
 (defn normalize-description [res]
