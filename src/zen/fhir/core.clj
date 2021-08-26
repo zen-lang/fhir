@@ -47,9 +47,6 @@
                                       :type :key}]))))
          vec)))
 
-(rich-parse-path "Patient.identifier:MRI.value[x]:valueCode")
-
-[:els :identifier :slice :MRI :value :els :Quantity :els :value]
 
 (defn build-path [id-path]
   (->> id-path
@@ -64,28 +61,77 @@
 
 ;; polymorphic path
 ;; extensions path
-(defn group-elements [els]
+(defn group-elements [acc els]
   (->> els
        (reduce (fn [acc {id :id pth :path :as el}]
                  (let [id-path (rich-parse-path id)]
-                   (if (empty? pth)
-                     el
-                     (assoc-in acc (build-path id-path) (select-keys el [:id])))))
-               {})))
+                   (if (empty? id-path)
+                     (merge acc (dissoc el :min :max :vector))
+                     (assoc-in acc (build-path id-path) el #_(select-keys el [:id :els :polymorphic])))))
+               acc)))
+
+(defn reference-profiles [el]
+  (let [tp   (first (:type el))
+        tpc  (:code tp)
+        prof (:targetProfile tp)]
+
+    (if (and (= tpc "Reference") prof)
+      (assoc el :profiles (into #{} prof))
+      el)))
+
+(defn normalize-polymorphic [el]
+  (if (str/ends-with? (:path el) "[x]")
+    (-> (assoc el :polymorphic true)
+        (dissoc :type)
+        (assoc :els (->> (:type el)
+                         (reduce (fn [acc {c :code :as tp}]
+                                   (assoc acc (keyword c) (-> (reference-profiles {:type [tp]})
+                                                              (assoc :type c))))
+                                 {})))
+        (assoc :types (->> (:type el) (map :code) (into #{}))))
+    (if-not (:type el)
+      el
+      (if (= 1 (count (:type el)))
+        (let [tp (first (:type el))
+              tpc (:code tp)]
+          (-> el (reference-profiles)
+              (assoc :type tpc)))
+        (throw (Exception. (pr-str el)))))))
+
+(defn normalize-cardinality [{mi :min mx :max :as el}]
+  (->
+    (cond
+      (not (= "1" mx))          (cond-> (assoc el :vector true)
+                                  (not (= 0 mi)) (assoc :minItems mi)
+                                  (and mx (not (= "*" mx))) (assoc :maxItems (Integer/parseInt mx)))
+      (and (= "1" mx) (= 1 mi)) (assoc el :required true)
+      :else                     el)
+    (dissoc :min :max)))
+
+(defn normalize-binding [el]
+  (if-let [bn (:binding el)]
+    (cond-> (dissoc el :binding)
+      (contains? #{"required" "preferred"} (:strength bn))
+      (assoc :binding (dissoc bn :extension)))
+    el))
 
 (defn normalize-element [x]
-  (-> (dissoc x :mapping :path :constraint :extension :comment :comments :requirements :definition)
-      (assoc :path
-             (->> (rest (str/split (:path x) #"\."))
-                  (mapv (fn [x] (str/replace x #"\[x\]" "")))
-                  (into [])
-                  (mapv keyword)))))
+  (-> (dissoc x
+              :mapping :constraint :extension :comment :comments :requirements :definition :alias
+              :meaningWhenMissing :isModifierReason)
+      (normalize-binding)
+      (normalize-cardinality)
+      (normalize-polymorphic)))
 
+(defn normalize-description [res]
+  (-> (dissoc res :description :short)
+      (assoc :short (or (:short res) (:description res)))))
 ;; ADD check by http://www.hl7.org/fhir/elementdefinition.html#interpretation
 (defn make-elements [res]
   (->> (get-in res [:differential :element])
        (mapv normalize-element)
-       (group-elements)))
+       (group-elements (select-keys res [:kind :derivation :baseDefinition :description :fhirVersion]))
+       (normalize-description)))
 
 (defmulti process-on-load (fn [res] (keyword (:resourceType res))))
 (defmethod process-on-load :default
@@ -127,125 +173,7 @@
 
 
 
-(comment
 
-  (do
-    (def ztx (zen/new-context {}))
-    (load-all ztx "hl7.fhir.r4.core")
-    )
-
-  (get-in @ztx [:fhir "StructureDefinition"
-                "http://hl7.org/fhir/us/carin-bb/StructureDefinition/C4BB-ExplanationOfBenefit-Inpatient-Institutional"
-                :elements])
-
-
-  (get-in @ztx [:fhir "StructureDefinition"
-                "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
-                :elements])
-
-  (get-in @ztx [:fhir "StructureDefinition"
-                "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"
-                :elements])
-
-  (get-in @ztx [:fhir "StructureDefinition"
-                "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
-                :src])
-
-  (keys (get-in @ztx [:fhir "StructureDefinition"]))
-
-
-
-  (def def-ks
-    (->> (get-in @ztx [:fhir "hl7.fhir.r4.core" "StructureDefinition"])
-         (map (fn [[k v]]
-                (->
-                  (select-keys v [:id :kind :type :derivation :abstract])
-                  (assoc :base (when-let [bd (:baseDefinition v)]
-                                 (-> (str/split bd #"/")
-                                     (last)))))))))
-
-
-  (def schemas
-    (->> (get-in @ztx [:fhir "hl7.fhir.r4.core" "StructureDefinition"])
-         (reduce (fn [acc [_ {id :id :as res}]]
-                   (assert id "id is required")
-                   (-> (update acc (symbol id)
-                               process-sd
-                               )))
-                 {})))
-
-  (time
-    (doseq [[id res] schemas]
-      (when (contains? (:zen/tags res) 'fhir/specialization)
-        (spit (str "/tmp/fhir/" id ".edn")
-              (with-out-str (fipp.edn/pprint res))))))
-
-
-
-  (->
-    (group-by :derivation def-ks)
-    (get nil))
-
-  (->>
-    def-ks
-    (mapv #(select-keys % [:kind :derivation :abstract]))
-    (into #{}))
-
-  {:kind       (->
-                 (group-by :kind def-ks)
-                 (keys))
-   ;; :type (->
-   ;;         (group-by :type def-ks)
-   ;;         (keys))
-   :derivation (->
-                 (group-by :derivation def-ks)
-                 (keys))}
-
-  ;; (zen.fhir.loader/generate-profiles-types-uni-project 'zen-fhir.R4-test type-profiles-bundle resource-profiles-bundle "test-temp-zrc")
-
-  (-> (get-in @ztx [:fhir "hl7.fhir.r4.core" "StructureDefinition" "heartrate" ])
-      (dissoc  :extension :mapping :contact))
-
-  (-> (get-in @ztx [:fhir "hl7.fhir.r4.core" "StructureDefinition"])
-      (keys))
-
-  (def resource-not-important-attrs
-    [:date :meta :snapshot :extension :mapping :contact :_baseDefinition :purpose :fhirVersion :publisher :description])
-
-  (def element-not-important-attrs
-    [:constraint :mapping :alias :requirements :definition :comment :id])
-
-  (defn clean-up [res]
-    (-> (apply dissoc res resource-not-important-attrs)
-        (update-in [:differential :element]
-                   (fn [xs]
-                     (->> xs
-                          (mapv (fn [x]
-                                  (cond-> (apply dissoc x element-not-important-attrs)
-                                    (:binding x) (update :binding dissoc :extension)))))))))
-
-  (-> (get-in @ztx [:fhir "hl7.fhir.r4.core" "StructureDefinition" "Questionnaire"])
-      (clean-up))
-
-  (-> (get-in @ztx [:fhir "hl7.fhir.r4.core" "StructureDefinition" "Age"])
-      (dissoc :snapshot :extension :mapping :contact))
-
-  (-> (get-in @ztx [:fhir "hl7.fhir.r4.core" "StructureDefinition" "bmi"])
-      (dissoc :snapshot :extension :mapping :contact))
-
-  (-> (get-in @ztx [:fhir "hl7.fhir.r4.core" "StructureDefinition" "Definition"])
-      (dissoc :extension :mapping :contact))
-
-  (-> (get-in @ztx [:fhir "hl7.fhir.r4.core" "StructureDefinition" "Event"])
-      (dissoc :extension :mapping :contact))
-
-  (-> (get-in @ztx [:fhir "hl7.fhir.r4.core" "StructureDefinition" "Resource"])
-      (dissoc :extension :mapping :contact :snapshot))
-
-  (-> (get-in @ztx [:fhir "hl7.fhir.r4.core" "StructureDefinition" "openEHR-test"])
-      (dissoc :extension :mapping :contact :snapshot))
-
-  )
 ;; 1. differential
 ;; 2. context for
 ;; * problem polymorphic
