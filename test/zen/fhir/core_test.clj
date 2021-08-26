@@ -58,22 +58,40 @@
   (def ztx (zen.core/new-context {}))
   (sut/load-all ztx "hl7.fhir.r4.core")
 
-  (def observation (get-in @ztx [:fhir "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Observation"]))
+  (t/testing "base type poly keys"
+    (def observation (get-in @ztx [:fhir "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Observation"]))
 
-  (matcho/match
-    (:elements observation)
-    {:baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"
-     :kind           "resource",
-     :type           "Observation"
-     :derivation     "specialization",
-     :fhir-poly-keys {:valueQuantity {:key :value, :type "Quantity"}
-                      :valueBoolean  {:key :value, :type "boolean"}}
-     :els {:value {:els {:boolean {:type "boolean"}
-                         :Quantity {:type "Quantity"}}}
-           :component {:fhir-poly-keys {:valueQuantity {:key :value, :type "Quantity"}
-                                        :valueBoolean  {:key :value, :type "boolean"}}
-                       :els {:value {:els {:boolean {:type "boolean"}
-                                           :Quantity {:type "Quantity"}}}}}}}))
+    (matcho/match
+      (:elements observation)
+      {:baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"
+       :kind           "resource",
+       :type           "Observation"
+       :derivation     "specialization",
+       :fhir-poly-keys {:valueQuantity {:key :value, :type "Quantity"}
+                        :valueBoolean  {:key :value, :type "boolean"}}
+       :els {:value {:els {:boolean {:type "boolean"}
+                           :Quantity {:type "Quantity"}}}
+             :component {:fhir-poly-keys {:valueQuantity {:key :value, :type "Quantity"}
+                                          :valueBoolean  {:key :value, :type "boolean"}}
+                         :els {:value {:els {:boolean {:type "boolean"}
+                                             :Quantity {:type "Quantity"}}}}}}}))
+
+  (t/testing "constraint poly keys fixing"
+    (def poly-prof-res (get-in @ztx [:fhir "StructureDefinition" "http://hl7.org/fhir/us/core/StructureDefinition/pediatric-bmi-for-age"]))
+
+    (matcho/match
+      (:elements poly-prof-res)
+
+      {:baseDefinition "http://hl7.org/fhir/StructureDefinition/vitalsigns"
+       :kind           "resource",
+       :type           "Observation"
+       :derivation     "constraint",
+       :els {:value
+             {:polymorphic true
+              :els {:Quantity
+                    {:els
+                     {:value {:required true}}}}}}})))
+
 
 (t/deftest test-zen-transformation
   (def ztx (zen.core/new-context {}))
@@ -136,37 +154,9 @@
     (:elements ares)
     {})
 
-
-  (def poly-prof-res (get-in @ztx [:fhir "StructureDefinition" "http://hl7.org/fhir/us/core/StructureDefinition/pediatric-bmi-for-age"]))
-
-  (get-in @ztx [:fhir "StructureDefinition"
-                "http://hl7.org/fhir/StructureDefinition/Observation" :elements])
-
-
-  (:src poly-prof-res)
-
-  (matcho/match
-    (:elements poly-prof-res)
-
-    {:baseDefinition "http://hl7.org/fhir/StructureDefinition/vitalsigns"
-     :kind           "resource",
-     :type           "Observation"
-     :derivation     "constraint",
-     :els {:value
-           {:polymorphic true
-            :els {:Quantity
-                  {:els
-                   {:value {:required true}}}}}}}
-    )
-
-  (spit "/tmp/poly.edn" (with-out-str (clojure.pprint/pprint (:elements poly-prof-res))))
-
-
   (def qres (get-in @ztx [:fhir "StructureDefinition"
                           "http://hl7.org/fhir/StructureDefinition/Questionnaire"
                           :elements]))
-
-
 
   (spit "/tmp/qres.edn" (with-out-str (clojure.pprint/pprint qres)))
 

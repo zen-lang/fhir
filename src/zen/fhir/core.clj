@@ -216,8 +216,12 @@
        (reduce (fn [acc [k el]]
                  (let [base-el (get-in base [:els k])]
                    (if-not base-el
-                     (do (println :ups (:id el))
-                       (assoc acc k (assoc el :error :no-base)))
+                     (if-let [base-poly-key (get-in base [:fhir-poly-keys k])]
+                       (assoc-in acc
+                                 [(:key base-poly-key) :els (keyword (:type base-poly-key))]
+                                 (assoc el :base-type (:type base-poly-key)))
+                       (do (println :ups (:id el))
+                           (assoc acc k (assoc el :error :no-base))))
                      (assoc acc k (if (:els el)
                                     (walk-with-base ztx (update ctx :lvl inc) el base-el)
                                     el)))))
