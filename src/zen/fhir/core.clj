@@ -60,15 +60,44 @@
                      :poly-slice (conj acc :els k))))
                [])))
 
+
+(defn ^String capitalize-first-letter
+  "Converts first character of the string to upper-case, all other characters leaves as is"
+  [^CharSequence s]
+  (let [s (.toString s)]
+    (if (< (count s) 2)
+      (.toUpperCase s)
+      (str (.toUpperCase (subs s 0 1))
+           (subs s 1)))))
+
+
+(defn build-fhir-poly-keys-mapping [poly-key types]
+  (into {}
+        (map #(-> {(keyword (str poly-key (capitalize-first-letter %)))
+                   (keyword poly-key)}))
+        types))
+
+
 ;; polymorphic path
 ;; extensions path
 (defn group-elements [acc els]
   (->> els
        (reduce (fn [acc {id :id pth :path :as el}]
-                 (let [id-path (rich-parse-path id)]
-                   (if (empty? id-path)
+                 (let [id-path  (rich-parse-path id)
+                       root-el? (empty? id-path)]
+                   (if root-el?
                      (merge acc (dissoc el :min :max :vector))
-                     (assoc-in acc (build-path id-path) el #_(select-keys el [:id :els :polymorphic])))))
+                     (let [last-part      (last id-path)
+                           el-path        (build-path id-path)
+                           el-parent-path (vec (drop-last 2 el-path))]
+                       (cond-> acc
+                         (= :poly (:type last-part))
+                         (assoc-in
+                           (conj el-parent-path :fhir-poly-keys)
+                           (build-fhir-poly-keys-mapping (:key last-part) (:types el)))
+
+                         :always
+                         (assoc-in el-path el #_(select-keys el [:id :els :polymorphic])))))))
                acc)))
 
 (defn reference-profiles [el]

@@ -53,10 +53,24 @@
                       sut/normalize-element)
                   {:required not, :vector not, :prohibited true?})))
 
-(t/deftest test-zen-transformation
 
+(t/deftest fhir-aidbox-poly-keys-mapping
   (def ztx (zen.core/new-context {}))
+  (sut/load-all ztx "hl7.fhir.r4.core")
 
+  (def observation (get-in @ztx [:fhir "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Observation"]))
+
+  (matcho/match
+    (:elements observation)
+    {:baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"
+     :kind           "resource",
+     :type           "Observation"
+     :derivation     "specialization",
+     :fhir-poly-keys {:valueQuantity :value
+                      :valueBoolean  :value}}))
+
+(t/deftest test-zen-transformation
+  (def ztx (zen.core/new-context {}))
   (sut/load-all ztx "hl7.fhir.r4.core")
 
   (def pres (get-in @ztx [:fhir "StructureDefinition"
