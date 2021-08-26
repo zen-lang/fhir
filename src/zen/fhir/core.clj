@@ -118,7 +118,7 @@
 
 
 (defn normalize-polymorphic [el]
-  (if (str/ends-with? (str (:id el)) "[x]")
+  (if (str/ends-with? (str (or (:path el) (:id el))) "[x]")
     (-> (assoc el :polymorphic true)
         (dissoc :type)
         (assoc :els (->> (:type el)
@@ -222,7 +222,7 @@
         (swap! ztx update-in [:fhir rt url]
                (fn [x]
                  (when x (println :WARN :override-resource header))
-                 rest))
+                 res))
         (println :WARN :no-url header))
       (println :WARN :no-resource-type header))))
 
