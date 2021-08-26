@@ -99,10 +99,8 @@
                            el-parent-path (vec (butlast el-root-path))]
                        (cond-> acc
                          (= :poly (:type last-part))
-                         (-> (assoc-in (conj el-root-path :polymorphic) true)
-                             (assoc-in
-                               (conj el-parent-path :fhir-poly-keys)
-                               (build-fhir-poly-keys-mapping (:key last-part) (:types el))))
+                         (assoc-in (conj el-parent-path :fhir-poly-keys)
+                                   (build-fhir-poly-keys-mapping (:key last-part) (:types el)))
 
                          :always
                          (assoc-in el-path el #_(select-keys el [:id :els :polymorphic])))))))
@@ -233,18 +231,25 @@
 (defn walk-with-base [ztx ctx subj base]
   (update subj :els
           #(reduce (fn [acc [k el]]
-                     (let [base-el (get-in base [:els k])]
-                       (if-not base-el
-                         (if-let [base-poly-key (get-in base [:fhir-poly-keys k])]
-                           (-> acc
-                               (assoc-in [(:key base-poly-key) :polymorphic] true)
-                               (assoc-in [(:key base-poly-key) :els (keyword (:type base-poly-key))]
-                                         (assoc el :base-type (:type base-poly-key))))
-                           (do (println :ups (:id el))
-                               (assoc acc k (assoc el :error :no-base))))
+                     (if-let [base-el (get-in base [:els k])]
+                       (let [el (-> el
+                                    (assoc :base base-el)
+                                    normalize-arity)] ;; TODO: remove code duplication
                          (assoc acc k (if (:els el)
                                         (walk-with-base ztx (update ctx :lvl inc) el base-el)
-                                        el)))))
+                                        el)))
+                       (if-let [base-poly-key (get-in base [:fhir-poly-keys k])]
+                         (let [base-poly-el (get-in base [:els (:key (get-in base [:fhir-poly-keys k]))])
+                               base-type-el (get-in base [:els (:key (get-in base [:fhir-poly-keys k])) :els (keyword (:type base-poly-key))])
+                               base-el      (merge base-poly-el base-type-el)
+                               el           (-> el
+                                                (assoc :base base-el)
+                                                normalize-arity)] ;; TODO: remove code duplication
+                           (-> acc
+                               (assoc-in [(:key base-poly-key) :polymorphic] true)
+                               (assoc-in [(:key base-poly-key) :els (keyword (:type base-poly-key))] el)))
+                         (do (println :ups (:id el))
+                             (assoc acc k (assoc el :error :no-base))))))
                    {}
                    %)))
 
