@@ -151,21 +151,22 @@
   but we are treating StructureDefinition as a tool to validate a single resource"
   [{:as element, id :id, el-min :min, el-max :max, {base-max :max} :base}]
   (merge element
-         (when (and (not (root-element? id))
-                    (or (some? base-max)
-                        (some? el-max)))
-           (if (and (not= "1" base-max)
-                    (not= "0" base-max)
-                    (or (some? base-max)
-                        (and (not= "1" el-max)
-                             (not= "0" el-max))))
-             {:vector   true
-              :minItems (when-not (= 0 el-min) el-min)
-              :maxItems (when-not (= "*" el-max) (utils/parse-int el-max))}
-             (when (or (= "0" el-max)
-                       (and (nil? el-max)
-                            (= "0" base-max)))
-               {:prohibited true})))))
+         (utils/strip-nils
+           (when (and (not (root-element? id))
+                     (or (some? base-max)
+                         (some? el-max)))
+            (if (and (not= "1" base-max)
+                     (not= "0" base-max)
+                     (or (some? base-max)
+                         (and (not= "1" el-max)
+                              (not= "0" el-max))))
+              {:vector   true
+               :minItems (when-not (= 0 el-min) el-min)
+               :maxItems (when-not (= "*" el-max) (utils/parse-int el-max))}
+              (when (or (= "0" el-max)
+                        (and (nil? el-max)
+                             (= "0" base-max)))
+                {:prohibited true}))))))
 
 
 (defn normalize-binding [el]
