@@ -118,7 +118,7 @@
 
 
 (defn normalize-polymorphic [el]
-  (if (str/ends-with? (str (:path el)) "[x]")
+  (if (str/ends-with? (str (:id el)) "[x]")
     (-> (assoc el :polymorphic true)
         (dissoc :type)
         (assoc :els (->> (:type el)
