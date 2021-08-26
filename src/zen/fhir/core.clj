@@ -147,10 +147,11 @@
   (-> (dissoc res :description :short)
       (assoc :short (or (:short res) (:description res)))))
 ;; ADD check by http://www.hl7.org/fhir/elementdefinition.html#interpretation
+
 (defn make-elements [res]
   (->> (get-in res [:differential :element])
        (mapv normalize-element)
-       (group-elements (select-keys res [:kind :derivation :baseDefinition :description :fhirVersion]))
+       (group-elements (select-keys res [:kind :derivation :baseDefinition :description :fhirVersion :type]))
        (normalize-description)))
 
 (defmulti process-on-load (fn [res] (keyword (:resourceType res))))
@@ -178,6 +179,40 @@
 (defn read-json [f]
   (cheshire.core/parse-string (slurp f) keyword))
 
+(defn walk-with-base [ztx ctx subj base]
+  (->> (:els subj)
+       (reduce (fn [acc [k el]]
+                 (let [base-el (get-in base [:els k])]
+                   (if-not base-el
+                     (do (println :ups (:id el))
+                       (assoc acc k (assoc el :error :no-base)))
+                     (assoc acc k (if (:els el)
+                                    (walk-with-base ztx (update ctx :lvl inc) el base-el)
+                                    el)))))
+               {})))
+
+(defn process-sd [ztx url subj]
+  (if (and (= "constraint" (:derivation subj)) (not (= "Extension" (:type subj))))
+    (let [base-url (str "http://hl7.org/fhir/StructureDefinition/" (:type subj))]
+      (if (= url base-url)
+        subj
+        (let [base (get-in @ztx [:fhir "StructureDefinition" base-url :elements])]
+          (println :process url (:type subj))
+          (assert base (pr-str :WARN :no-base base-url))
+          (walk-with-base ztx {:lvl 0} subj base))))
+    subj))
+
+(defn process-structure-definitions [ztx]
+  (swap! ztx update-in [:fhir "StructureDefinition"]
+         (fn [old]
+           (->> old
+                (reduce (fn [acc [url res]]
+                          (assoc acc url (assoc res :elements (process-sd ztx url (:elements res)))))
+                        {})))))
+
+(defn process-resources [ztx]
+  (process-structure-definitions ztx))
+
 (defn load-all [ztx package]
   (doseq [pkg-dir (.listFiles (io/file "node_modules"))]
     (when (and (.isDirectory pkg-dir)(not (str/starts-with? (.getName pkg-dir) ".")))
@@ -187,7 +222,8 @@
             index (read-json (str (.getPath pkg-dir) "/.index.json"))]
         (doseq [{filename :filename :as header} (:files index)]
           (load-json-file ztx package header (io/file (str (.getPath pkg-dir) "/" filename))))
-        (println :loaded (:name package) (count (:files index)))))))
+        (println :loaded (:name package) (count (:files index))))))
+  (process-resources ztx))
 
 
 

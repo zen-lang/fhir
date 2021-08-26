@@ -62,6 +62,9 @@
   (def pres (get-in @ztx [:fhir "StructureDefinition"
                           "http://hl7.org/fhir/StructureDefinition/Patient"]))
 
+
+
+
   (spit "/tmp/pres.edn" (with-out-str (clojure.pprint/pprint (:elements pres))))
 
   (matcho/match
@@ -71,10 +74,10 @@
      :derivation     "specialization",
      :baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"
 
-     :deps {:valuesets {}
-            :types {}
-            :extensions {}
-            :profiles {}}
+     ;; :deps {:valuesets {}
+     ;;        :types {}
+     ;;        :extensions {}
+     ;;        :profiles {}}
 
      :short          "Information about an individual or animal receiving health care services"
      :els            {:address             {:short     "An address for the individual"
@@ -113,9 +116,37 @@
     (:elements ares)
     {})
 
+
+  (def poly-prof-res (get-in @ztx [:fhir "StructureDefinition" "http://hl7.org/fhir/us/core/StructureDefinition/pediatric-bmi-for-age"]))
+
+  (get-in @ztx [:fhir "StructureDefinition"
+                "http://hl7.org/fhir/StructureDefinition/Observation" :elements])
+
+
+  (:src poly-prof-res)
+
+  (matcho/match
+    (:elements poly-prof-res)
+
+    {:baseDefinition "http://hl7.org/fhir/StructureDefinition/vitalsigns"
+     :kind           "resource",
+     :type           "Observation"
+     :derivation     "constraint",
+     :els {:value
+           {:polymorphic true
+            :els {:Quantity
+                  {:els
+                   {:value {:required true}}}}}}}
+    )
+
+  (spit "/tmp/poly.edn" (with-out-str (clojure.pprint/pprint (:elements poly-prof-res))))
+
+
   (def qres (get-in @ztx [:fhir "StructureDefinition"
                           "http://hl7.org/fhir/StructureDefinition/Questionnaire"
                           :elements]))
+
+
 
   (spit "/tmp/qres.edn" (with-out-str (clojure.pprint/pprint qres)))
 
