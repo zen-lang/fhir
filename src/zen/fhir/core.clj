@@ -4,7 +4,8 @@
             [clojure.java.io :as io]
             [fipp.edn]
             [clojure.string :as str]
-            [zen.fhir.utils :as utils]))
+            [zen.fhir.utils :as utils]
+            [com.rpl.specter :as sp]))
 
 ;; load resources into memory [rt id]
 ;; transform to zen (two phase?)
@@ -220,7 +221,7 @@
         (swap! ztx update-in [:fhir rt url]
                (fn [x]
                  (when x (println :WARN :override-resource header))
-                 (process-on-load res)))
+                 rest))
         (println :WARN :no-url header))
       (println :WARN :no-resource-type header))))
 
@@ -275,6 +276,13 @@
                  old))))
 
 
+(defn preprocess-resources [ztx]
+  (swap! ztx update :fhir
+         #(sp/transform [sp/MAP-VALS sp/MAP-VALS]
+                        process-on-load
+                        %)))
+
+
 (defn process-resources [ztx]
   (process-structure-definitions ztx))
 
@@ -286,6 +294,7 @@
                    index   (read-json (str (.getPath pkg-dir) "/.index.json"))]
           {filename :filename :as header} (:files index)]
     (load-json-file ztx package header (io/file (str (.getPath pkg-dir) "/" filename))))
+  (preprocess-resources ztx)
   (process-resources ztx))
 
 
