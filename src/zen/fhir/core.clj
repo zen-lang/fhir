@@ -21,11 +21,14 @@
 
 (def poly-id-terminator "[x]")
 
+
 (defn drop-poly-name [id poly-name]
   (subs id (count poly-name)))
 
+
 (defn drop-poly-terminator [id]
   (subs id 0 (- (count id) (count poly-id-terminator))))
+
 
 (defn rich-parse-path [id]
   (if (str/blank? id)
@@ -105,14 +108,15 @@
                          (assoc-in el-path el #_(select-keys el [:id :els :polymorphic])))))))
                acc)))
 
+
 (defn reference-profiles [el]
   (let [tp   (first (:type el))
         tpc  (:code tp)
         prof (:targetProfile tp)]
-
     (if (and (= tpc "Reference") prof)
       (assoc el :profiles (into #{} prof))
       el)))
+
 
 (defn normalize-polymorphic [el]
   (if (str/ends-with? (str (:path el)) "[x]")
@@ -127,18 +131,21 @@
     (if-not (:type el)
       el
       (if (= 1 (count (:type el)))
-        (let [tp (first (:type el))
+        (let [tp  (first (:type el))
               tpc (:code tp)]
           (-> el (reference-profiles)
               (assoc :type tpc)))
         (throw (Exception. (pr-str el)))))))
 
+
 (defn root-element? [el-path]
   (not (str/includes? (str el-path) ".")))
+
 
 (defn normalize-require [{:as element, el-min :min}]
   (merge element
          {:required (pos? (or el-min 0))}))
+
 
 (defn normalize-arity
   "The first ElementDefinition (root element) usually has max=* which may be treated as a collection
@@ -153,13 +160,14 @@
                     (or (some? base-max)
                         (and (not= "1" el-max)
                              (not= "0" el-max))))
-             {:vector       true
-              :minItems     (when-not (= 0 el-min) el-min)
-              :maxItems     (when-not (= "*" el-max) (utils/parse-int el-max))}
+             {:vector   true
+              :minItems (when-not (= 0 el-min) el-min)
+              :maxItems (when-not (= "*" el-max) (utils/parse-int el-max))}
              (when (or (= "0" el-max)
                        (and (nil? el-max)
                             (= "0" base-max)))
                {:prohibited true})))))
+
 
 (defn normalize-binding [el]
   (if-let [bn (:binding el)]
@@ -167,6 +175,7 @@
       (contains? #{"required" "preferred"} (:strength bn))
       (assoc :binding (dissoc bn :extension)))
     el))
+
 
 (defn normalize-element [x]
   (-> (dissoc x
@@ -177,10 +186,12 @@
       (normalize-arity)
       (normalize-polymorphic)))
 
+
 (defn normalize-description [res]
   (-> (dissoc res :description :short)
       (assoc :short (or (:short res) (:description res)))))
 ;; ADD check by http://www.hl7.org/fhir/elementdefinition.html#interpretation
+
 
 (defn make-elements [res]
   (->> (get-in res [:differential :element])
@@ -188,15 +199,20 @@
        (group-elements (select-keys res [:kind :derivation :baseDefinition :description :fhirVersion :type]))
        (normalize-description)))
 
+
 (defmulti process-on-load (fn [res] (keyword (:resourceType res))))
+
+
 (defmethod process-on-load :default
   [res]
   #_(println :WARN :no-process-on-load :for (:resourceType res)))
+
 
 (defmethod process-on-load :StructureDefinition
   [res]
   {:src (dissoc res :text)
    :elements (make-elements res)})
+
 
 (defn load-json-file [ztx package header f]
   (let [res (-> (cheshire.core/parse-string (slurp f) keyword)
@@ -210,26 +226,28 @@
         (println :WARN :no-url header))
       (println :WARN :no-resource-type header))))
 
-(defn read-json [f]
-  (cheshire.core/parse-string (slurp f) keyword))
+
+(defn read-json [f] (cheshire.core/parse-string (slurp f) keyword))
+
 
 (defn walk-with-base [ztx ctx subj base]
-  (assoc subj :els
-         (->> (:els subj)
-              (reduce (fn [acc [k el]]
-                        (let [base-el (get-in base [:els k])]
-                          (if-not base-el
-                            (if-let [base-poly-key (get-in base [:fhir-poly-keys k])]
-                              (-> acc
-                                  (assoc-in [(:key base-poly-key) :polymorphic] true)
-                                  (assoc-in [(:key base-poly-key) :els (keyword (:type base-poly-key))]
-                                            (assoc el :base-type (:type base-poly-key))))
-                              (do (println :ups (:id el))
-                                  (assoc acc k (assoc el :error :no-base))))
-                            (assoc acc k (if (:els el)
-                                           (walk-with-base ztx (update ctx :lvl inc) el base-el)
-                                           el)))))
-                      {}))))
+  (update subj :els
+          #(reduce (fn [acc [k el]]
+                     (let [base-el (get-in base [:els k])]
+                       (if-not base-el
+                         (if-let [base-poly-key (get-in base [:fhir-poly-keys k])]
+                           (-> acc
+                               (assoc-in [(:key base-poly-key) :polymorphic] true)
+                               (assoc-in [(:key base-poly-key) :els (keyword (:type base-poly-key))]
+                                         (assoc el :base-type (:type base-poly-key))))
+                           (do (println :ups (:id el))
+                               (assoc acc k (assoc el :error :no-base))))
+                         (assoc acc k (if (:els el)
+                                        (walk-with-base ztx (update ctx :lvl inc) el base-el)
+                                        el)))))
+                   {}
+                   %)))
+
 
 (defn process-sd [ztx url subj]
   (if (and (= "constraint" (:derivation subj)) (not (= "Extension" (:type subj))))
@@ -242,32 +260,28 @@
           (walk-with-base ztx {:lvl 0} subj base))))
     subj))
 
+
 (defn process-structure-definitions [ztx]
   (swap! ztx update-in [:fhir "StructureDefinition"]
          (fn [old]
-           (->> old
-                (reduce (fn [acc [url res]]
-                          (assoc acc url (assoc res :elements (process-sd ztx url (:elements res)))))
-                        {})))))
+           (into {}
+                 (map (fn [[url res]]
+                        {url (update res :elements (partial process-sd ztx url))}))
+                 old))))
+
 
 (defn process-resources [ztx]
   (process-structure-definitions ztx))
 
+
 (defn load-all [ztx package]
-  (doseq [pkg-dir (.listFiles (io/file "node_modules"))]
-    (when (and (.isDirectory pkg-dir)(not (str/starts-with? (.getName pkg-dir) ".")))
-      (println pkg-dir)
-
-      (let [package (read-json (str (.getPath pkg-dir) "/package.json"))
-            index (read-json (str (.getPath pkg-dir) "/.index.json"))]
-        (doseq [{filename :filename :as header} (:files index)]
-          (load-json-file ztx package header (io/file (str (.getPath pkg-dir) "/" filename))))
-        (println :loaded (:name package) (count (:files index))))))
+  (doseq [pkg-dir (.listFiles (io/file "node_modules"))
+          :when   (and (.isDirectory pkg-dir)(not (str/starts-with? (.getName pkg-dir) ".")))
+          :let    [package (read-json (str (.getPath pkg-dir) "/package.json"))
+                   index   (read-json (str (.getPath pkg-dir) "/.index.json"))]
+          {filename :filename :as header} (:files index)]
+    (load-json-file ztx package header (io/file (str (.getPath pkg-dir) "/" filename))))
   (process-resources ztx))
-
-
-
-
 
 
 ;; 1. differential
