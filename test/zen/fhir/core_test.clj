@@ -69,11 +69,13 @@
        :derivation     "specialization",
        :fhir-poly-keys {:valueQuantity {:key :value, :type "Quantity"}
                         :valueBoolean  {:key :value, :type "boolean"}}
-       :els {:value {:els {:boolean {:type "boolean"}
+       :els {:value {:polymorphic true
+                     :els {:boolean {:type "boolean"}
                            :Quantity {:type "Quantity"}}}
              :component {:fhir-poly-keys {:valueQuantity {:key :value, :type "Quantity"}
                                           :valueBoolean  {:key :value, :type "boolean"}}
-                         :els {:value {:els {:boolean {:type "boolean"}
+                         :els {:value {:polymorphic true
+                                       :els {:boolean {:type "boolean"}
                                              :Quantity {:type "Quantity"}}}}}}}))
 
   (t/testing "constraint poly keys fixing"

@@ -92,12 +92,14 @@
                      (merge acc (dissoc el :min :max :vector))
                      (let [last-part      (last id-path)
                            el-path        (build-path id-path)
-                           el-parent-path (vec (drop-last 2 el-path))]
+                           el-root-path   (vec (butlast el-path))
+                           el-parent-path (vec (butlast el-root-path))]
                        (cond-> acc
                          (= :poly (:type last-part))
-                         (assoc-in
-                           (conj el-parent-path :fhir-poly-keys)
-                           (build-fhir-poly-keys-mapping (:key last-part) (:types el)))
+                         (-> (assoc-in (conj el-root-path :polymorphic) true)
+                             (assoc-in
+                               (conj el-parent-path :fhir-poly-keys)
+                               (build-fhir-poly-keys-mapping (:key last-part) (:types el))))
 
                          :always
                          (assoc-in el-path el #_(select-keys el [:id :els :polymorphic])))))))
@@ -218,9 +220,10 @@
                         (let [base-el (get-in base [:els k])]
                           (if-not base-el
                             (if-let [base-poly-key (get-in base [:fhir-poly-keys k])]
-                              (assoc-in acc
-                                        [(:key base-poly-key) :els (keyword (:type base-poly-key))]
-                                        (assoc el :base-type (:type base-poly-key)))
+                              (-> acc
+                                  (assoc-in [(:key base-poly-key) :polymorphic] true)
+                                  (assoc-in [(:key base-poly-key) :els (keyword (:type base-poly-key))]
+                                            (assoc el :base-type (:type base-poly-key))))
                               (do (println :ups (:id el))
                                   (assoc acc k (assoc el :error :no-base))))
                             (assoc acc k (if (:els el)
