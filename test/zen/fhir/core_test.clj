@@ -54,6 +54,90 @@
                   {:required not, :vector not, :prohibited true?})))
 
 
+(t/deftest arity-test
+  (def ztx (zen.core/new-context {}))
+
+  (swap! ztx assoc-in [:fhir "StructureDefinition"]
+         {"http://hl7.org/fhir/StructureDefinition/TestBaseResourceType"
+          {:resourceType "StructureDefinition"
+           :url "http://hl7.org/fhir/StructureDefinition/TestBaseResourceType"
+           :type "TestBaseResourceType"
+           :derivation "specialization"
+           :differential
+           {:element
+            [{:id "TestBaseResourceType"}
+             {:id "TestBaseResourceType.singular"
+              :min 0
+              :max "1"}
+             {:id "TestBaseResourceType.singular.array"
+              :min 0
+              :max "*"}
+             {:id "TestBaseResourceType.poly[x]"
+              :min 0
+              :max "1"
+              :type [{:code "Complex"}]}
+             {:id "TestBaseResourceType.poly[x]:polyComplex"
+              :min 0
+              :max "1"}
+             {:id "TestBaseResourceType.poly[x]:polyComplex.array"
+              :min 0
+              :max "*"}]}}
+
+          "http://hl7.org/fhir/StructureDefinition/TestConstraint"
+          {:resourceType "StructureDefinition"
+           :url "http://hl7.org/fhir/StructureDefinition/TestConstraint"
+           :baseDefiniton "http://hl7.org/fhir/StructureDefinition/SomeOtherTestConstraint"
+           :type "TestBaseResourceType"
+           :derivation "constraint"
+           :differential
+           {:element
+            [{:id "TestBaseResourceType"}
+             {:id "TestBaseResourceType.singular"}
+             {:id "TestBaseResourceType.singular.array"
+              :min 1
+              :max "1"}
+             {:id "TestBaseResourceType.polyComplex"}
+             {:id "TestBaseResourceType.polyComplex.array"
+              :min 1
+              :max "1"}]}}})
+
+  (sut/preprocess-resources ztx)
+  (sut/process-resources ztx)
+
+  (matcho/match (get-in @ztx [:fhir "StructureDefinition"])
+                {"http://hl7.org/fhir/StructureDefinition/TestBaseResourceType"
+                 {:elements
+                  {:id "TestBaseResourceType"
+                   :els {:singular {:required not
+                                    :vector not
+                                    :els {:array {:required not
+                                                  :vector true?}}}
+                         :poly {:required not
+                                :vector not
+                                :els {:Complex {:required not
+                                                :vector not
+                                                :els {:array {:required not
+                                                              :vector true?}}}}}}}}
+
+                 "http://hl7.org/fhir/StructureDefinition/TestConstraint"
+                 {:elements
+                  {:id "TestBaseResourceType"
+                   :els {:singular {:required not
+                                    :vector not
+                                    :els {:array {:minItems 1
+                                                  :maxItems 1
+                                                  :required true?
+                                                  :vector true?}}}
+                         :poly {:required not
+                                :vector not
+                                :els {:Complex {:required not
+                                                :vector not
+                                                :els {:array {:minItems 1
+                                                              :maxItems 1
+                                                              :required true?
+                                                              :vector true?}}}}}}}}}))
+
+
 (t/deftest fhir-aidbox-poly-keys-mapping
   (def ztx (zen.core/new-context {}))
   (sut/load-all ztx "hl7.fhir.r4.core")
