@@ -234,7 +234,7 @@
           #(reduce (fn [acc [k el]]
                      (if-let [base-el (get-in base [:els k])]
                        (let [el (-> el
-                                    (assoc :base base-el)
+                                    (assoc :base (dissoc base-el :els))
                                     normalize-arity)] ;; TODO: remove code duplication
                          (assoc acc k (if (:els el)
                                         (walk-with-base ztx (update ctx :lvl inc) el base-el)
@@ -244,11 +244,12 @@
                                base-type-el (get-in base [:els (:key (get-in base [:fhir-poly-keys k])) :els (keyword (:type base-poly-key))])
                                base-el      (merge base-poly-el base-type-el)
                                el           (-> el
-                                                (assoc :base base-el)
+                                                (assoc :base (dissoc base-el :els))
                                                 normalize-arity)] ;; TODO: remove code duplication
                            (-> acc
                                (assoc-in [(:key base-poly-key) :polymorphic] true)
-                               (assoc-in [(:key base-poly-key) :els (keyword (:type base-poly-key))] el)))
+                               (assoc-in [(:key base-poly-key) :els (keyword (:type base-poly-key))]
+                                         (walk-with-base ztx (update ctx :lvl inc) el base-el))))
                          (do (println :ups (:id el))
                              (assoc acc k (assoc el :error :no-base))))))
                    {}
