@@ -3,6 +3,9 @@
 
 SHELL = bash
 
+init:
+	npm install
+
 repl:
 	clj -M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]
 
