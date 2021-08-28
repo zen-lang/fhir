@@ -10,7 +10,7 @@ repl:
 	clj -M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]
 
 test:
-	clj -M:test:kaocha
+	clojure -M:test:kaocha
 
 # init:
 #		mkdir -p fhir && cd fhir && curl http://hl7.org/fhir/definitions.json.zip > definitions.json.zip && unzip definitions.json.zip
