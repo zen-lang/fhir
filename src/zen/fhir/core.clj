@@ -58,10 +58,10 @@
        (reduce (fn [acc {k :key tp :type}]
                  (let [k (keyword k)]
                    (case tp
-                     :key        (conj acc :els k)
+                     :key        (conj acc :| k)
                      :slice      (conj acc :slice k)
-                     :poly       (conj acc :els k)
-                     :poly-slice (conj acc :els k))))
+                     :poly       (conj acc :| k)
+                     :poly-slice (conj acc :| k))))
                [])))
 
 
@@ -93,7 +93,8 @@
                  (let [id-path  (rich-parse-path id)
                        root-el? (empty? id-path)]
                    (if root-el?
-                     (merge acc (dissoc el :min :max :vector))
+                     (-> (merge acc el)
+                         (dissoc  :vector :id :path :short :example))
                      (let [last-part      (last id-path)
                            el-path        (build-path id-path)
                            el-root-path   (vec (butlast el-path))
@@ -104,7 +105,7 @@
                                    (build-fhir-poly-keys-mapping (:key last-part) (:types el)))
 
                          :always
-                         (assoc-in el-path el #_(select-keys el [:id :els :polymorphic])))))))
+                         (assoc-in el-path (dissoc el :id :path :example) #_(select-keys el [:id :| :polymorphic])))))))
                acc)))
 
 
@@ -113,7 +114,7 @@
         tpc  (:code tp)
         prof (:targetProfile tp)]
     (if (and (= tpc "Reference") prof)
-      (assoc el :profiles (into #{} prof))
+      (assoc el :profiles (into #{} prof) :escalate {:deps {:refs (reduce (fn [acc x] (assoc acc x true)) {} prof)}})
       el)))
 
 
@@ -121,9 +122,9 @@
   (if (str/ends-with? (str (or (:path el) (:id el))) "[x]")
     (-> (assoc el :polymorphic true)
         (dissoc :type)
-        (assoc :els (->> (:type el)
+        (assoc :| (->> (:type el)
                          (reduce (fn [acc {c :code :as tp}]
-                                   (assoc acc (keyword c) (-> (reference-profiles {:type [tp]})
+                                   (assoc acc (keyword c) (-> (reference-profiles {:type [tp]  :escalate {:deps {:type {c true}}}})
                                                               (assoc :type c))))
                                  {})))
         (assoc :types (->> (:type el) (map :code) (into #{}))))
@@ -133,7 +134,7 @@
         (let [tp  (first (:type el))
               tpc (:code tp)]
           (-> el (reference-profiles)
-              (assoc :type tpc)))
+              (assoc :type tpc :escalate {:deps {:type {tpc true}}})))
         (throw (Exception. (pr-str el)))))))
 
 
@@ -142,31 +143,36 @@
 
 
 (defn normalize-require [{:as element, el-min :min}]
-  (merge element
-         {:required (pos? (or el-min 0))}))
+  (if (pos? (or el-min 0))
+    (assoc element :required true)
+    element))
 
+
+;; why not use settings of base for arity
+(defn fix-arity
+  "The first ElementDefinition (root element) usually has max=* which may be treated as a collection
+  but we are treating StructureDefinition as a tool to validate a single resource"
+  [{:as element el-type :type} {v :vector r :required base-type :type :as _base}]
+  (let [tp (or el-type base-type)]
+    (cond-> (merge element (utils/strip-nils {:vector v :required r}))
+      tp (assoc :type tp :escalate {:deps {:type {tp true}}})
+      (not v) (dissoc :maxItems :minItems))))
 
 (defn normalize-arity
   "The first ElementDefinition (root element) usually has max=* which may be treated as a collection
   but we are treating StructureDefinition as a tool to validate a single resource"
-  [{:as element, id :id, el-min :min, el-max :max, {base-max :max} :base}]
-  (merge element
-         (utils/strip-nils
-           (when (and (not (root-element? id))
-                     (or (some? base-max)
-                         (some? el-max)))
-            (if (and (not= "1" base-max)
-                     (not= "0" base-max)
-                     (or (some? base-max)
-                         (and (not= "1" el-max)
-                              (not= "0" el-max))))
-              {:vector   true
-               :minItems (when-not (= 0 el-min) el-min)
-               :maxItems (when-not (= "*" el-max) (utils/parse-int el-max))}
-              (when (or (= "0" el-max)
-                        (and (nil? el-max)
-                             (= "0" base-max)))
-                {:prohibited true}))))))
+  [{:as element, id :id, el-min :min, el-max :max}]
+  (->
+    (cond-> element
+      (and (not (nil? el-max)) (not (contains? #{"1" "0"} el-max)) (not (root-element? id)))
+      (assoc :vector true)
+
+      (and (not (nil? el-min)) (not (= 0 el-min)))
+      (assoc :minItems el-min)
+
+      (and (not (nil? el-max)) (not (contains? #{"*"} el-max) ))
+      (assoc :maxItems (utils/parse-int el-max)))
+    (dissoc :min :max)))
 
 
 (defn normalize-binding [el]
@@ -177,6 +183,12 @@
     el))
 
 
+(defn normalize-content-ref [x]
+  (if-let [cr (:contentReference x)]
+    (assoc x :escalate  {:recur (->> (rest (str/split cr #"\."))
+                                     (mapv keyword))})
+    x))
+
 (defn normalize-element [x]
   (-> (dissoc x
               :mapping :constraint :extension :comment :comments :requirements :definition :alias
@@ -184,7 +196,8 @@
       (normalize-binding)
       (normalize-require)
       (normalize-arity)
-      (normalize-polymorphic)))
+      (normalize-polymorphic)
+      (normalize-content-ref)))
 
 
 (defn normalize-description [res]
@@ -193,14 +206,36 @@
 ;; ADD check by http://www.hl7.org/fhir/elementdefinition.html#interpretation
 
 
-(defn make-elements [res]
+(defn *normalize-extension [res]
+  (if-let [complex (get-in res [:| :extension :slice])]
+    (-> (assoc res :| (->> complex
+                           (reduce (fn [acc [k v]]
+                                     (assoc acc k (*normalize-extension v)))
+                                   {}))
+               :fhir/extension (get-in res [:| :url :fixedUri]))
+        (dissoc :fhir-poly-keys))
+    (let [values (dissoc (:| res) :url)]
+      (if (= 1 (count values))
+        (merge (dissoc (first (vals values)) :minItems :maxItems :required)
+               (select-keys res [:vector :maxItems :minItems :required]))
+        {:error :error}))))
+
+(defn normalize-extension [res]
+  (if-not (= "Extension" (:type res))
+    res
+    (*normalize-extension res)))
+
+(defn load-intermidiate [res]
   (->> (get-in res [:differential :element])
        (mapv normalize-element)
        (group-elements (select-keys res [:kind :derivation :baseDefinition :description :fhirVersion :type]))
-       (normalize-description)))
+       (normalize-description)
+       (normalize-extension)))
 
 
-(defmulti process-on-load (fn [res] (keyword (:resourceType res))))
+
+(defmulti process-on-load
+  (fn [res] (keyword (:resourceType res))))
 
 
 (defmethod process-on-load :default
@@ -208,84 +243,140 @@
   #_(println :WARN :no-process-on-load :for (:resourceType res)))
 
 
-(defmethod process-on-load :StructureDefinition
-  [res]
-  {:src (dissoc res :text)
-   :elements (make-elements res)})
 
+(defmethod process-on-load
+  :StructureDefinition
+  [res]
+  (load-intermidiate res))
+
+
+(defn load-definiton [ztx packages header res]
+  (if-let [rt (:resourceType res)]
+    (if-let [url (:url header)]
+      (swap! ztx update-in [:fhir/src rt url]
+             (fn [x] (when x (println :WARN :override-resource header)) res))
+      (println :WARN :no-url header))
+    (println :WARN :no-resource-type header)))
 
 (defn load-json-file [ztx package header f]
   (let [res (-> (cheshire.core/parse-string (slurp f) keyword)
                 (assoc :zen.fhir/header header :zen.fhir/package package :zen.fhir/file (.getPath f)))]
-    (if-let [rt (:resourceType res)]
-      (if-let [url (:url header)]
-        (swap! ztx update-in [:fhir rt url]
-               (fn [x]
-                 (when x (println :WARN :override-resource header))
-                 res))
-        (println :WARN :no-url header))
-      (println :WARN :no-resource-type header))))
+    (load-definiton ztx package header res)))
 
 
 (defn read-json [f] (cheshire.core/parse-string (slurp f) keyword))
 
+(defn base-url [subj]
+  (println(:type subj) (pr-str :no-type-in subj))
+  (str "http://hl7.org/fhir/StructureDefinition/" (:type subj)))
 
+(defn is-profile? [url subj]
+  (and (= "constraint" (:derivation subj))
+       (not (= "Extension" (:type subj)))
+       (not (= url (base-url subj)))))
+
+(defn get-base [ztx subj]
+  (get-in @ztx [:fhir/inter "StructureDefinition" (base-url subj)]))
+
+(defn get-definition [ztx url]
+  (get-in @ztx [:fhir/inter "StructureDefinition" url]))
+
+(defn get-original [ztx url]
+  (get-in @ztx [:fhir/src "StructureDefinition" url]))
+
+;; one of the most complicated places now
 (defn walk-with-base [ztx ctx subj base]
-  (update subj :els
+  (update subj :|
           #(reduce (fn [acc [k el]]
-                     (if-let [base-el (get-in base [:els k])]
-                       (let [el (-> el
-                                    (assoc :base (dissoc base-el :els))
-                                    normalize-arity)] ;; TODO: remove code duplication
-                         (assoc acc k (if (:els el)
-                                        (walk-with-base ztx (update ctx :lvl inc) el base-el)
-                                        el)))
+
+                     (if-let [base-el (get-in base [:| k])]
+                       (assoc acc k
+                              (let [el      (fix-arity el base-el)
+                                    new-ctx (-> (update ctx :lvl inc) (update :path conj k))]
+                                (if (and (not (:| base-el)) (:| el))
+                                  (if-let [tp-base (get-definition ztx (base-url base-el))]
+                                    (walk-with-base ztx new-ctx el tp-base)
+                                    (assoc el :error {:no-type-jump true}))
+                                  (if (:| el) (walk-with-base ztx new-ctx el base-el) el))))
+
                        (if-let [base-poly-key (get-in base [:fhir-poly-keys k])]
-                         (let [base-poly-el (get-in base [:els (:key (get-in base [:fhir-poly-keys k]))])
-                               base-type-el (get-in base [:els (:key (get-in base [:fhir-poly-keys k])) :els (keyword (:type base-poly-key))])
+                         (let [fixed-key (:key base-poly-key)
+                               base-poly-el (get-in base [:| fixed-key])
+                               tp-key       (keyword (:type base-poly-key))
+                               base-type-el (get-in base [:| fixed-key :| ])
                                base-el      (merge base-poly-el base-type-el)
-                               el           (-> el
-                                                (assoc :base (dissoc base-el :els))
-                                                normalize-arity)] ;; TODO: remove code duplication
+                               el           (fix-arity el base-el)]
                            (-> acc
-                               (assoc-in [(:key base-poly-key) :polymorphic] true)
-                               (assoc-in [(:key base-poly-key) :els (keyword (:type base-poly-key))]
-                                         (walk-with-base ztx (update ctx :lvl inc) el base-el))))
-                         (do (println :ups (:id el))
-                             (assoc acc k (assoc el :error :no-base))))))
+                               (assoc-in [fixed-key :polymorphic] true)
+                               (assoc-in [fixed-key :| tp-key]
+                                         (if (and (:| el) (not (:| base-el)))
+                                           (if-let [tp-base (get-definition ztx (base-url base-poly-key))]
+                                             (walk-with-base ztx (-> (update ctx :lvl inc)
+                                                                     (update :path conj k))
+                                                             (fix-arity el base-el) tp-base)
+                                             (throw (Exception. (pr-str "Unexpected" (conj (:path ctx) k)
+                                                                        :el el
+                                                                        :base-poly-key base-poly-key
+                                                                        :base-el base-el))))
+                                           (walk-with-base ztx (-> (update ctx :lvl inc)
+                                                                   (update :path conj k))
+                                                           el base-el)))))
+                         (assoc acc k (assoc el :error :no-base))
+                         #_(throw (Exception. (pr-str "No base " :el el :path (conj (:path ctx) k)
+                                                    :el el
+                                                    :top-base base))))))
                    {}
                    %)))
 
 
+(defn is-extension?
+  [_url subj]
+  (= "Extension" (:type subj)))
+
+(defn process-extension
+  [ztx url subj]
+  (println "Process ext")
+  subj)
+
 (defn process-sd [ztx url subj]
-  (if (and (= "constraint" (:derivation subj)) (not (= "Extension" (:type subj))))
-    (let [base-url (str "http://hl7.org/fhir/StructureDefinition/" (:type subj))]
-      (if (= url base-url)
-        subj
-        (let [base (get-in @ztx [:fhir "StructureDefinition" base-url :elements])]
-          (println :process url (:type subj))
-          (assert base (pr-str :WARN :no-base base-url))
-          (walk-with-base ztx {:lvl 0} subj base))))
-    subj))
+  (cond
+    (is-profile? url subj)
+    (let [base (get-base ztx subj)]
+      (assert base (pr-str :WARN :no-base url subj))
+      (walk-with-base ztx {:lvl 0 :path [url]} subj base))
+
+    (is-extension? url subj)
+    (process-extension ztx url subj)
+
+    :else subj))
 
 
 (defn process-structure-definitions [ztx]
-  (swap! ztx update-in [:fhir "StructureDefinition"]
+  (swap! ztx update-in [:fhir/inter "StructureDefinition"]
          (fn [old]
-           (into {}
-                 (map (fn [[url res]]
-                        {url (update res :elements (partial process-sd ztx url))}))
-                 old))))
+           (->> old
+                (reduce (fn [acc [url resource]]
+                          (assoc acc url (process-sd ztx url resource)))
+                        {})))))
 
 
-(defn preprocess-resources [ztx]
-  (swap! ztx update :fhir
-         #(sp/transform [sp/MAP-VALS sp/MAP-VALS]
-                        process-on-load
-                        %)))
+(defn preprocess-resources
+  ;; this is pure transformation of original resources (i.e. without context)
+  [ztx]
+  (swap! ztx
+         assoc :fhir/inter
+         (->> (:fhir/src @ztx)
+              (reduce (fn [acc [type resources]]
+                        (assoc acc type (->> resources
+                                             (reduce (fn [acc' [url resource]]
+                                                       (assoc acc' url (process-on-load resource)))
+                                                     {}))))
+                      {}))))
 
 
-(defn process-resources [ztx]
+(defn process-resources
+  "this is processing of resources with context"
+  [ztx]
   (process-structure-definitions ztx))
 
 
@@ -313,27 +404,3 @@
 ;;  publish
 
 ;; problem with content reference
-
-;; snapshot.elements ->
-;; {:StructureDefinition {"hl7fhir/Patient" {:elements {[:id :duce] {:el :value}
-;;                                                      [:id :duce] {:el :value}
-;;                                                      [:id :duce] {:el :value}}}
-;;                        "fhir/Qest"       {:elements {[:id :duce] {:el :value}
-;;                                                      [:id :duce] {:el :value}
-;;                                                      [:id :duce] {:el :value}}}}
-;;  :ValueSet            {"url" {}}
-;;  :SearchParameter     {"url" {}}}
-
-
-
-;; {:StructureDefinition {"hl7fhir/Patient" {:elements {:name {:url "hl7fhir/HumanName"}
-;;                                                      :communication {:elements {}}
-;;                                                      :identifier {:url "hl7/Identifier"}}}
-;;                        "fhir/Qest"       {:elements {:item {:elements {:item {:contetRef [:item]}}}}}
-;;                        "us-core/Patient" {:elements {:race {:url "us-core/race-ext"}
-;;                                                      :identifier {:base ["hl7fhir/Patient" :identfier]
-;;                                                                   :slice {:mri {:elements {:system {}}}}}}}}
-;;  :ValueSet             {"url" {}}
-;;  :SearchParameter      {"url" {}}}
-
-;; (sd-to-ns ctx rt url)

@@ -11,7 +11,8 @@
  :aliases
  {:nrepl
   {:extra-paths []
-   :extra-deps  {cider/cider-nrepl {:mvn/version "LATEST"}}
+   :extra-deps  {cider/cider-nrepl {:mvn/version "LATEST"}
+                 hiccup/hiccup {:mvn/version "2.0.0-alpha2"}}
 
    :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]}
 
