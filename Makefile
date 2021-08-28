@@ -4,7 +4,7 @@
 SHELL = bash
 
 init:
-	npm install
+	 npm config set registry  https://packages.simplifier.net && npm install
 
 repl:
 	clj -M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]
