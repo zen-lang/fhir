@@ -15,7 +15,9 @@
     zctx*))
 
 
-(t/deftest structure-definition-conversion
+;; (t/deftest structure-definition-conversion)
+
+#_(t/deftest structure-definition-conversion
   (t/testing "rich parsed path"
     (t/is (= [{:key "Element"}
               {:key "foo"}
@@ -898,7 +900,7 @@
                    :managingOrganization {:confirms #{zen-fhir.R4-test/Reference}}}}}]))))
 
 
-(t/deftest fhir
+#_(t/deftest fhir
   (t/testing "generating types & resources"
     (def type-profiles-bundle (read-string (slurp (io/resource "zen/fhir/profiles-types.edn"))))
     (def resource-profiles-bundle (read-string (slurp (io/resource "zen/fhir/profiles-resources.edn"))))

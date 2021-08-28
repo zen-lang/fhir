@@ -10,10 +10,10 @@ repl:
 	clj -M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]
 
 test:
-	clj -A:test:kaocha
+	clj -M:test:kaocha
 
-init:
-	mkdir -p fhir && cd fhir && curl http://hl7.org/fhir/definitions.json.zip > definitions.json.zip && unzip definitions.json.zip
+# init:
+#		mkdir -p fhir && cd fhir && curl http://hl7.org/fhir/definitions.json.zip > definitions.json.zip && unzip definitions.json.zip
 
 deploy:
 	cd build && git init && git add . && git commit -m "first commit" & git branch -M master & git remote add origin git@github.com:zen-lang/zen-lang.github.io.git && git push -u --force origin master

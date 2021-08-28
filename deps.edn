@@ -17,7 +17,8 @@
    :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]}
 
   :test {:extra-paths ["test" "lib/example" "lib/auth"]
-         :extra-deps {healthsamurai/matcho {:mvn/version "0.3.7"}}
+         :extra-deps {healthsamurai/matcho {:mvn/version "0.3.7"}
+                      hiccup/hiccup {:mvn/version "2.0.0-alpha2"}}
          :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]}
 
   :outdated {:extra-deps {olical/depot {:mvn/version "1.7.0"}}
