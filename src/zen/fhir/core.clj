@@ -127,6 +127,10 @@
       el)))
 
 
+(defn extension-profiles [el]
+  (assoc el :extension-profiles (:profile (first (:type el)))))
+
+
 (defn normalize-polymorphic [el]
   (if (str/ends-with? (str (or (:path el) (:id el))) "[x]")
     (-> (assoc el :polymorphic true)
@@ -143,6 +147,7 @@
         (let [tp  (first (:type el))
               tpc (:code tp)]
           (-> el (reference-profiles)
+              extension-profiles
               (assoc :type tpc)))
         (throw (Exception. (pr-str el)))))))
 
@@ -393,13 +398,21 @@
   subj)
 
 
-(defn collect-deps [processed-sd]
-  {:value-sets            {"url://valueset" [[:complexattr :attr]]}
-   :types                 {"ComplexType" [[:complexattr]]
-                           "prim"        [[:complexattr :attr]]}
-   :extensions            {"url://some-ext" [[:ext]]}
-   :structure-definitions {"url://DomainResource" [[]]
-                           "url://SomeResource"   [[:ref]]}})
+(defn collect-exts [acc subj]
+  (reduce (fn [acc' [k v]]
+            (let [acc'' (collect-exts acc' v)]
+              (if (:extension-profiles v)
+                (reduce (fn [acc'' url]
+                          (update-in acc'' [:extensions url] (comp distinct concat) [[k]]))
+                        acc''
+                        (:extension-profiles v))
+                acc'')))
+          acc
+          (concat (:| subj) (:slice subj))))
+
+
+(defn collect-deps [sd-processed]
+   (select-keys (collect-exts {} sd-processed) [:extensions])
 
 
 (defn process-sd [ztx url subj]

@@ -432,7 +432,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
       {:deps {:value-sets            {"url://valueset" [[:complexattr :attr]]}
               :types                 {"ComplexType" [[:complexattr]]
                                       "prim"        [[:complexattr :attr]]}
-              :extensions            {"url://some-ext" [[:ext]]}
+              :extensions            {"url://some-ext" [[:some-ext]]}
               :structure-definitions {"url://DomainResource" [[]]
                                       "url://SomeResource"   [[:ref]]}}}))
 
