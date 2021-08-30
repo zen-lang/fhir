@@ -169,7 +169,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
      {:element
       (->> els
            (mapv
-             (fn [x] (update x :id #(str base-name "/" %))))
+             (fn [x] (update x :id #(str base-name "." %))))
            (into [{:id base-name}]))}}))
 
 
@@ -186,15 +186,16 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
      {:element
       (->> els
            (mapv
-             (fn [x] (update x :id #(str prof-name "/" %))))
+             (fn [x] (update x :id #(str prof-name "." %))))
            (into [{:id prof-name}]))}}))
 
 
-(defn load-type [{type-name :type els :els}]
+(defn load-type [{type-name :name, els :els}]
   (sut/load-definiton
     aztx {}
     {:url (str "http://hl7.org/fhir/StructureDefinition/" type-name)}
     {:resourceType "StructureDefinition"
+     :url          (str "http://hl7.org/fhir/StructureDefinition/" type-name)
      :type         "Complex"
      :derivation   "specialization"
      :kind         "complex-type"
@@ -202,7 +203,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
      {:element
       (->> els
            (mapv
-             (fn [x] (update x :id #(str type-name "/" %))))
+             (fn [x] (update x :id #(str type-name "." %))))
            (into [{:id type-name}]))}}))
 
 
