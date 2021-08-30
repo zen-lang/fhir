@@ -412,22 +412,27 @@
           (cons (:type v) (:types v))))
 
 
+(defn collect-references [acc path v]
+  (reduce (fn [acc' profile-url]
+            (update-in acc' [:references profile-url] (comp vec distinct concat) [path]))
+          acc
+          (:profiles v)))
+
+
 (defn collect-nested [acc path subj]
   (reduce (fn [acc' [k v]]
             (let [acc'' (collect-nested acc' (conj path k) v)]
               (-> acc''
                   (collect-extension-profiles (conj path k) v)
-                  (collect-types (conj path k) v))))
+                  (collect-types (conj path k) v)
+                  (collect-references (conj path k) v))))
           acc
           (concat (:| subj) (:slice subj))))
 
 
 (defn collect-deps [sd-processed]
   (-> {:structure-definitions {(:baseDefinition sd-processed) [[]]}}
-      (collect-nested [] sd-processed)
-      (select-keys [:extensions
-                    :structure-definitions
-                    :types])))
+      (collect-nested [] sd-processed)))
 
 
 (defn process-sd [ztx url subj]
