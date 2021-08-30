@@ -159,11 +159,11 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
 (defn load-base [{base-name :name tp :base els :els}]
   (sut/load-definiton
     aztx {}
-    {:url (str "url://" base-name)}
+    {:url (some->> base-name (str "url://"))}
     {:resourceType "StructureDefinition"
-     :url          base-name
+     :url          (some->> base-name (str "url://"))
      :type         tp
-     :baseDefinition (str "url://" tp)
+     :baseDefinition (some->> tp (str "url://"))
      :derivation   "specialization"
      :differential
      {:element
@@ -176,12 +176,12 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
 (defn load-profile [{prof-name :name base :base els :els}]
   (sut/load-definiton
     aztx {}
-    {:url (str "url://" prof-name)}
+    {:url (some->> prof-name (str "url://"))}
     {:resourceType   "StructureDefinition"
-     :url            prof-name
+     :url            (some->> prof-name (str "url://"))
      :type           base
      :derivation     "constraint"
-     :baseDefinition (str "url://" base)
+     :baseDefinition (some->> base (str "url://"))
      :differential
      {:element
       (->> els
@@ -234,8 +234,10 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
 
   (reload)
 
+  (sut/get-definition aztx "url://VectorBase")
+
   (matcho/match
-    (sut/get-definition aztx  "VectorProfile")
+    (sut/get-definition aztx "url://VectorProfile")
     {:| {:attr {:vector true :type "prim"}}})
 
 
