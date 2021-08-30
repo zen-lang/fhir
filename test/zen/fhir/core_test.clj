@@ -579,7 +579,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
   )
 
 
-(t/deftest fhir-aidbox-poly-keys-mapping)
+(t/deftest ^:kaocha/pending fhir-aidbox-poly-keys-mapping)
 
 (defn see-definition-els [ztx url]
   (let [d (sut/get-original ztx url)]
