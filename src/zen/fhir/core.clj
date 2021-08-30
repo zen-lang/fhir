@@ -412,7 +412,7 @@
 
 
 (defn collect-deps [sd-processed]
-   (select-keys (collect-exts {} sd-processed) [:extensions])
+  (select-keys (collect-exts {} sd-processed) [:extensions]))
 
 
 (defn process-sd [ztx url subj]
