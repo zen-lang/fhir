@@ -417,15 +417,10 @@
 (defn preprocess-resources
   ;; this is pure transformation of original resources (i.e. without context)
   [ztx]
-  (swap! ztx
-         assoc :fhir/inter
-         (->> (:fhir/src @ztx)
-              (reduce (fn [acc [type resources]]
-                        (assoc acc type (->> resources
-                                             (reduce (fn [acc' [url resource]]
-                                                       (assoc acc' url (process-on-load resource)))
-                                                     {}))))
-                      {}))))
+  (swap! ztx assoc :fhir/inter
+         (sp/transform [sp/MAP-VALS sp/MAP-VALS]
+                       process-on-load
+                       (:fhir/src @ztx))))
 
 
 (defn process-resources
