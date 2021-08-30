@@ -74,6 +74,15 @@
       (str (.toUpperCase (subs s 0 1))
            (subs s 1)))))
 
+(defn ^String decapitalize-first-letter
+  "Converts first character of the string to lower-case, all other characters leaves as is"
+  [^CharSequence s]
+  (let [s (.toString s)]
+    (if (< (count s) 2)
+      (.toLowerCase s)
+      (str (.toLowerCase (subs s 0 1))
+           (subs s 1)))))
+
 
 (defn build-fhir-poly-keys-mapping [poly-key types]
   (into {}
@@ -270,75 +279,93 @@
 
 (defn base-url [subj]
   (println(:type subj) (pr-str :no-type-in subj))
-  (str "http://hl7.org/fhir/StructureDefinition/" (:type subj)))
-
-
-(defn is-profile? [url subj]
-  (and (= "constraint" (:derivation subj))
-       (not (= "Extension" (:type subj)))
-       (not (= url (base-url subj)))))
-
-
-(defn get-base [ztx subj]
-  (get-in @ztx [:fhir/inter "StructureDefinition" (base-url subj)]))
+  (or (:baseDefinition subj)
+      (str "http://hl7.org/fhir/StructureDefinition/" (:type subj))))
 
 
 (defn get-definition [ztx url]
   (get-in @ztx [:fhir/inter "StructureDefinition" url]))
 
 
+(defn get-type-definition [ztx type-name]
+  (let [definition (get-definition ztx (str "http://hl7.org/fhir/StructureDefinition/" type-name))]
+    (assert definition (str "Could not find type definition: " type-name))
+    definition))
+
+
+(defn is-profile? [url subj]
+  (and (= "constraint" (:derivation subj))
+       (not (= "Extension" (:type subj)))
+       #_(not (= url (base-url subj)))))
+
+
+(defn get-bases [ztx subj]
+  (loop [base       (:baseDefinition subj)
+         base-stack []
+         bases      #{}]
+    (if (or (nil? base)
+            (contains? bases base))
+      base-stack
+      (let [base-def (get-definition ztx base)]
+        (recur (:baseDefinition base-def)
+               (conj base-stack base-def)
+               (conj bases base))))))
+
+
 (defn get-original [ztx url]
   (get-in @ztx [:fhir/src "StructureDefinition" url]))
 
 
+(defn get-base-elements [ztx k el bases]
+  (let [elements-stack (cons el bases)
+        base-elements  (keep #(get-in % [:| k]) (reverse elements-stack))
+        types          (set (keep #(get-in % [:type]) base-elements))
+        types-defs     (map (partial get-type-definition ztx) types)]
+    (not-empty (vec (concat base-elements types-defs)))))
+
+
+(defn get-base-poly-key [ztx k bases]
+  (some #(get-in % [:fhir-poly-keys k]) bases))
+
+
+(defn enrich-element [el base-els]
+  (assoc el
+         :vector (some :vector base-els)
+         :type (some :type base-els))
+  #_(fix-arity el (first base-els)))
+
+
+(defn search-base-elements [ztx k el bases]
+  (if-let [b-els (get-base-elements ztx k el bases)]
+    [k b-els]
+    (let [fix-poly-k (keyword (decapitalize-first-letter (name k)))]
+      (if-let [b-els (get-base-elements ztx fix-poly-k el bases)]
+        [fix-poly-k b-els]
+        [k]))))
+
+
 ;; one of the most complicated places now
-(defn walk-with-base [ztx ctx subj base]
-  (update subj :|
-          #(reduce (fn [acc [k el]]
-
-                     (if-let [base-el (get-in base [:| k])]
-                       (assoc acc k
-                              (let [el      (fix-arity el base-el)
-                                    new-ctx (-> (update ctx :lvl inc) (update :path conj k))]
-                                (if (and (not (:| base-el)) (:| el))
-                                  (if-let [tp-base (get-definition ztx (base-url base-el))]
-                                    (walk-with-base ztx new-ctx el tp-base)
-                                    (assoc el :error {:no-type-jump true}))
-                                  (if (:| el) (walk-with-base ztx new-ctx el base-el) el))))
-
-                       (if-let [base-poly-key (get-in base [:fhir-poly-keys k])]
-                         (let [;; key to rename
-                               fixed-key (:key base-poly-key)
-                               ;; get from base
-                               base-poly-el (get-in base [:| fixed-key])
-                               ;; key for type
-                               tp-name      (:type base-poly-key)
-                               tp-key       (keyword tp-name)
-                               base-type-el (get-in base [:| fixed-key :| tp-key])
-                               base-type-prof (get-definition ztx (base-url base-poly-key))
-                               base-el      base-type-prof ;;(merge base-poly-el base-type-el base-type-prof)
-                               el           (fix-arity el base-el)]
-                           (-> acc
-                               (assoc-in [fixed-key :polymorphic] true)
-                               (assoc-in [fixed-key :| tp-key]
-                                         (if (and (:| el) (not (:| base-el)))
-                                           (if base-type-prof
-                                             (walk-with-base ztx (-> (update ctx :lvl inc)
-                                                                     (update :path conj k))
-                                                             (fix-arity el base-type-prof) base-type-prof)
-                                             (throw (Exception. (pr-str "Unexpected" (conj (:path ctx) k)
-                                                                        :el el
-                                                                        :base-poly-key base-poly-key
-                                                                        :base-el base-el))))
-                                           (walk-with-base ztx (-> (update ctx :lvl inc)
-                                                                   (update :path conj k))
-                                                           (fix-arity el base-el) base-el)))))
-                         (assoc acc k (assoc el :error :no-base))
-                         #_(throw (Exception. (pr-str "No base " :el el :path (conj (:path ctx) k)
-                                                    :el el
-                                                    :top-base base))))))
-                   {}
-                   %)))
+(defn walk-with-bases [ztx ctx subj bases]
+  (let [subj (enrich-element subj bases)]
+    (if (empty? (:| subj))
+      subj
+      (update subj :|
+              #(reduce (fn [acc [k el]]
+                         (let [[k base-els] (search-base-elements ztx k el bases)]
+                           (if base-els
+                               (assoc acc k
+                                      (let [new-ctx (-> (update ctx :lvl inc) (update :path conj k))]
+                                        (walk-with-bases ztx new-ctx el base-els)))
+                               (if-let [{poly-key :key, poly-type :type} (get-base-poly-key ztx k bases)]
+                                 (let [poly-el  {:| {(keyword poly-type) (assoc el :type poly-type)}}
+                                       base-els (get-base-elements ztx poly-key poly-el bases)
+                                       new-ctx (-> (update ctx :lvl inc) (update :path conj poly-key))]
+                                   (assoc acc poly-key (walk-with-bases ztx new-ctx poly-el base-els)))
+                                 (do
+                                   (assert false (pr-str "!!" ctx k el))
+                                   (assoc acc k (assoc el :error :no-base)))))))
+                       {}
+                       %)))))
 
 
 (defn is-extension?
@@ -355,9 +382,9 @@
 (defn process-sd [ztx url subj]
   (cond
     (is-profile? url subj)
-    (let [base (get-base ztx subj)]
-      (assert base (pr-str :WARN :no-base url subj))
-      (walk-with-base ztx {:lvl 0 :path [url]} subj base))
+    (let [bases (get-bases ztx subj)]
+      (assert (seq bases) (pr-str :WARN :no-base url subj))
+      (walk-with-bases ztx {:lvl 0 :path [url]} subj bases))
 
     (is-extension? url subj)
     (process-extension ztx url subj)

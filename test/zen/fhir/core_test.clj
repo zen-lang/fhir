@@ -222,71 +222,79 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
 
 (t/deftest arity-test
 
-
-  (load-base
-    {:name "VectorBase"
-     :els   [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
-
-  (load-profile
-    {:name "VectorProfile"
-     :base "VectorBase"
-     :els  [{:id "attr" :max "1"}]})
-
-  (reload)
-
-  (sut/get-definition aztx "url://VectorBase")
-
-  (matcho/match
-    (sut/get-definition aztx "url://VectorProfile")
-    {:| {:attr {:vector true :type "prim"}}})
-
-
-  (load-base
-    {:name "InhBaseOfBase"
-     :els  [{:id "attr" :min 0 :max "1" :type [{:code "prim"}]}]})
-
-  (load-base
-    {:name "InhBase"
-     :base "InhBaseOfBase"
-     :els  []})
-
-  (load-profile
-    {:name "InhProfile"
-     :base "InhBase"
-     :els  [{:id "attr" :max "1"}]})
-
-  (reload)
-
-  (matcho/match
-    (sut/get-definition aztx  "InhProfile")
-    {:| {:attr {:vector true :type "prim"}}})
-
-
-
   (load-type
-    {:name "ComplexType"
-     :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
+    {:name "prim"})
 
-  (load-base
-    {:name "CBase"
-     :els  [{:id "el" :min 0 :max "*" :type [{:code "ComplexType"}]}]})
+  (t/testing "inheritence"
+    (load-base
+      {:name "VectorBase"
+       :els   [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
 
-  (load-profile
-    {:name "CProfile"
-     :base "CBase"
-     :els  [{:id "el" :max "1"}
-            {:id "el.attr" :max "1"}]})
+    (reload)
 
-  (reload)
+    (matcho/match
+      (sut/get-definition aztx "url://VectorBase")
+      {:| {:attr {:vector true :type "prim"}}})
 
-  (matcho/match
-    (sut/get-definition aztx  "CProfile")
-    {:| {:el {:vector true
-              :|      {:attr {:vector true :type "prim"}}}}})
+    (load-profile
+      {:name "VectorProfile"
+       :base "VectorBase"
+       :els  [{:id "attr" :max "1"}]})
+
+    (reload)
+
+    (matcho/match
+      (sut/get-definition aztx "url://VectorProfile")
+      {:| {:attr {:vector true :type "prim"}}}))
+
+  (t/testing "Double inheritece"
+
+    (load-base
+      {:name "InhBaseOfBase"
+       :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
+
+    (load-base
+      {:name "InhBase"
+       :base "InhBaseOfBase"
+       :els  []})
+
+    (load-profile
+      {:name "InhProfile"
+       :base "InhBase"
+       :els  [{:id "attr" :max "1"}]})
+
+    (reload)
+
+    (matcho/match
+      (sut/get-definition aztx  "url://InhProfile")
+      {:| {:attr {:vector true :type "prim"}}}))
+
+
+  (t/testing "Inherit complex type attrs properties"
+
+    (load-type
+      {:name "ComplexType"
+       :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
+
+    (load-base
+      {:name "CBase"
+       :els  [{:id "el" :min 0 :max "*" :type [{:code "ComplexType"}]}]})
+
+    (load-profile
+      {:name "CProfile"
+       :base "CBase"
+       :els  [{:id "el" :max "1"}
+              {:id "el.attr" :max "1"}]})
+
+    (reload)
+
+    (matcho/match
+      (sut/get-definition aztx "url://CProfile")
+      {:| {:el {:vector true
+                :|      {:attr {:vector true :type "prim"}}}}}))
 
 
   (t/testing "Complex type inheritance"
-
     (load-type
       {:name "BaseType"
        :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
@@ -309,15 +317,11 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
     (reload)
 
     (matcho/match
-      (sut/get-definition aztx  "InhCProfile")
+      (sut/get-definition aztx "url://InhCProfile")
       {:| {:el {:vector true
-                :|  {:attr {:vector true :type "prim"}}}}})
-
-    )
+                :|  {:attr {:vector true :type "prim"}}}}}))
 
   (t/testing "Polymoric shortcat"
-
-
     (load-base
       {:name "PBase"
        :els  [{:id "el[x]" :type [{:code "prim"}
@@ -339,244 +343,184 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
        :els  [{:id "el[x]:elComplexType"}
               {:id "el[x]:elPrim"}]})
 
+    (load-profile
+      {:name "PProfile4"
+       :base "PBase"
+       :els  [{:id "el[x]:elComplexType.attr", :max "1"}]})
+
 
     (load-profile
       {:name "PTProfile"
        :base "PBase"
        :els  [{:id "elComplexType"}
-              {:id "elComplexType.attr" :max 1}]})
+              {:id "elComplexType.attr" :max "1"}]})
 
     (reload)
 
     (matcho/match
-      (sut/get-definition aztx  "PProfile1")
+      (sut/get-definition aztx "url://PProfile1")
       {:| {:el {:|  {:prim {:type "prim"}
                      :ComplexType nil}}
            :elPrim nil?}})
 
     (matcho/match
-      (sut/get-definition aztx  "PProfile2")
+      (sut/get-definition aztx  "url://PProfile2")
       {:| {:el {:| {:ComplexType {:type "ComplexType"}
                     :prim nil?}}}})
 
     (matcho/match
-      (sut/get-definition aztx  "PProfile3")
+      (sut/get-definition aztx "url://PProfile3")
       {:| {:el {:| {:ComplexType {:type "ComplexType"}
                     :prim {:type "prim"}}}}})
 
     (matcho/match
-      (sut/get-definition aztx  "PTrofile")
+      (sut/get-definition aztx "url://PProfile4")
       {:| {:el {:| {:ComplexType {:type "ComplexType"
-                                  :| {:attr {:vector true :type "prim"}}}}}}})
+                                  :| {:attr {:vector true
+                                             :type "prim"}}}}}}})
 
-    )
+    (matcho/match
+      (sut/get-definition aztx "url://PTProfile")
+      {:| {:el {:| {:ComplexType {:type "ComplexType"
+                                  :| {:attr {:vector true :type "prim"}}}}}}}))
 
+  #_(do
+   ;; (keys (get-in (:fhir/src @aztx) ["StructureDefinition"]))
 
-
-
-  ;; (keys (get-in (:fhir/src @aztx) ["StructureDefinition"]))
-
-  ;; (select-keys @aztx [:fhir/src :fhir/inter])
-
-
-  (sut/load-definiton
-    aztx {}
-    {:url "SimpleVectorProfile"}
-    {:resourceType "StructureDefinition"
-     :type         "Complex"
-     :derivation   "specialization"
-     :kind         "complex-type"
-     :differential
-     {:element
-      [{:id "Complex"}
-       {:id "Complex.attr" :min 0 :max "1" :type [{:code "prim"}]}
-       {:id "Complex.array" :min 0 :max "*" :type [{:code "prim"}]}
-       {:id "Complex.nested" :min 0 :max "1"}
-       {:id "Complex.nested.attr" :min 0 :max "1" :type [{:code "prim"}]}]}})
-
-  (sut/load-definiton
-    aztx {}
-    {:url "http://hl7.org/fhir/StructureDefinition/Complex"}
-    {:resourceType "StructureDefinition"
-     :type         "Complex"
-     :derivation   "specialization"
-     :kind "complex-type"
-     :differential
-     {:element
-      [{:id "Complex"}
-       {:id "Complex.attr" :min 0 :max "1" :type [{:code "prim"}]}
-       {:id "Complex.array" :min 0 :max "*" :type [{:code "prim"}]}
-       {:id "Complex.nested" :min 0 :max "1"}
-       {:id "Complex.nested.attr" :min 0 :max "1" :type [{:code "prim"}]}]}})
-
-  (sut/load-definiton
-    aztx {}
-    {:url "http://hl7.org/fhir/StructureDefinition/TestBaseResourceType"}
-    {:resourceType "StructureDefinition"
-     :url          "http://hl7.org/fhir/StructureDefinition/TestBaseResourceType"
-     :type         "TestBaseResourceType"
-     :derivation   "specialization"
-     :differential
-     {:element
-      [{:id "TestBaseResourceType"}
-       {:id "TestBaseResourceType.singular" :min 0 :max "1"}
-       {:id "TestBaseResourceType.singular.array" :min 0 :max "*"}
-       {:id "TestBaseResourceType.type" :min 0 :max "*" :type [{:code "Complex"}]}
-       {:id "TestBaseResourceType.poly[x]" :min 0 :max "1" :type [{:code "Complex"}]}
-       ;; {:id "TestBaseResourceType.poly[x]:polyComplex" :min 0 :max "1"}
-       ;; {:id "TestBaseResourceType.poly[x]:polyComplex.array" :min 0 :max "*"}
-       ]}})
-
-  (sut/load-definiton
-    aztx {}
-    {:url "http://hl7.org/fhir/StructureDefinition/TestConstraint"}
-    {:resourceType  "StructureDefinition"
-     :url           "http://hl7.org/fhir/StructureDefinition/TestConstraint"
-     :baseDefiniton "http://hl7.org/fhir/StructureDefinition/SomeOtherTestConstraint"
-     :type          "TestBaseResourceType"
-     :derivation    "constraint"
-     :differential
-     {:element
-      [{:id "TestConstraint"}
-       {:id "TestConstraint.singular"}
-       {:id "TestConstraint.singular.array" :min 1 :max "1"}
-       {:id "TestConstraint.type"}
-       {:id "TestConstraint.type.array" :max "1"}
-       {:id "TestConstraint.polyComplex"}
-       {:id "TestConstraint.polyComplex.array" :min 1 :max "1"}]}})
+   ;; (select-keys @aztx [:fhir/src :fhir/inter])
 
 
-  (sut/load-definiton
-    aztx {}
-    {:url "race"}
-    {:type "Extension",
-     :kind "complex-type",
-     :url  "race"
-     :id   "us-core-race",
-     :resourceType "StructureDefinition"
-     :differential
-     {:element
-      [{:id "Extension", :path "Extension", :min 0, :max "1"}
-       {:id        "Extension.extension:ombCategory",
-        :type      [{:code "Extension"}],
-        :sliceName "ombCategory",
-        :min       0, :max       "5"}
-       {:id       "Extension.extension:ombCategory.url",
-        :type     [{:code "uri"}],
-        :min      1, :max      "1",
-        :fixedUri "ombCategory"}
-       {:id   "Extension.extension:ombCategory.valueCoding",
-        :type [{:code "Coding"}],
-        :min  1, :max  "1",
-        :binding {:strength "required",
-         :valueSet "http://hl7.org/fhir/us/core/ValueSet/omb-race-category"}}
-       {:id        "Extension.extension:detailed",
-        :type      [{:code "Extension"}],
-        :sliceName "detailed",
-        :min       0, :max       "*"}
-       {:id       "Extension.extension:detailed.url",
-        :type     [{:code "uri"}],
-        :min      1, :max      "1",
-        :fixedUri "detailed"}
-       {:id   "Extension.extension:detailed.valueCoding",
-        :type [{:code "Coding"}],
-        :min  1, :max  "1",
-        :binding {:strength "required",
-                  :valueSet "http://hl7.org/fhir/us/core/ValueSet/detailed-race"}}
-       {:id        "Extension.extension:text",
-        :type      [{:code "Extension"}],
-        :sliceName "text",
-        :min       1, :max       "1"}
-       {:id       "Extension.extension:text.url",
-        :type     [{:code "uri"}],
-        :min      1, :max      "1",
-        :fixedUri "text"}
-       {:id   "Extension.extension:text.valueString",
-        :type [{:code "string"}],
-        :min  1, :max  "1"}
-       {:id       "Extension.url",
-        :min      1, :max      "1",
-        :fixedUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
-       {:id "Extension.value[x]", :path "Extension.value[x]", :min 0, :max "0"}]}})
+   (sut/load-definiton
+     aztx {}
+     {:url "race"}
+     {:type "Extension",
+      :kind "complex-type",
+      :url  "race"
+      :id   "us-core-race",
+      :resourceType "StructureDefinition"
+      :differential
+      {:element
+       [{:id "Extension", :path "Extension", :min 0, :max "1"}
+        {:id        "Extension.extension:ombCategory",
+         :type      [{:code "Extension"}],
+         :sliceName "ombCategory",
+         :min       0, :max       "5"}
+        {:id       "Extension.extension:ombCategory.url",
+         :type     [{:code "uri"}],
+         :min      1, :max      "1",
+         :fixedUri "ombCategory"}
+        {:id   "Extension.extension:ombCategory.valueCoding",
+         :type [{:code "Coding"}],
+         :min  1, :max  "1",
+         :binding {:strength "required",
+                   :valueSet "http://hl7.org/fhir/us/core/ValueSet/omb-race-category"}}
+        {:id        "Extension.extension:detailed",
+         :type      [{:code "Extension"}],
+         :sliceName "detailed",
+         :min       0, :max       "*"}
+        {:id       "Extension.extension:detailed.url",
+         :type     [{:code "uri"}],
+         :min      1, :max      "1",
+         :fixedUri "detailed"}
+        {:id   "Extension.extension:detailed.valueCoding",
+         :type [{:code "Coding"}],
+         :min  1, :max  "1",
+         :binding {:strength "required",
+                   :valueSet "http://hl7.org/fhir/us/core/ValueSet/detailed-race"}}
+        {:id        "Extension.extension:text",
+         :type      [{:code "Extension"}],
+         :sliceName "text",
+         :min       1, :max       "1"}
+        {:id       "Extension.extension:text.url",
+         :type     [{:code "uri"}],
+         :min      1, :max      "1",
+         :fixedUri "text"}
+        {:id   "Extension.extension:text.valueString",
+         :type [{:code "string"}],
+         :min  1, :max  "1"}
+        {:id       "Extension.url",
+         :min      1, :max      "1",
+         :fixedUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
+        {:id "Extension.value[x]", :path "Extension.value[x]", :min 0, :max "0"}]}})
 
 
-  (sut/preprocess-resources aztx)
-  (sut/process-resources aztx)
+   (sut/preprocess-resources aztx)
+   (sut/process-resources aztx)
 
-  ;; (keys (get-in (:fhir/src @aztx) ["StructureDefinition"]))
+   ;; (keys (get-in (:fhir/src @aztx) ["StructureDefinition"]))
 
-  ;; (select-keys @aztx [:fhir/src :fhir/inter])
+   ;; (select-keys @aztx [:fhir/src :fhir/inter])
 
-  (matcho/match
-    (sut/get-definition aztx  "http://hl7.org/fhir/StructureDefinition/TestBaseResourceType")
-    {:| {:singular {:required not
-                    :vector   not
-                    :|        {:array {:required not
-                                       :vector   true}}}
-         :type     {:type     "Complex"
-                    :vector   true
-                    :escalate {:deps {:type {"Complex" true}}}}
-         :poly     {:required not
-                    :vector   not
-                    :|        {:Complex {:required not
-                                         :vector   not}}}}})
+   (matcho/match
+     (sut/get-definition aztx  "http://hl7.org/fhir/StructureDefinition/TestBaseResourceType")
+     {:| {:singular {:required not
+                     :vector   not
+                     :|        {:array {:required not
+                                        :vector   true}}}
+          :type     {:type     "Complex"
+                     :vector   true
+                     :escalate {:deps {:type {"Complex" true}}}}
+          :poly     {:required not
+                     :vector   not
+                     :|        {:Complex {:required not
+                                          :vector   not}}}}})
 
-  (matcho/match (sut/get-definition aztx "http://hl7.org/fhir/StructureDefinition/TestConstraint")
-                {:| {:singular {:required not
-                                :vector   not
-                                :|        {:array {:minItems 1
-                                                   :maxItems 1
-                                                   :required true
-                                                   :vector   true}}}
-                     :type     {:type     "Complex"
-                                :vector   true
-                                :escalate {:deps {:type {"Complex" true}}}
-                                :|        {:array {:type "prim"
-                                            :maxItems 1
-                                            :vector true}}}
-                     :poly     {:required not
-                                :vector   not
-                                :|        {:Complex {:required not
-                                                     ;;TODO: uncomment
-                                                     :type "Complex"
-                                                     :escalate {:deps {:type {"Complex" true}}}
-                                                     :vector   not
-                                                     :|        {:array {:minItems 1
-                                                                        :maxItems 1
-                                                                        :type "prim"
-                                                                        :escalate {:deps {:type {"prim" true}}}
-                                                                        :required true
-                                                                        :vector   true
-                                                                        }}}}}}})
+   (matcho/match (sut/get-definition aztx "http://hl7.org/fhir/StructureDefinition/TestConstraint")
+                 {:| {:singular {:required not
+                                 :vector   not
+                                 :|        {:array {:minItems 1
+                                                    :maxItems 1
+                                                    :required true
+                                                    :vector   true}}}
+                      :type     {:type     "Complex"
+                                 :vector   true
+                                 :escalate {:deps {:type {"Complex" true}}}
+                                 :|        {:array {:type "prim"
+                                                    :maxItems 1
+                                                    :vector true}}}
+                      :poly     {:required not
+                                 :vector   not
+                                 :|        {:Complex {:required not
+                                                      ;;TODO: uncomment
+                                                      :type "Complex"
+                                                      :escalate {:deps {:type {"Complex" true}}}
+                                                      :vector   not
+                                                      :|        {:array {:minItems 1
+                                                                         :maxItems 1
+                                                                         :type "prim"
+                                                                         :escalate {:deps {:type {"prim" true}}}
+                                                                         :required true
+                                                                         :vector   true
+                                                                         }}}}}}})
 
-  (matcho/match
-    (sut/get-definition aztx  "race")
-    {:kind           "complex-type"
-     :type           "Extension"
-     :fhir/extension "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"
-     :|              {:ombCategory {:vector   true
-                                    :maxItems 5
-                                    :escalate {:deps {:type {"Coding" true}}}
-                                    :type     "Coding"
-                                    :binding  {:strength "required"
-                                               :valueSet "http://hl7.org/fhir/us/core/ValueSet/omb-race-category"}}
-                      :detailed    {:vector    true
-                                    :type      "Coding"
-                                    :binding   {:strength "required"
-                                                :valueSet "http://hl7.org/fhir/us/core/ValueSet/detailed-race"}
-                                    :escalate  {:deps {:type {"Coding" true}}}}
-                      :text        {:type     "string"
-                                    :escalate {:deps {:type {"string" true}}}
-                                    :required true}}})
+   (matcho/match
+     (sut/get-definition aztx  "race")
+     {:kind           "complex-type"
+      :type           "Extension"
+      :fhir/extension "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"
+      :|              {:ombCategory {:vector   true
+                                     :maxItems 5
+                                     :escalate {:deps {:type {"Coding" true}}}
+                                     :type     "Coding"
+                                     :binding  {:strength "required"
+                                                :valueSet "http://hl7.org/fhir/us/core/ValueSet/omb-race-category"}}
+                       :detailed    {:vector    true
+                                     :type      "Coding"
+                                     :binding   {:strength "required"
+                                                 :valueSet "http://hl7.org/fhir/us/core/ValueSet/detailed-race"}
+                                     :escalate  {:deps {:type {"Coding" true}}}}
+                       :text        {:type     "string"
+                                     :escalate {:deps {:type {"string" true}}}
+                                     :required true}}}))
 
 
   )
 
 
-;; (t/deftest fhir-aidbox-poly-keys-mapping)
+(t/deftest fhir-aidbox-poly-keys-mapping)
 
 
-(t/deftest fhir-aidbox-poly-keys-mapping
+#_(t/deftest fhir-aidbox-poly-keys-mapping
     (def ztx (zen.core/new-context {}))
     (sut/load-all ztx "hl7.fhir.r4.core")
 
