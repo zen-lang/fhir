@@ -329,10 +329,12 @@
 
 
 (defn enrich-element [el base-els]
+  ;; TODO: if vector do min/max items
+  ;;       required/prohibited
+  ;;       tragetProfile type profile
   (assoc el
          :vector (some :vector base-els)
-         :type (some :type base-els))
-  #_(fix-arity el (first base-els)))
+         :type (some :type base-els)))
 
 
 (defn search-base-elements [ztx k el bases]
@@ -379,17 +381,28 @@
   subj)
 
 
+(defn collect-deps [processed-sd]
+  {:value-sets            {"url://valueset" [[:complexattr :attr]]}
+   :types                 {"ComplexType" [[:complexattr]]
+                           "prim"        [[:complexattr :attr]]}
+   :extensions            {"url://some-ext" [[:ext]]}
+   :structure-definitions {"url://DomainResource" [[]]
+                           "url://SomeResource"   [[:ref]]}})
+
+
 (defn process-sd [ztx url subj]
-  (cond
-    (is-profile? url subj)
-    (let [bases (get-bases ztx subj)]
-      (assert (seq bases) (pr-str :WARN :no-base url subj))
-      (walk-with-bases ztx {:lvl 0 :path [url]} subj bases))
+  (let [processed-sd
+        (cond
+          (is-profile? url subj)
+          (let [bases (get-bases ztx subj)]
+            (assert (seq bases) (pr-str :WARN :no-base url subj))
+            (walk-with-bases ztx {:lvl 0 :path [url]} subj bases))
 
-    (is-extension? url subj)
-    (process-extension ztx url subj)
+          (is-extension? url subj)
+          (process-extension ztx url subj)
 
-    :else subj))
+          :else subj)]
+    (assoc processed-sd :deps (collect-deps processed-sd))))
 
 
 (defn process-structure-definitions [ztx]

@@ -385,6 +385,37 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
       {:| {:el {:| {:ComplexType {:type "ComplexType"
                                   :| {:attr {:vector true :type "prim"}}}}}}}))
 
+  (t/testing "Dependency escalation"
+    (load-base
+      {:name "BaseResource2"
+       :base "DomainResource"
+       :els  [{:id   "complexattr"
+               :type [{:code "ComplexType"}]}
+              {:id      "complexattr.attr"
+               :type    [{:code "prim"}]
+               :binding {:strength "required", :valueSet "url://valueset"}}
+              {:id   "ref"
+               :type [{:code "Reference"
+                       :targetProfile ["url://SomeResource"]}]}
+              {:id      "ext",
+               :type    [{:code "Extension"}]
+               :slicing {:discriminator [{:type "value", :path "url"}]}}
+              {:id        "ext:some-ext"
+               :type      [{:code    "Extension"
+                            :profile ["url://some-ext"]}]
+               :sliceName "some-ext"}]})
+
+    (reload)
+
+    (matcho/match
+      (sut/get-definition aztx "url://BaseResource2")
+      {:deps {:value-sets            {"url://valueset" [[:complexattr :attr]]}
+              :types                 {"ComplexType" [[:complexattr]]
+                                      "prim"        [[:complexattr :attr]]}
+              :extensions            {"url://some-ext" [[:ext]]}
+              :structure-definitions {"url://DomainResource" [[]]
+                                      "url://SomeResource"   [[:ref]]}}}))
+
   #_(do
    ;; (keys (get-in (:fhir/src @aztx) ["StructureDefinition"]))
 
