@@ -127,6 +127,10 @@
       el)))
 
 
+(defn extension-profiles [el]
+  (assoc el :extension-profiles (:profile (first (:type el)))))
+
+
 (defn normalize-polymorphic [el]
   (if (str/ends-with? (str (or (:path el) (:id el))) "[x]")
     (-> (assoc el :polymorphic true)
@@ -143,6 +147,7 @@
         (let [tp  (first (:type el))
               tpc (:code tp)]
           (-> el (reference-profiles)
+              extension-profiles
               (assoc :type tpc)))
         (throw (Exception. (pr-str el)))))))
 
@@ -393,13 +398,53 @@
   subj)
 
 
-(defn collect-deps [processed-sd]
-  {:value-sets            {"url://valueset" [[:complexattr :attr]]}
-   :types                 {"ComplexType" [[:complexattr]]
-                           "prim"        [[:complexattr :attr]]}
-   :extensions            {"url://some-ext" [[:ext]]}
-   :structure-definitions {"url://DomainResource" [[]]
-                           "url://SomeResource"   [[:ref]]}})
+(defn collect-extension-profiles [acc path v]
+  (reduce (fn [acc' url]
+            (update-in acc' [:extensions url] (comp vec distinct concat) [path]))
+          acc
+          (:extension-profiles v)))
+
+
+(defn collect-types [acc path v]
+  (reduce (fn [acc' el-type]
+            (update-in acc' [:types el-type] (comp vec distinct concat) [path]))
+          acc
+          (cons (:type v) (:types v))))
+
+
+(defn collect-references [acc path v]
+  (reduce (fn [acc' profile-url]
+            (update-in acc' [:references profile-url] (comp vec distinct concat) [path]))
+          acc
+          (:profiles v)))
+
+
+(defn collect-valuesets [acc path v]
+  (let [value-set-url (get-in v [:binding :valueSet])]
+    (update-in acc [:value-sets value-set-url] (comp vec distinct concat) [path])))
+
+
+(defn collect-nested [acc path subj]
+  (letfn [(collect-element [path-fn acc [k v]]
+            (let [new-path (path-fn path k)]
+              (-> acc
+                  (collect-nested new-path v)
+                  (collect-extension-profiles new-path v)
+                  (collect-types new-path v)
+                  (collect-references new-path v)
+                  (collect-valuesets new-path v))))]
+    (as-> acc acc
+      (reduce (partial collect-element (fn [path k] (-> (butlast path) vec (conj k))))
+              acc
+              (:slice subj))
+      (reduce (partial collect-element (fn [path k] (conj path k)))
+              acc
+              (:| subj)))))
+
+
+(defn collect-deps [sd-processed]
+  (-> {:structure-definitions {(:baseDefinition sd-processed) [[]]}}
+      (collect-nested [] sd-processed)))
 
 
 (defn process-sd [ztx url subj]

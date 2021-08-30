@@ -423,7 +423,10 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
               {:id        "ext:some-ext"
                :type      [{:code    "Extension"
                             :profile ["url://some-ext"]}]
-               :sliceName "some-ext"}]})
+               :sliceName "some-ext"}
+              {:id      "polyattr[x]"
+               :type    [{:code "prim"} {:code "string"}]
+               :binding {:strength "required", :valueSet "url://valueset"}}]})
 
     (reload)
 
@@ -431,10 +434,13 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
       (sut/get-definition aztx "url://BaseResource2")
       {:deps {:value-sets            {"url://valueset" [[:complexattr :attr]]}
               :types                 {"ComplexType" [[:complexattr]]
-                                      "prim"        [[:complexattr :attr]]}
-              :extensions            {"url://some-ext" [[:ext]]}
-              :structure-definitions {"url://DomainResource" [[]]
-                                      "url://SomeResource"   [[:ref]]}}}))
+                                      "Reference"   [[:ref]]
+                                      "Extension"   [[:some-ext] [:ext]]
+                                      "prim"        [[:complexattr :attr] [:polyattr :prim]]
+                                      "string"      [[:polyattr :string]]}
+              :extensions            {"url://some-ext" [[:some-ext]]}
+              :references            {"url://SomeResource"   [[:ref]]}
+              :structure-definitions {"url://DomainResource" [[]]}}}))
 
 
   (load-extension
@@ -573,7 +579,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
   )
 
 
-(t/deftest fhir-aidbox-poly-keys-mapping)
+(t/deftest ^:kaocha/pending fhir-aidbox-poly-keys-mapping)
 
 (defn see-definition-els [ztx url]
   (let [d (sut/get-original ztx url)]
