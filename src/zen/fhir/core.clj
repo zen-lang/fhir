@@ -398,23 +398,36 @@
   subj)
 
 
-(defn collect-exts [acc subj]
+(defn collect-extension-profiles [acc path v]
+  (reduce (fn [acc' url]
+            (update-in acc' [:extensions url] (comp vec distinct concat) [path]))
+          acc
+          (:extension-profiles v)))
+
+
+(defn collect-types [acc path v]
+  (reduce (fn [acc' el-type]
+            (update-in acc' [:types el-type] (comp vec distinct concat) [path]))
+          acc
+          (cons (:type v) (:types v))))
+
+
+(defn collect-nested [acc path subj]
   (reduce (fn [acc' [k v]]
-            (let [acc'' (collect-exts acc' v)]
-              (if (:extension-profiles v)
-                (reduce (fn [acc'' url]
-                          (update-in acc'' [:extensions url] (comp distinct concat) [[k]]))
-                        acc''
-                        (:extension-profiles v))
-                acc'')))
+            (let [acc'' (collect-nested acc' (conj path k) v)]
+              (-> acc''
+                  (collect-extension-profiles (conj path k) v)
+                  (collect-types (conj path k) v))))
           acc
           (concat (:| subj) (:slice subj))))
 
 
 (defn collect-deps [sd-processed]
   (-> {:structure-definitions {(:baseDefinition sd-processed) [[]]}}
-      (collect-exts sd-processed)
-      (select-keys [:extensions :structure-definitions])))
+      (collect-nested [] sd-processed)
+      (select-keys [:extensions
+                    :structure-definitions
+                    :types])))
 
 
 (defn process-sd [ztx url subj]
