@@ -425,16 +425,21 @@
 
 
 (defn collect-nested [acc path subj]
-  (reduce (fn [acc' [k v]]
-            (let [new-path (conj path k)
-                  acc''    (collect-nested acc' new-path v)]
-              (-> acc''
+  (letfn [(collect-element [path-fn acc [k v]]
+            (let [new-path (path-fn path k)]
+              (-> acc
+                  (collect-nested new-path v)
                   (collect-extension-profiles new-path v)
                   (collect-types new-path v)
                   (collect-references new-path v)
-                  (collect-valuesets new-path v))))
-          acc
-          (concat (:| subj) (:slice subj))))
+                  (collect-valuesets new-path v))))]
+    (as-> acc acc
+      (reduce (partial collect-element (fn [path k] (-> (butlast path) vec (conj k))))
+              acc
+              (:slice subj))
+      (reduce (partial collect-element (fn [path k] (conj path k)))
+              acc
+              (:| subj)))))
 
 
 (defn collect-deps [sd-processed]
