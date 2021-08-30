@@ -419,13 +419,20 @@
           (:profiles v)))
 
 
+(defn collect-valuesets [acc path v]
+  (let [value-set-url (get-in v [:binding :valueSet])]
+    (update-in acc [:value-sets value-set-url] (comp vec distinct concat) [path])))
+
+
 (defn collect-nested [acc path subj]
   (reduce (fn [acc' [k v]]
-            (let [acc'' (collect-nested acc' (conj path k) v)]
+            (let [new-path (conj path k)
+                  acc''    (collect-nested acc' new-path v)]
               (-> acc''
-                  (collect-extension-profiles (conj path k) v)
-                  (collect-types (conj path k) v)
-                  (collect-references (conj path k) v))))
+                  (collect-extension-profiles new-path v)
+                  (collect-types new-path v)
+                  (collect-references new-path v)
+                  (collect-valuesets new-path v))))
           acc
           (concat (:| subj) (:slice subj))))
 
