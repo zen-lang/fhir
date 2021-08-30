@@ -205,6 +205,22 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
              (fn [x] (update x :id #(str type-name "/" %))))
            (into [{:id type-name}]))}}))
 
+(defn load-extension [{ext-name :type els :els}]
+  (sut/load-definiton
+    aztx {}
+    {:url (str "uri://" ext-name)}
+    {:resourceType "StructureDefinition"
+     :type         "Extension"
+     :derivation   "constraint"
+     :kind         "complex-type"
+     :url (str "uri://" ext-name)
+     :differential
+     {:element
+      (->> els
+           (mapv
+             (fn [x] (update x :id #(str ext-name "/" %))))
+           (into [{:id ext-name}]))}}))
+
 
 (defn reload []
   (sut/preprocess-resources aztx)
@@ -446,7 +462,58 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
        {:id "TestConstraint.polyComplex.array" :min 1 :max "1"}]}})
 
 
-  (sut/load-definiton
+
+
+
+  (sut/preprocess-resources aztx)
+  (sut/process-resources aztx)
+
+  ;; (keys (get-in (:fhir/src @aztx) ["StructureDefinition"]))
+
+  ;; (select-keys @aztx [:fhir/src :fhir/inter])
+
+  (matcho/match
+    (sut/get-definition aztx  "http://hl7.org/fhir/StructureDefinition/TestBaseResourceType")
+    {:| {:singular {:required not
+                    :vector   not
+                    :|        {:array {:required not
+                                       :vector   true}}}
+         :type     {:type     "Complex"
+                    :vector   true
+                    :escalate {:deps {:type {"Complex" true}}}}
+         :poly     {:required not
+                    :vector   not
+                    :|        {:Complex {:required not
+                                         :vector   not}}}}})
+
+  (matcho/match (sut/get-definition aztx "http://hl7.org/fhir/StructureDefinition/TestConstraint")
+                {:| {:singular {:required not
+                                :vector   not
+                                :|        {:array {:minItems 1
+                                                   :maxItems 1
+                                                   :required true
+                                                   :vector   true}}}
+                     :type     {:type     "Complex"
+                                :vector   true
+                                :escalate {:deps {:type {"Complex" true}}}
+                                :|        {:array {:type "prim"
+                                            :maxItems 1
+                                            :vector true}}}
+                     :poly     {:required not
+                                :vector   not
+                                :|        {:Complex {:required not
+                                                     ;;TODO: uncomment
+                                                     :type "Complex"
+                                                     :escalate {:deps {:type {"Complex" true}}}
+                                                     :vector   not
+                                                     :|        {:array {:minItems 1
+                                                                        :maxItems 1
+                                                                        :type "prim"
+                                                                        :escalate {:deps {:type {"prim" true}}}
+                                                                        :required true
+                                                                        :vector   true}}}}}}})
+
+ #_(sut/load-definiton
     aztx {}
     {:url "race"}
     {:type "Extension",
@@ -499,58 +566,18 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
         :fixedUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
        {:id "Extension.value[x]", :path "Extension.value[x]", :min 0, :max "0"}]}})
 
+  (load-extension {:name "us-core-race"
+                   :els [{:id "extension:ombCategory" :max "5"}
+                         {:id "extension:ombCategory.url" :fixedUri "ombCategory"}
+                         {:id "extension:ombCategory.valueCoding" :type [{:code "Coding"}] :binding {:strength "required" :valueSet "url://vs"}}
+                         {:id "extension:text" :max "1"}
+                         {:id "extension:text.url" :max "1" :fixedUri "text"}
+                         {:id "extension:text.valueString" :max "1" :type [{:code "string"}]}]})
 
-  (sut/preprocess-resources aztx)
-  (sut/process-resources aztx)
-
-  ;; (keys (get-in (:fhir/src @aztx) ["StructureDefinition"]))
-
-  ;; (select-keys @aztx [:fhir/src :fhir/inter])
-
-  (matcho/match
-    (sut/get-definition aztx  "http://hl7.org/fhir/StructureDefinition/TestBaseResourceType")
-    {:| {:singular {:required not
-                    :vector   not
-                    :|        {:array {:required not
-                                       :vector   true}}}
-         :type     {:type     "Complex"
-                    :vector   true
-                    :escalate {:deps {:type {"Complex" true}}}}
-         :poly     {:required not
-                    :vector   not
-                    :|        {:Complex {:required not
-                                         :vector   not}}}}})
-
-  (matcho/match (sut/get-definition aztx "http://hl7.org/fhir/StructureDefinition/TestConstraint")
-                {:| {:singular {:required not
-                                :vector   not
-                                :|        {:array {:minItems 1
-                                                   :maxItems 1
-                                                   :required true
-                                                   :vector   true}}}
-                     :type     {:type     "Complex"
-                                :vector   true
-                                :escalate {:deps {:type {"Complex" true}}}
-                                :|        {:array {:type "prim"
-                                            :maxItems 1
-                                            :vector true}}}
-                     :poly     {:required not
-                                :vector   not
-                                :|        {:Complex {:required not
-                                                     ;;TODO: uncomment
-                                                     :type "Complex"
-                                                     :escalate {:deps {:type {"Complex" true}}}
-                                                     :vector   not
-                                                     :|        {:array {:minItems 1
-                                                                        :maxItems 1
-                                                                        :type "prim"
-                                                                        :escalate {:deps {:type {"prim" true}}}
-                                                                        :required true
-                                                                        :vector   true
-                                                                        }}}}}}})
+  (reload)
 
   (matcho/match
-    (sut/get-definition aztx  "race")
+    (sut/get-definition aztx  "uri://us-core-race")
     {:kind           "complex-type"
      :type           "Extension"
      :fhir/extension "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"
@@ -559,12 +586,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
                                     :escalate {:deps {:type {"Coding" true}}}
                                     :type     "Coding"
                                     :binding  {:strength "required"
-                                               :valueSet "http://hl7.org/fhir/us/core/ValueSet/omb-race-category"}}
-                      :detailed    {:vector    true
-                                    :type      "Coding"
-                                    :binding   {:strength "required"
-                                                :valueSet "http://hl7.org/fhir/us/core/ValueSet/detailed-race"}
-                                    :escalate  {:deps {:type {"Coding" true}}}}
+                                               :valueSet "url://vs"}}
                       :text        {:type     "string"
                                     :escalate {:deps {:type {"string" true}}}
                                     :required true}}})
