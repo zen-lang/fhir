@@ -258,6 +258,7 @@
       (println :WARN :no-url header))
     (println :WARN :no-resource-type header)))
 
+
 (defn load-json-file [ztx package header f]
   (let [res (-> (cheshire.core/parse-string (slurp f) keyword)
                 (assoc :zen.fhir/header header :zen.fhir/package package :zen.fhir/file (.getPath f)))]
@@ -266,23 +267,29 @@
 
 (defn read-json [f] (cheshire.core/parse-string (slurp f) keyword))
 
+
 (defn base-url [subj]
   (println(:type subj) (pr-str :no-type-in subj))
   (str "http://hl7.org/fhir/StructureDefinition/" (:type subj)))
+
 
 (defn is-profile? [url subj]
   (and (= "constraint" (:derivation subj))
        (not (= "Extension" (:type subj)))
        (not (= url (base-url subj)))))
 
+
 (defn get-base [ztx subj]
   (get-in @ztx [:fhir/inter "StructureDefinition" (base-url subj)]))
+
 
 (defn get-definition [ztx url]
   (get-in @ztx [:fhir/inter "StructureDefinition" url]))
 
+
 (defn get-original [ztx url]
   (get-in @ztx [:fhir/src "StructureDefinition" url]))
+
 
 ;; one of the most complicated places now
 (defn walk-with-base [ztx ctx subj base]
@@ -338,10 +345,12 @@
   [_url subj]
   (= "Extension" (:type subj)))
 
+
 (defn process-extension
   [ztx url subj]
   (println "Process ext")
   subj)
+
 
 (defn process-sd [ztx url subj]
   (cond

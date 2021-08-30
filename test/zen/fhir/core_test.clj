@@ -152,7 +152,9 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
 
 ;; 7. determine all dependencies ()
 
+
 (def aztx (zen.core/new-context {}))
+
 
 (defn load-base [{base-name :name tp :base els :els}]
   (sut/load-definiton
@@ -170,6 +172,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
              (fn [x] (update x :id #(str base-name "/" %))))
            (into [{:id base-name}]))}}))
 
+
 (defn load-profile [{prof-name :name base :base els :els}]
   (sut/load-definiton
     aztx {}
@@ -186,6 +189,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
              (fn [x] (update x :id #(str prof-name "/" %))))
            (into [{:id prof-name}]))}}))
 
+
 (defn load-type [{type-name :type els :els}]
   (sut/load-definiton
     aztx {}
@@ -200,6 +204,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
            (mapv
              (fn [x] (update x :id #(str type-name "/" %))))
            (into [{:id type-name}]))}}))
+
 
 (defn reload []
   (sut/preprocess-resources aztx)
@@ -567,6 +572,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
 
 
 ;; (t/deftest fhir-aidbox-poly-keys-mapping)
+
 
 (t/deftest fhir-aidbox-poly-keys-mapping
     (def ztx (zen.core/new-context {}))
