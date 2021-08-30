@@ -396,16 +396,8 @@
   (process-resources ztx))
 
 
-;; 1. differential
-;; 2. context for
-;; * problem polymorphic
-;; * prbolem with cardinality
-;; * valueset ets
-;; * extensions
-
-
-;;  ig(npm) -> get all deps -> load into memory db
-;;  only for this ig  sd=>zen (sp, vs, ???)
-;;  publish
-
-;; problem with content reference
+;; 1. depency to generate import in zen (profile, type, extension, valuesets)
+;; 2. extensions as first class
+;; 3. polymoric shortcats - valueQuantity -> value.Quantity
+;; 4. P.meta. <- BP <- DomainResource.meta...
+;; 5. Slicing on arrays (filter, matcho)

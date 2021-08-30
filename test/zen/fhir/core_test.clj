@@ -116,8 +116,276 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
     ))
 
 
+;; 1 use base of base for element
+"Profile.meta" "Base" "DomainResource.meta"
+
+;;2.
+;; vector should be inherited from base
+;; problem that we could not distinct max=1 in Profile is it vector or not
+"Profile.attr min/max"  "Base.attr vector"
+;; enrich with vector
+;; enrich with type
+
+;; 3.
+"Profiley.attr.subattr" "Base.attr[Type]" "Type.subattr"
+;; enrich with vector
+;; enrich with type
+
+
+;; 4.
+;; Polymorics
+"Profile.attrType"  "Base.attr [polymorphic]"
+;; rename attrType => attr.Type
+;; enrich with type
+;; polymorphic could not be vector in FHIR!
+;; restrict polymorphic
+
+;; 5 first class extensions
+;; Extension
+;; => Complex Type (extension in extension)
+;; => primitive type constraints
+
+;; 6. mount extensions in Profile
+;; * give it sliceNames
+;; * inline primitive extension constraints ???
+
+
+;; 7. determine all dependencies ()
+
+(def aztx (zen.core/new-context {}))
+
+(defn load-base [{base-name :name tp :base els :els}]
+  (sut/load-definiton
+    aztx {}
+    {:url (str "url://" base-name)}
+    {:resourceType "StructureDefinition"
+     :url          base-name
+     :type         tp
+     :baseDefinition (str "url://" tp)
+     :derivation   "specialization"
+     :differential
+     {:element
+      (->> els
+           (mapv
+             (fn [x] (update x :id #(str base-name "/" %))))
+           (into [{:id base-name}]))}}))
+
+(defn load-profile [{prof-name :name base :base els :els}]
+  (sut/load-definiton
+    aztx {}
+    {:url (str "url://" prof-name)}
+    {:resourceType   "StructureDefinition"
+     :url            prof-name
+     :type           base
+     :derivation     "constraint"
+     :baseDefinition (str "url://" base)
+     :differential
+     {:element
+      (->> els
+           (mapv
+             (fn [x] (update x :id #(str prof-name "/" %))))
+           (into [{:id prof-name}]))}}))
+
+(defn load-type [{type-name :type els :els}]
+  (sut/load-definiton
+    aztx {}
+    {:url (str "http://hl7.org/fhir/StructureDefinition/" type-name)}
+    {:resourceType "StructureDefinition"
+     :type         "Complex"
+     :derivation   "specialization"
+     :kind         "complex-type"
+     :differential
+     {:element
+      (->> els
+           (mapv
+             (fn [x] (update x :id #(str type-name "/" %))))
+           (into [{:id type-name}]))}}))
+
+(defn reload []
+  (sut/preprocess-resources aztx)
+  (sut/process-resources aztx))
+
+;; * :vector  as or
+;; * :required as or
+;; * :prohibited as or
+;; * no inheritance :minItems
+;; * no inheritance :maxItems
+
+;; polymorphic valueString (no other types) if String then
+;; polymorphic constraint on type  value[x]:valueString only valueString
+;; constraint polymorphic type: []
+
 (t/deftest arity-test
-  (def aztx (zen.core/new-context {}))
+
+
+  (load-base
+    {:name "VectorBase"
+     :els   [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
+
+  (load-profile
+    {:name "VectorProfile"
+     :base "VectorBase"
+     :els  [{:id "attr" :max "1"}]})
+
+  (reload)
+
+  (matcho/match
+    (sut/get-definition aztx  "VectorProfile")
+    {:| {:attr {:vector true :type "prim"}}})
+
+
+  (load-base
+    {:name "InhBaseOfBase"
+     :els  [{:id "attr" :min 0 :max "1" :type [{:code "prim"}]}]})
+
+  (load-base
+    {:name "IhnBase"
+     :base "InhBaseOfBase"
+     :els  []})
+
+  (load-profile
+    {:name "InhProfile"
+     :base "InhBase"
+     :els  [{:id "attr" :max "1"}]})
+
+  (reload)
+
+  (matcho/match
+    (sut/get-definition aztx  "InhProfile")
+    {:| {:attr {:vector true :type "prim"}}})
+
+
+
+  (load-type
+    {:name "ComplexType"
+     :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
+
+  (load-base
+    {:name "CBase"
+     :els  [{:id "el" :min 0 :max "*" :type [{:code "ComplexType"}]}]})
+
+  (load-profile
+    {:name "CProfile"
+     :base "CBase"
+     :els  [{:id "el" :max "1"}
+            {:id "el.attr" :max "1"}]})
+
+  (reload)
+
+  (matcho/match
+    (sut/get-definition aztx  "CProfile")
+    {:| {:el {:vector true
+              :|      {:attr {:vector true :type "prim"}}}}})
+
+
+  (t/testing "Complex type inheritance"
+
+    (load-type
+      {:name "BaseType"
+       :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
+
+    (load-type
+      {:name "InhComplexType"
+       :base "BaseType"
+       :els  []})
+
+    (load-base
+      {:name "InhCBase"
+       :els  [{:id "el" :min 0 :max "*" :type [{:code "ComplexType"}]}]})
+
+    (load-profile
+      {:name "InhCProfile"
+       :base "InhCBase"
+       :els  [{:id "el" :max "1"}
+              {:id "el.attr" :max "1"}]})
+
+    (reload)
+
+    (matcho/match
+      (sut/get-definition aztx  "InhCProfile")
+      {:| {:el {:vector true
+                :|  {:attr {:vector true :type "prim"}}}}})
+
+    )
+
+  (t/testing "Polymoric shortcat"
+
+
+    (load-base
+      {:name "PBase"
+       :els  [{:id "el[x]" :type [{:code "prim"}
+                                  {:code "ComplexType"}]}]})
+
+    (load-profile
+      {:name "PProfile1"
+       :base "PBase"
+       :els  [{:id "elPrim"}]})
+
+    (load-profile
+      {:name "PProfile2"
+       :base "PBase"
+       :els  [{:id "elComplexType"}]})
+
+    (load-profile
+      {:name "PProfile3"
+       :base "PBase"
+       :els  [{:id "el[x]:elComplexType"}
+              {:id "el[x]:elPrim"}]})
+
+
+    (load-profile
+      {:name "PTProfile"
+       :base "PBase"
+       :els  [{:id "elComplexType"}
+              {:id "elComplexType.attr" :max 1}]})
+
+    (reload)
+
+    (matcho/match
+      (sut/get-definition aztx  "PProfile1")
+      {:| {:el {:|  {:prim {:type "prim"}
+                     :ComplexType nil}}
+           :elPrim nil?}})
+
+    (matcho/match
+      (sut/get-definition aztx  "PProfile2")
+      {:| {:el {:| {:ComplexType {:type "ComplexType"}
+                    :prim nil?}}}})
+
+    (matcho/match
+      (sut/get-definition aztx  "PProfile3")
+      {:| {:el {:| {:ComplexType {:type "ComplexType"}
+                    :prim {:type "prim"}}}}})
+
+    (matcho/match
+      (sut/get-definition aztx  "PTrofile")
+      {:| {:el {:| {:ComplexType {:type "ComplexType"
+                                  :| {:attr {:vector true :type "prim"}}}}}}})
+
+    )
+
+
+
+
+  ;; (keys (get-in (:fhir/src @aztx) ["StructureDefinition"]))
+
+  ;; (select-keys @aztx [:fhir/src :fhir/inter])
+
+
+  (sut/load-definiton
+    aztx {}
+    {:url "SimpleVectorProfile"}
+    {:resourceType "StructureDefinition"
+     :type         "Complex"
+     :derivation   "specialization"
+     :kind         "complex-type"
+     :differential
+     {:element
+      [{:id "Complex"}
+       {:id "Complex.attr" :min 0 :max "1" :type [{:code "prim"}]}
+       {:id "Complex.array" :min 0 :max "*" :type [{:code "prim"}]}
+       {:id "Complex.nested" :min 0 :max "1"}
+       {:id "Complex.nested.attr" :min 0 :max "1" :type [{:code "prim"}]}]}})
 
   (sut/load-definiton
     aztx {}
@@ -298,9 +566,9 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
   )
 
 
-(t/deftest fhir-aidbox-poly-keys-mapping)
+;; (t/deftest fhir-aidbox-poly-keys-mapping)
 
-#_(t/deftest fhir-aidbox-poly-keys-mapping
+(t/deftest fhir-aidbox-poly-keys-mapping
     (def ztx (zen.core/new-context {}))
     (sut/load-all ztx "hl7.fhir.r4.core")
 
