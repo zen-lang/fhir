@@ -246,7 +246,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
      :els  [{:id "attr" :min 0 :max "1" :type [{:code "prim"}]}]})
 
   (load-base
-    {:name "IhnBase"
+    {:name "InhBase"
      :base "InhBaseOfBase"
      :els  []})
 
