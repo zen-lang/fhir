@@ -583,7 +583,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
              (->> (:element (:differential d))
                   (mapv #(select-keys % [:id :min :max :sliceName :binding :fixedUri :type])))))))
 
-#_(t/deftest fhir-aidbox-poly-keys-mapping
+(t/deftest fhir-aidbox-poly-keys-mapping
     (def ztx (zen.core/new-context {}))
 
     (sut/load-all ztx "hl7.fhir.r4.core")

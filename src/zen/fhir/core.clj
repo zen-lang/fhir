@@ -224,7 +224,7 @@
                                    {}))
                :fhir/extension (get-in res [:| :url :fixedUri]))
         (dissoc :fhir-poly-keys))
-    (let [values (dissoc (:| res) :url)]
+    (let [values (dissoc (:| res) :url :extension)]
       (if (= 1 (count values))
         (merge (dissoc res :| :fhir-poly-keys)
                (dissoc (first (vals values)) :minItems :maxItems :required))
