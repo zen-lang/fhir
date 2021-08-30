@@ -263,15 +263,15 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
                                 :vector   not
                                 :|        {:Complex {:required not
                                                      ;;TODO: uncomment
-                                                     ;; :type "Complex"
-                                                     ;; :escalate {:deps {:type "Complex"}}
+                                                     :type "Complex"
+                                                     :escalate {:deps {:type {"Complex" true}}}
                                                      :vector   not
                                                      :|        {:array {:minItems 1
                                                                         :maxItems 1
-                                                                        ;; :type "prim"
-                                                                        ;; :escalate {:deps {:type {"prim" true}}}
+                                                                        :type "prim"
+                                                                        :escalate {:deps {:type {"prim" true}}}
                                                                         :required true
-                                                                        ;; :vector   true
+                                                                        :vector   true
                                                                         }}}}}}})
 
   (matcho/match
@@ -298,10 +298,9 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
   )
 
 
-;; (t/deftest fhir-aidbox-poly-keys-mapping)
+(t/deftest fhir-aidbox-poly-keys-mapping)
 
-
-(t/deftest fhir-aidbox-poly-keys-mapping
+#_(t/deftest fhir-aidbox-poly-keys-mapping
     (def ztx (zen.core/new-context {}))
     (sut/load-all ztx "hl7.fhir.r4.core")
 

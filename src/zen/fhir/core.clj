@@ -300,27 +300,32 @@
                                   (if (:| el) (walk-with-base ztx new-ctx el base-el) el))))
 
                        (if-let [base-poly-key (get-in base [:fhir-poly-keys k])]
-                         (let [fixed-key (:key base-poly-key)
+                         (let [;; key to rename
+                               fixed-key (:key base-poly-key)
+                               ;; get from base
                                base-poly-el (get-in base [:| fixed-key])
-                               tp-key       (keyword (:type base-poly-key))
-                               base-type-el (get-in base [:| fixed-key :| ])
-                               base-el      (merge base-poly-el base-type-el)
+                               ;; key for type
+                               tp-name      (:type base-poly-key)
+                               tp-key       (keyword tp-name)
+                               base-type-el (get-in base [:| fixed-key :| tp-key])
+                               base-type-prof (get-definition ztx (base-url base-poly-key))
+                               base-el      base-type-prof ;;(merge base-poly-el base-type-el base-type-prof)
                                el           (fix-arity el base-el)]
                            (-> acc
                                (assoc-in [fixed-key :polymorphic] true)
                                (assoc-in [fixed-key :| tp-key]
                                          (if (and (:| el) (not (:| base-el)))
-                                           (if-let [tp-base (get-definition ztx (base-url base-poly-key))]
+                                           (if base-type-prof
                                              (walk-with-base ztx (-> (update ctx :lvl inc)
                                                                      (update :path conj k))
-                                                             (fix-arity el base-el) tp-base)
+                                                             (fix-arity el base-type-prof) base-type-prof)
                                              (throw (Exception. (pr-str "Unexpected" (conj (:path ctx) k)
                                                                         :el el
                                                                         :base-poly-key base-poly-key
                                                                         :base-el base-el))))
                                            (walk-with-base ztx (-> (update ctx :lvl inc)
                                                                    (update :path conj k))
-                                                           el base-el)))))
+                                                           (fix-arity el base-el) base-el)))))
                          (assoc acc k (assoc el :error :no-base))
                          #_(throw (Exception. (pr-str "No base " :el el :path (conj (:path ctx) k)
                                                     :el el
