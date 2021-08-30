@@ -433,8 +433,8 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
               :types                 {"ComplexType" [[:complexattr]]
                                       "prim"        [[:complexattr :attr]]}
               :extensions            {"url://some-ext" [[:some-ext]]}
-              :structure-definitions {"url://DomainResource" [[]]
-                                      "url://SomeResource"   [[:ref]]}}}))
+              :references            {"url://SomeResource"   [[:ref]]}
+              :structure-definitions {"url://DomainResource" [[]]}}}))
 
 
   (load-extension
