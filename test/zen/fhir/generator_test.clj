@@ -66,7 +66,9 @@
       'import #(contains? % 'fhir.r4.DomainResource)
       'schema {:confirms #{'fhir.r4.DomainResource/schema}
                :type 'zen/map
-               :keys {:active {:confirms #{'fhir.r4.boolean/schema}}
+               :keys {:name {:type 'zen/vector
+                             :every {:confirms #{'fhir.r4.HumanName/schema}}}
+                      :active {:confirms #{'fhir.r4.boolean/schema}}
                       :deceased {:type 'zen/map
                                  :keys {:boolean {:confirms #{'fhir.r4.boolean/schema}}
                                         :dateTime {:confirms #{'fhir.r4.dateTime/schema}}}}}}}

@@ -48,10 +48,14 @@
 
 (defn els-schema [fhir-inter [_url inter-res]]
   (letfn [(el-schema [fhir-inter el]
-            (merge (when-let [type-sym (type-string->type-symbol fhir-inter (:type el))]
-                     {:confirms #{type-sym}})
-                   (when (seq (:| el))
-                     (els-schema fhir-inter [_url el]))))]
+            (let [sch (merge (when-let [type-sym (type-string->type-symbol fhir-inter (:type el))]
+                               {:confirms #{type-sym}})
+                             (when (seq (:| el))
+                               (els-schema fhir-inter [_url el])))]
+              (if (:vector inter-res)
+                {:type 'zen/vector
+                 :every sch}
+                sch)))]
     {:type 'zen/map
      :keys (sp/transform [sp/MAP-VALS]
                          (partial el-schema fhir-inter)
