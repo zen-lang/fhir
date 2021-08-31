@@ -47,10 +47,17 @@
       (symbol (name tp-ns) "schema"))))
 
 
+(defn ext-url->ext-symbol [fhir-inter ext-url]
+  (when-let [ext-ns (get-in fhir-inter ["StructureDefinition" ext-url :zen.fhir/schema-ns])]
+    (symbol (name ext-ns) "schema")))
+
+
 (defn els-schema [fhir-inter [url inter-res]]
   (letfn [(el-schema [fhir-inter el]
-            (let [sch (merge (when-let [type-sym (type-string->type-symbol fhir-inter (:type el))]
+            (let [sch (merge (when-let [type-sym (some->> (:type el) (type-string->type-symbol fhir-inter))]
                                {:confirms #{type-sym}})
+                             (when-let [ext-sym (some->> (:fhir/extension el) (ext-url->ext-symbol fhir-inter))]
+                               {:confirms #{ext-sym}})
                              (when (seq (:| el))
                                (els-schema fhir-inter [url el])))]
               (if (:vector el)

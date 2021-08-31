@@ -82,7 +82,10 @@
       'import #(contains? % 'fhir.r4.Patient)
       'schema {:confirms  #{'fhir.r4.Patient/schema}
                :type 'zen/map
-               :keys {:identifier {:type     'zen/vector
+               :keys {:race      {:confirms #{'us-core.v3.us-core-race/schema}}
+                      :ethnicity {:confirms #{'us-core.v3.us-core-ethnicity/schema}}
+                      :birthsex  {:confirms #{'us-core.v3.us-core-birthsex/schema}}
+                      :identifier {:type     'zen/vector
                                    :minItems 1
                                    :every    {:confirms #{'fhir.r4.Identifier/schema}
                                               :type 'zen/map
