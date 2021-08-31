@@ -8,6 +8,18 @@
             [clojure.java.io :as io]
             [clojure.string :as str]))
 
+(defn see-definition-els [ztx url]
+  (let [d (sut/get-original ztx url)]
+    (->
+      (select-keys d [:kind :type :url :baseDefinition :derivation])
+      (assoc :els
+             (->> (:element (:differential d))
+                  (mapv #(select-keys % [:id :min :max :sliceName :binding :fixedUri :type])))))))
+
+(defmacro match-definition [ztx url pattern]
+  `(let [res# (sut/get-definition ~ztx ~url)]
+     (matcho/match res# ~pattern)
+     res#))
 
 (t/deftest element-normalization
   (t/testing "cardinality"
@@ -137,9 +149,9 @@
     {:url (str "http://hl7.org/fhir/StructureDefinition/" type-name)}
     {:resourceType "StructureDefinition"
      :url          (str "http://hl7.org/fhir/StructureDefinition/" type-name)
-     :type         "Complex"
+     :type         "Element"
      :derivation   "specialization"
-     :kind         "complex-type"
+     :kind         "primitive-type"
      :differential
      {:element
       (->> els
@@ -193,6 +205,8 @@
        :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
 
     (reload)
+
+    (:fhir/inter @aztx)
 
     (matcho/match
       (sut/get-definition aztx "url://VectorBase")
@@ -376,7 +390,6 @@
       {:deps {:value-sets            {"url://valueset" [[:complexattr :attr]]}
               :types                 {"http://hl7.org/fhir/StructureDefinition/ComplexType" [[:complexattr]]
                                       "http://hl7.org/fhir/StructureDefinition/Reference"   [[:ref]]
-                                      "http://hl7.org/fhir/StructureDefinition/Extension"   [[:some-ext] [:ext]]
                                       "http://hl7.org/fhir/StructureDefinition/prim"        [[:complexattr :attr] [:polyattr :prim]]
                                       "http://hl7.org/fhir/StructureDefinition/string"      [[:polyattr :string]]}
               :extensions            {"url://some-ext" [[:some-ext]]}
@@ -522,18 +535,6 @@
 
 (t/deftest ^:kaocha/pending fhir-aidbox-poly-keys-mapping)
 
-(defn see-definition-els [ztx url]
-  (let [d (sut/get-original ztx url)]
-    (->
-      (select-keys d [:kind :type :url :baseDefinition :derivation])
-      (assoc :els
-             (->> (:element (:differential d))
-                  (mapv #(select-keys % [:id :min :max :sliceName :binding :fixedUri :type])))))))
-
-(defmacro match-definition [ztx url pattern]
-  `(let [res# (sut/get-definition ztx ~url)]
-     (matcho/match res# ~pattern)
-     res#))
 
 #_(t/deftest fhir-aidbox-poly-keys-mapping
   (def ztx (zen.core/new-context {}))

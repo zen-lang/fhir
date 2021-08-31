@@ -375,7 +375,10 @@
   ;;       required/prohibited
   ;;       tragetProfile type profile
   (let [v? (some :vector base-els)
-        tp (some :type base-els)]
+        tp (->> base-els
+                (filter (fn [{tp :type}] (and (not (nil? tp))
+                                              (not (= "Element" tp)))))
+                (some :type))]
     (cond-> el
       v?       (assoc :vector true)
       (not v?) (dissoc :minItems :maxItems)
