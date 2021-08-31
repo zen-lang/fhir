@@ -66,7 +66,10 @@
       'import #(contains? % 'fhir.r4.DomainResource)
       'schema {:confirms #{'fhir.r4.DomainResource/schema}
                :type 'zen/map
-               :keys {:active {:confirms #{'fhir.r4.boolean/schema}}}}}
+               :keys {:active {:confirms #{'fhir.r4.boolean/schema}}
+                      :deceased {:type 'zen/map
+                                 :keys {:boolean {:confirms #{'fhir.r4.boolean/schema}}
+                                        :dateTime {:confirms #{'fhir.r4.dateTime/schema}}}}}}}
 
      'us-core.v3.us-core-patient
      {'ns     'us-core.v3.us-core-patient

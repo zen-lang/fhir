@@ -46,15 +46,16 @@
       (symbol (name tp-ns) "schema"))))
 
 
-(defn el-schema [fhir-inter el]
-  {:confirms #{(type-string->type-symbol fhir-inter (:type el))}})
-
-
 (defn els-schema [fhir-inter [_url inter-res]]
-  {:type 'zen/map
-   :keys (sp/transform [sp/MAP-VALS]
-                       (partial el-schema fhir-inter)
-                       (:| inter-res))})
+  (letfn [(el-schema [fhir-inter el]
+            (merge (when-let [type-sym (type-string->type-symbol fhir-inter (:type el))]
+                     {:confirms #{type-sym}})
+                   (when (seq (:| el))
+                     (els-schema fhir-inter [_url el]))))]
+    {:type 'zen/map
+     :keys (sp/transform [sp/MAP-VALS]
+                         (partial el-schema fhir-inter)
+                         (:| inter-res))}))
 
 
 (defmethod generate-kind-schema :complex-type [fhir-inter [url inter-res]]
