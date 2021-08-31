@@ -376,7 +376,6 @@
       {:deps {:value-sets            {"url://valueset" [[:complexattr :attr]]}
               :types                 {"ComplexType" [[:complexattr]]
                                       "Reference"   [[:ref]]
-                                      "Extension"   [[:some-ext] [:ext]]
                                       "prim"        [[:complexattr :attr] [:polyattr :prim]]
                                       "string"      [[:polyattr :string]]}
               :extensions            {"url://some-ext" [[:some-ext]]}

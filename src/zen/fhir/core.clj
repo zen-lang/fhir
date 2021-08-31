@@ -407,9 +407,15 @@
                                        base-els (get-base-elements ztx poly-key poly-el bases)
                                        new-ctx  (-> (update ctx :lvl inc) (update :path conj poly-key))]
                                    (assoc acc poly-key (walk-with-bases ztx new-ctx poly-el base-els)))
-                                 (do
-                                   ;; (assert false (pr-str :no-base (conj (:path ctx) k) el))
-                                   (assoc acc k (assoc el :error :no-base))))))))
+                                 (if (= "specialization" (:derivation ctx))
+                                   (assoc acc k
+                                          (let [new-ctx (-> (update ctx :lvl inc) (update :path conj k))]
+                                            (walk-with-bases ztx new-ctx el [])))
+                                   (do
+                                     (println :WARN :no-base (conj (:path ctx) k) el)
+                                     (assoc acc k
+                                            (let [new-ctx (-> (update ctx :lvl inc) (update :path conj k))]
+                                              (walk-with-bases ztx new-ctx el []))))))))))
                        {}
                        %)))))
 
@@ -475,15 +481,19 @@
 (defn process-sd [ztx url subj]
   (let [processed-sd
         (cond
-          (is-profile? url subj)
-          (let [bases (get-bases ztx subj)]
-            (assert (seq bases) (pr-str :WARN :no-base url subj))
-            (walk-with-bases ztx {:lvl 0 :path [url]} subj bases))
-
           (is-extension? url subj)
           (process-extension ztx url subj)
 
-          :else subj)]
+          ;; (is-profile? url subj)
+          :else
+          (let [bases (get-bases ztx subj)]
+            (when (= "constraint" (:derivation subj))
+              (println (pr-str :WARN :no-base url)))
+            (walk-with-bases ztx {:lvl 0 :path [url] :derivation (:derivation subj)}
+                             subj bases))
+
+          ;; :else subj
+          )]
     (assoc processed-sd :deps (collect-deps processed-sd))))
 
 
