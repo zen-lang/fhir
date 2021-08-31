@@ -1,66 +1,12 @@
 (ns zen.fhir.core-test
   (:require [zen.fhir.core :as sut]
+            [zen.fhir.inspect :as inspect]
             [clojure.test :as t]
             [zen.core]
             [clojure.pprint]
             [matcho.core :as matcho]
-            [hiccup.core :as hiccup]
             [clojure.java.io :as io]))
 
-(defn inspect [file data]
-  (spit file (with-out-str (clojure.pprint/pprint data))))
-
-(defmulti render-data (fn [x & [opts]] (type x)))
-
-(defmethod render-data :default
-  [x & [opts]]
-  [:span (with-out-str (clojure.pprint/pprint x))])
-
-(defn primitive? [x]
-  (or (number? x) (string? x) (keyword? x) (boolean? x) (set? x)))
-
-(defn render-map [x & [opts]]
-  (into [:div.block]
-        (for [[k v] (sort-by first x)]
-          (if (primitive? v)
-            [:div [:b.key (str k)] (render-data v)]
-            [:details (cond-> {:style "display: flex;"}
-                        (and (or (= k :|) (:| v))
-                             (not (:closed opts))) (assoc :open "open"))
-             [:summary [:b.key (str k)]]
-             (render-data v)]))))
-
-(defmethod render-data
-  clojure.lang.PersistentArrayMap
-  [x & [opts]] (render-map x opts))
-
-(defmethod render-data
-  clojure.lang.PersistentHashMap
-  [x & [opts]] (render-map x opts))
-
-(defmethod render-data
-  clojure.lang.PersistentVector
-  [x & [opts]]
-  (into [:div.block (pr-str x)]))
-
-
-
-
-;; (defn inspect [file data]
-;;   (spit file (with-out-str (clojure.pprint/pprint data))))
-
-(def css
-  "
-body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a36; color: #bfcd70;}
-.block {padding-left: 1rem;}
-.key {color: #fe7ac6; padding-right: 0.5rem; cursor: pointer;}
-.key:hover {color: white;}"
-  )
-
-(defn inspect [file data & [opts]]
-  (spit file (hiccup/html
-               [:html [:head [:style css]]
-                [:body (render-data data opts)]])))
 
 (t/deftest element-normalization
   (t/testing "cardinality"
@@ -595,14 +541,97 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
   (see-definition-els  ztx  "http://hl7.org/fhir/StructureDefinition/patient-nationality")
   (see-definition-els  ztx "http://hl7.org/fhir/StructureDefinition/condition-dueTo")
   (see-definition-els  ztx "http://hl7.org/fhir/StructureDefinition/structuredefinition-xml-type")
+  (see-definition-els  ztx "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient")
+  (sut/get-definition  ztx "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient")
 
 
   ;; (->> (:element (:differential (sut/get-original ztx)))
   ;;      (mapv #(select-keys % [:id :min :max :sliceName :binding :fixedUri :type])))
 
 
-  (sut/get-definition ztx "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient")
-
+  (match-definition
+    ztx "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+    {:derivation     "constraint"
+     :type           "Patient"
+     :kind           "resource"
+     :url            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+     :baseDefinition "http://hl7.org/fhir/StructureDefinition/Patient"
+     :fhirVersion    "4.0.1"
+     :|              {:address       {:vector     true
+                                      :type       "Address"
+                                      :fhir/flags #{:MS}
+                                      :|          {:line       {:vector true :fhir/flags #{:MS} :type "string"}
+                                                   :city       {:fhir/flags #{:MS} :type "string"}
+                                                   :state      {:fhir/flags #{:MS} :type "string"}
+                                                   :postalCode {:short "US Zip Codes" :fhir/flags #{:MS} :type "string"}
+                                                   :period     {:fhir/flags #{:MS} :type "Period"}}}
+                      :race          {:maxItems   nil?
+                                      :extension-profiles nil?
+                                      :fhir/flags #{:MS}
+                                      :fhir/extension "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
+                      :name          {:fhir/flags #{:MS}
+                                      :type       "HumanName"
+                                      :vector     true
+                                      :minItems   1
+                                      :required   true
+                                      :| {:family {:type "string" :condition ["us-core-8"] :fhir/flags #{:MS}}
+                                          :given  {:type "string" :condition ["us-core-8"] :vector true :fhir/flags #{:MS}}}}
+                      :birthDate     {:type "date" :fhir/flags #{:MS}}
+                      :ethnicity     {:fhir/flags #{:MS}
+                                      :fhir/extension "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity"}
+                      :communication {:vector     true
+                                      :type       "BackboneElement"
+                                      :fhir/flags #{:MS}
+                                      :|          {:language {:type "CodeableConcept" :fhir/flags #{:MS} :required true}}}
+                      :identifier    {:type       "Identifier"
+                                      :vector     true
+                                      :fhir/flags #{:MS}
+                                      :minItems   1
+                                      :required   true
+                                      :|          {:system {:type "uri" :fhir/flags #{:MS} :required true}
+                                                   :value
+                                                   {:short      "The value that is unique within the system."
+                                                    :type       "string"
+                                                    :fhir/flags #{:MS}
+                                                    :required   true}}}
+                      :telecom       {:vector     true
+                                      :fhir/flags #{:MS}
+                                      :|
+                                      {:system
+                                       {:type       "code"
+                                        :binding
+                                        {:strength    "required"
+                                         :description "Telecommunications form for contact point."
+                                         :valueSet    "http://hl7.org/fhir/ValueSet/contact-point-system"}
+                                        :fhir/flags #{:MS}
+                                        :required   true}
+                                       :value {:required true :fhir/flags #{:MS} :type "string"}
+                                       :use
+                                       {:binding
+                                        {:strength "required"
+                                         :valueSet "http://hl7.org/fhir/ValueSet/contact-point-use"}
+                                        :fhir/flags #{:MS}
+                                        :type       "code"}}
+                                      :type       "ContactPoint"}
+                      :gender
+                      {:type       "code"
+                       :binding
+                       {:strength "required"
+                        :valueSet "http://hl7.org/fhir/ValueSet/administrative-gender"}
+                       :fhir/flags #{:MS}
+                       :required   true}
+                      :birthsex
+                      {:fhir/extension
+                       "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex"
+                       :binding
+                       {:strength    "required"
+                        :description "Code for sex assigned at birth"
+                        :valueSet    "http://hl7.org/fhir/us/core/ValueSet/birthsex"}
+                       :fhir/flags #{:MS}
+                       :maxItems   1
+                       :extension-profiles
+                       ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex"]}}
+     })
 
 
   (match-definition
@@ -641,26 +670,26 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
     {:kind           "resource"
      :derivation     "specialization",
      :baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"
-     :| {:address             {:short  "An address for the individual"
-                               :type   "Address"
-                               :vector true}
-         :multipleBirth
-         {:|           {:boolean {:type "boolean"}
-                        :integer {:type "integer"}}
-          :types       #{"boolean" "integer"}
-          :polymorphic true}
-         :link                {:type   "BackboneElement"
-                               :vector true
-                               :|      {:other {:type     "Reference"
-                                                :required true}
-                                        :type  {:binding  {:strength "required"
-                                                           :valueSet "http://hl7.org/fhir/ValueSet/link-type|4.0.1"}
-                                                :required true}}}
-         :generalPractitioner {:vector   true
-                               :type     "Reference"
-                               :profiles #{"http://hl7.org/fhir/StructureDefinition/Organization"
-                                           "http://hl7.org/fhir/StructureDefinition/Practitioner"
-                                           "http://hl7.org/fhir/StructureDefinition/PractitionerRole"}}}})
+     :|              {:address             {:short  "An address for the individual"
+                                            :type   "Address"
+                                            :vector true}
+                      :multipleBirth
+                      {:|           {:boolean {:type "boolean"}
+                                     :integer {:type "integer"}}
+                       :types       #{"boolean" "integer"}
+                       :polymorphic true}
+                      :link                {:type   "BackboneElement"
+                                            :vector true
+                                            :|      {:other {:type     "Reference"
+                                                             :required true}
+                                                     :type  {:binding  {:strength "required"
+                                                                        :valueSet "http://hl7.org/fhir/ValueSet/link-type|4.0.1"}
+                                                             :required true}}}
+                      :generalPractitioner {:vector   true
+                                            :type     "Reference"
+                                            :profiles #{"http://hl7.org/fhir/StructureDefinition/Organization"
+                                                        "http://hl7.org/fhir/StructureDefinition/Practitioner"
+                                                        "http://hl7.org/fhir/StructureDefinition/PractitionerRole"}}}})
 
 
   (def ares (sut/get-definition ztx "http://hl7.org/fhir/StructureDefinition/Address"))
@@ -678,6 +707,9 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
              :operator {}
              :answer   {}}}}}}})
   (comment
-    (inspect "/tmp/pres.html" (get-in @ztx [:fhir/inter "StructureDefinition"]) {:closed true})
+    (inspect/inspect "/tmp/pres.html" (get-in @ztx [:fhir/inter "StructureDefinition"]) {:closed true})
+
+    (inspect/inspect "/tmp/us-core-pt.html" (sut/get-definition ztx "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"))
+
     )
   )
