@@ -1,6 +1,7 @@
 (ns zen.fhir.generator
   (:require [zen.fhir.utils :as utils]
-            [com.rpl.specter :as sp]))
+            [com.rpl.specter :as sp]
+            [clojure.string :as str]))
 
 
 (defmulti generate-kind-schema
@@ -104,10 +105,30 @@
   :done)
 
 
+(defn order-zen-ns [zen-ns-map]
+  (let [zen-ns             (get zen-ns-map 'ns)
+        zen-import         (get zen-ns-map 'import)
+        rest-zen-ns-map    (dissoc zen-ns-map 'ns 'import)
+        ordered-zen-ns-map (cond->> (sort-by key rest-zen-ns-map)
+                             (some? zen-import) (cons ['import zen-import])
+                             (some? zen-ns)     (cons ['ns zen-ns])
+                             :always            flatten
+                             :always            (apply array-map))]
+    ordered-zen-ns-map))
+
+
+(defn format-zen-ns [zen-ns-map]
+  (clojure.pprint/write (order-zen-ns zen-ns-map) :stream nil))
+
+
 (defn spit-zen-schemas [ztx zrc-dir]
-  :todo)
-
-
+  (run! (fn [[zen-ns ns-content]]
+          (let [nss (name zen-ns)
+                file (str zrc-dir (str/replace nss #"\." "/") ".edn")]
+            (clojure.java.io/make-parents file)
+            (spit file (format-zen-ns ns-content))))
+        (get-in @ztx [:fhir.zen/ns]))
+  :done)
 
 ;; * resources, types
 ;;  -> sd (+deps => ctx)
