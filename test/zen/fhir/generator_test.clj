@@ -40,7 +40,8 @@
       'schema {:zen/tags #{'zen/schema}
                :type     'zen/map
                :keys     {:id        {:confirms #{'fhir.r4.string/schema}}
-                          :extension {:confirms #{'fhir.r4.Extension/schema}}}}}
+                          :extension {:type  'zen/vector
+                                      :every {:confirms #{'fhir.r4.Extension/schema}}}}}}
 
      'fhir.r4.Resource
      {'ns     'fhir.r4.Resource
@@ -57,9 +58,12 @@
       'schema {:confirms #{'fhir.r4.Resource/schema}
                :type 'zen/map
                :keys {:text              {:confirms #{'fhir.r4.Narrative/schema}}
-                      :contained         {:confirms #{'fhir.r4.Resource/schema}}
-                      :extension         {:confirms #{'fhir.r4.Extension/schema}}
-                      :modifierExtension {:confirms #{'fhir.r4.Extension/schema}}}}}
+                      :contained         {:type  'zen/vector
+                                          :every {:confirms #{'fhir.r4.Resource/schema}}}
+                      :extension         {:type  'zen/vector
+                                          :every {:confirms #{'fhir.r4.Extension/schema}}}
+                      :modifierExtension {:type  'zen/vector
+                                          :every {:confirms #{'fhir.r4.Extension/schema}}}}}}
 
      'fhir.r4.Patient
      {'ns     'fhir.r4.Patient
