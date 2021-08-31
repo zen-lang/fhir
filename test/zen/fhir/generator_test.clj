@@ -13,7 +13,7 @@
   (when (.isDirectory file)
     (doseq [file-in-dir (.listFiles file)]
       (delete-directory-recursive file-in-dir)))
-  (io/delete-file file))
+  (io/delete-file file true))
 
 
 (t/deftest generate-project-integration
