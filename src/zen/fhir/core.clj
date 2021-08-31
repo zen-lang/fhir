@@ -128,7 +128,9 @@
 
 
 (defn extension-profiles [el]
-  (assoc el :extension-profiles (:profile (first (:type el)))))
+  (if-let [ext-profs (:profile (first (:type el)))]
+    (assoc el :extension-profiles ext-profs)
+    el))
 
 
 (defn normalize-polymorphic [el]
@@ -203,6 +205,16 @@
                          (mapv keyword)))
     x))
 
+(defn normalize-flags [x]
+  (let [flags (cond-> #{}
+                (:isModifier x)  (conj :?!)
+                (:isSummary x)   (conj :SU)
+                (:mustSupport x) (conj :MS))]
+    (-> x
+        (dissoc :isModifier :isSummary :mustSupport)
+        (cond->
+            (not (empty? flags)) (assoc :fhir/flags flags)))))
+
 (defn normalize-element [x]
   (-> (dissoc x
               :mapping :constraint :extension :comment :comments :requirements :definition :alias
@@ -211,7 +223,8 @@
       (normalize-require)
       (normalize-arity)
       (normalize-polymorphic)
-      (normalize-content-ref)))
+      (normalize-content-ref)
+      (normalize-flags)))
 
 
 (defn normalize-description [res]
@@ -229,19 +242,21 @@
                                    {}))
                :fhir/extension (get-in res [:| :url :fixedUri]))
         (dissoc :fhir-poly-keys))
-    (let [values (dissoc (:| res) :url :extension)]
-      (if (= 1 (count values))
-        (merge (dissoc res :| :fhir-poly-keys)
-               (dissoc (first (vals values)) :minItems :maxItems :required))
-        (if-let [value (get-in res [:| :value] )]
-          (let [types (:types value)]
-            (if (= 1 (count types))
-              (merge (dissoc res :| :fhir-poly-keys)
-                     {:type (first types)})
-              (merge
-                (dissoc res :| :fhir-poly-keys)
-                (dissoc value :minItems :maxItems :vector :required :fhir-poly-keys))))
-
+    (if-let [value (get-in res [:| :value] )]
+      (let [types (:types value)]
+        (cond
+          (= 1 (count types))
+          (merge (dissoc res :| :fhir-poly-keys)
+                 {:type (first types)})
+          (< 1 (count types))
+          (merge
+            (dissoc res :| :fhir-poly-keys)
+            (dissoc value :minItems :maxItems :vector :required :fhir-poly-keys))
+          :else (assert false (pr-str :no-types res))))
+      (let [values (dissoc (:| res) :url :extension)]
+        (if (= 1 (count values))
+          (merge (dissoc res :| :fhir-poly-keys)
+                 (dissoc (first (vals values)) :minItems :maxItems :required))
           (assert false  (pr-str :extension-values (:url ext) values)))))))
 
 (defn normalize-extension [res]
@@ -269,8 +284,7 @@
 
 
 
-(defmethod process-on-load
-  :StructureDefinition
+(defmethod process-on-load :StructureDefinition
   [res]
   (load-intermidiate res))
 
@@ -349,9 +363,12 @@
   ;; TODO: if vector do min/max items
   ;;       required/prohibited
   ;;       tragetProfile type profile
-  (assoc el
-         :vector (some :vector base-els)
-         :type (some :type base-els)))
+  (let [v? (some :vector base-els)
+        tp (some :type base-els)]
+    (cond-> el
+      v?       (assoc :vector true)
+      (not v?) (dissoc :minItems :maxItems)
+      tp (assoc :type tp))))
 
 
 (defn search-base-elements [ztx k el bases]
@@ -370,19 +387,29 @@
       subj
       (update subj :|
               #(reduce (fn [acc [k el]]
-                         (let [[k base-els] (search-base-elements ztx k el bases)]
-                           (if base-els
+                         (if (= :extension k)
+                           (->> (:slice el)
+                                (reduce (fn [acc [ext-k ext-el]]
+                                          (when (> 1 (count (:extension-profiles ext-el)))
+                                            (assert false (pr-str :multiple-et-profiles  ext-el)))
+                                          (assert (= ext-k (keyword (:sliceName ext-el))) (pr-str ext-k "!=" (:sliceName ext-el)))
+                                          (assoc acc ext-k (-> ext-el
+                                                               (dissoc :type :sliceName)
+                                                               (assoc :fhir/extension (first (:extension-profiles ext-el))))))
+                                        acc))
+                           (let [[k base-els] (search-base-elements ztx k el bases)]
+                             (if base-els
                                (assoc acc k
                                       (let [new-ctx (-> (update ctx :lvl inc) (update :path conj k))]
                                         (walk-with-bases ztx new-ctx el base-els)))
                                (if-let [{poly-key :key, poly-type :type} (get-base-poly-key ztx k bases)]
                                  (let [poly-el  {:| {(keyword poly-type) (assoc el :type poly-type)}}
                                        base-els (get-base-elements ztx poly-key poly-el bases)
-                                       new-ctx (-> (update ctx :lvl inc) (update :path conj poly-key))]
+                                       new-ctx  (-> (update ctx :lvl inc) (update :path conj poly-key))]
                                    (assoc acc poly-key (walk-with-bases ztx new-ctx poly-el base-els)))
                                  (do
                                    #_(assert false (pr-str "!!" ctx k el))
-                                   (assoc acc k (assoc el :error :no-base)))))))
+                                   (assoc acc k (assoc el :error :no-base))))))))
                        {}
                        %)))))
 
@@ -394,7 +421,6 @@
 
 (defn process-extension
   [ztx url subj]
-  (println "Process ext")
   subj)
 
 

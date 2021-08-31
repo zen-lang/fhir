@@ -41,13 +41,7 @@
 (defmethod render-data
   clojure.lang.PersistentVector
   [x & [opts]]
-  (into [:div.block "[" (count x)]
-        (->> x
-             (map-indexed
-               (fn [i v]
-                 [:details
-                  [:summary [:b i]]
-                  (render-data v)])))))
+  (into [:div.block (pr-str x)]))
 
 
 
@@ -439,7 +433,7 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
                                       "prim"        [[:complexattr :attr] [:polyattr :prim]]
                                       "string"      [[:polyattr :string]]}
               :extensions            {"url://some-ext" [[:some-ext]]}
-              :references            {"url://SomeResource"   [[:ref]]}
+              :references            {"url://SomeResource" [[:ref]]}
               :structure-definitions {"url://DomainResource" [[]]}}}))
 
 
@@ -589,215 +583,101 @@ body {font-family: Geneva, Arial, Helvetica, sans-serif; background-color: #282a
              (->> (:element (:differential d))
                   (mapv #(select-keys % [:id :min :max :sliceName :binding :fixedUri :type])))))))
 
+(defmacro match-definition [ztx url pattern]
+  `(let [res# (sut/get-definition ztx ~url)]
+     (matcho/match res# ~pattern)
+     res#))
+
 (t/deftest fhir-aidbox-poly-keys-mapping
-    (def ztx (zen.core/new-context {}))
+  (def ztx (zen.core/new-context {}))
 
-    (sut/load-all ztx "hl7.fhir.r4.core")
-    (see-definition-els  ztx  "http://hl7.org/fhir/StructureDefinition/patient-nationality")
-    (see-definition-els  ztx "http://hl7.org/fhir/StructureDefinition/condition-dueTo")
-    (see-definition-els  ztx "http://hl7.org/fhir/StructureDefinition/structuredefinition-xml-type")
-
-
-    (->> (:element (:differential (sut/get-original ztx
-                                                    )))
-         (mapv #(select-keys % [:id :min :max :sliceName :binding :fixedUri :type])))
+  (sut/load-all ztx "hl7.fhir.r4.core")
+  (see-definition-els  ztx  "http://hl7.org/fhir/StructureDefinition/patient-nationality")
+  (see-definition-els  ztx "http://hl7.org/fhir/StructureDefinition/condition-dueTo")
+  (see-definition-els  ztx "http://hl7.org/fhir/StructureDefinition/structuredefinition-xml-type")
 
 
-
-    (-> (sut/get-original ztx "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race")
-        (dissoc :snapshot)
-        (select-keys [:type :kind :id :differential])
-        (update-in [:differential :element]
-                   (fn [xs]
-                     (->> xs
-                          (mapv (fn [x]
-                                  (select-keys x [:id :path :type :sliceName :min :max :fixedUri :binding])))))))
-
-    (t/testing "base type poly keys"
-      (def observation (sut/get-definition ztx "http://hl7.org/fhir/StructureDefinition/Observation"))
-
-      (matcho/match
-        observation
-        {:baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"
-         :kind           "resource",
-         :type           "Observation"
-         :derivation     "specialization",
-         :fhir-poly-keys {:valueQuantity {:key :value, :type "Quantity"}
-                          :valueBoolean  {:key :value, :type "boolean"}}
-         :|              {:value     {:polymorphic true
-                                      :|           {:boolean  {:type "boolean"}
-                                                    :Quantity {:type "Quantity"}}}
-                          :component {:fhir-poly-keys {:valueQuantity {:key :value, :type "Quantity"}
-                                                       :valueBoolean  {:key :value, :type "boolean"}}
-                                      :|              {:value {:polymorphic true
-                                                               :|           {:boolean  {:type "boolean"}
-                                                                             :Quantity {:type "Quantity"}}}}}}}))
-
-    (t/testing "constraint poly keys fixing"
-      (def poly-prof-res (sut/get-definition ztx "http://hl7.org/fhir/us/core/StructureDefinition/pediatric-bmi-for-age"))
-
-      (matcho/match
-        poly-prof-res
-
-        {:baseDefinition "http://hl7.org/fhir/StructureDefinition/vitalsigns"
-         :kind           "resource",
-         :type           "Observation"
-         :derivation     "constraint",
-         :|              {:value
-                          {:polymorphic true
-                           :|           {:Quantity
-                                         {:|
-                                          {:value {:required true}}}}}}}))
+  ;; (->> (:element (:differential (sut/get-original ztx)))
+  ;;      (mapv #(select-keys % [:id :min :max :sliceName :binding :fixedUri :type])))
 
 
-    (t/testing "test-zen-transformation"
-
-      (def pres (sut/get-definition ztx "http://hl7.org/fhir/StructureDefinition/Patient"))
-
-
-      (comment
-        (inspect "/tmp/pres.html" (get-in @ztx [:fhir/inter "StructureDefinition"]) {:closed true})
-        )
-
-
-      (matcho/match
-        pres
-        {:kind           "resource"
-         :derivation     "specialization",
-         :baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"
-
-         ;; :deps {:valuesets {}
-         ;;        :types {}
-         ;;        :extensions {}
-         ;;        :profiles {}}
-
-         :| {:address             {:short     "An address for the individual"
-                                   :type      "Address"
-                                   :escalate  {:deps {:type {"Address" true}}}
-                                   :vector    true
-                                   :isSummary true}
-             :multipleBirth
-             {:|           {:boolean {:type "boolean"}
-                            :integer {:type "integer"}}
-              :types       #{"boolean" "integer"}
-              :polymorphic true}
-             :link                {:type   "BackboneElement"
-                                   :vector true
-                                   :|      {:other {:type      "Reference"
-                                                    :required  true
-                                                    :isSummary true}
-                                            :type  {:binding  {:strength "required"
-                                                               :valueSet "http://hl7.org/fhir/ValueSet/link-type|4.0.1"}
-                                                    :required true}}}
-             :generalPractitioner {:vector   true
-                                   :type     "Reference"
-                                   :profiles #{"http://hl7.org/fhir/StructureDefinition/Organization"
-                                               "http://hl7.org/fhir/StructureDefinition/Practitioner"
-                                               "http://hl7.org/fhir/StructureDefinition/PractitionerRole"}}}})
-
-
-      (def ares (sut/get-definition ztx "http://hl7.org/fhir/StructureDefinition/Address"))
-
-      ;; (spit "/tmp/ares.edn" (with-out-str (clojure.pprint/pprint (:elements ares))))
-
-      (matcho/match ares {})
-
-      (def qres (sut/get-definition ztx "http://hl7.org/fhir/StructureDefinition/Questionnaire"))
-
-      ;; (spit "/tmp/qres.edn" (with-out-str (clojure.pprint/pprint qres)))
-
-      (matcho/match
-        qres
-        {:|
-         {:description {}
-          :subjectType {}
-          :item
-          {:|
-           {:item {:escalate {:recur [:item]}}
-            :enableWhen
-            {:| {:question {}
-                 :operator {}
-                 :answer   {}}}}}}})
-
-
-      ;; (get-in @ztx [:fhir "StructureDefinition" "Questionnaire"])
-
-      ;; (sut/process-sd quest)
-
-      ;; min/max => vector? required minItems/maxItems
-      ;; type -> polymorphic, type, profiles
-      ;; references to extensions etc
-      ;; group and analyze slicing
-      ;; analyze valuesets
-
-
-      ;; packeg (deps) => index
-
-
-      ;; {
-      ;;  <rt> <url> {
-      ;;              :lookup-idx {}
-      ;;              :fhir       {}
-      ;;              :elements   {}
-      ;;              :transforms {}
-      ;;              }
-      ;;  }
-
-      ;; => ????
-
-      ;; -> rich -> generate
-      ;;         -> assumptins check
-
-      ;;may be no vector as a first step
-      #_(matcho/match
-          (sut/group-elements ztx quest)
-
-          ;; (sut/load-structure-definition ztx quest)
-
-          {
-           :original      {}
-           :tree-elements {}
-           :elements      {}
-           :deps          {:base       {}
-                           :extensions {}
-                           :valuesets  {}}
-
-           }
-
-          {:elements
-           {:description {:type [{:code "markdown"}]},
-            :subjectType {:vector true
-                          :type   [{:code "code"}]},
-            :derivedFrom {:vector true
-                          :type   [{:code "canonical"}]},
-            :name        {:type [{:code "string"}]},
-            :code        {:vector true
-                          :type   [{:code "Coding"}]},
-            :item        {:vector true
-                          :elements
-                          {:enableBehavior {:type [{:code "code"}]},
-                           :definition     {:type [{:code "uri"}]},
-                           :item           {:vector true
-                                            :recur  [:item]},
-                           :enableWhen
-                           {:vector true
-                            :elements
-                            {:question {:type [{:code "string"}]},
-                             :operator {:type [{:code "code"}]},
-                             :answer   {:polymorphic true
-                                        :elements    {:boolean   {}
-                                                      :decimal   {}
-                                                      :integer   {}
-                                                      :date      {}
-                                                      :dateTime  {}
-                                                      :time      {}
-                                                      :string    {:type [{:code "string"}]}
-                                                      :Coding    {}
-                                                      :Quantity  {}
-                                                      :Reference {:type [{:code "Reference", :targetProfile ["http://hl7.org/fhir/StructureDefinition/Resource"]}]}}}}}}}}})
+  (sut/get-definition ztx "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient")
 
 
 
+  (match-definition
+    ztx "http://hl7.org/fhir/StructureDefinition/Observation"
+    {:baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"
+     :kind           "resource",
+     :type           "Observation"
+     :derivation     "specialization",
+     :fhir-poly-keys {:valueQuantity {:key :value, :type "Quantity"}
+                      :valueBoolean  {:key :value, :type "boolean"}}
+     :|              {:value     {:polymorphic true
+                                  :|           {:boolean  {:type "boolean"}
+                                                :Quantity {:type "Quantity"}}}
+                      :component {:fhir-poly-keys {:valueQuantity {:key :value, :type "Quantity"}
+                                                   :valueBoolean  {:key :value, :type "boolean"}}
+                                  :|              {:value {:polymorphic true
+                                                           :|           {:boolean  {:type "boolean"}
+                                                                         :Quantity {:type "Quantity"}}}}}}})
 
 
-      ))
+  (match-definition
+    ztx "http://hl7.org/fhir/us/core/StructureDefinition/pediatric-bmi-for-age"
+    {:baseDefinition "http://hl7.org/fhir/StructureDefinition/vitalsigns"
+     :kind           "resource",
+     :type           "Observation"
+     :derivation     "constraint",
+     :|              {:value
+                      {
+                       ;;TODO: check this case
+                       ;; :polymorphic true
+                       :| {:Quantity
+                           {:| {:value {:required true}}}}}}})
+
+  (match-definition
+    ztx "http://hl7.org/fhir/StructureDefinition/Patient"
+    {:kind           "resource"
+     :derivation     "specialization",
+     :baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"
+     :| {:address             {:short  "An address for the individual"
+                               :type   "Address"
+                               :vector true}
+         :multipleBirth
+         {:|           {:boolean {:type "boolean"}
+                        :integer {:type "integer"}}
+          :types       #{"boolean" "integer"}
+          :polymorphic true}
+         :link                {:type   "BackboneElement"
+                               :vector true
+                               :|      {:other {:type     "Reference"
+                                                :required true}
+                                        :type  {:binding  {:strength "required"
+                                                           :valueSet "http://hl7.org/fhir/ValueSet/link-type|4.0.1"}
+                                                :required true}}}
+         :generalPractitioner {:vector   true
+                               :type     "Reference"
+                               :profiles #{"http://hl7.org/fhir/StructureDefinition/Organization"
+                                           "http://hl7.org/fhir/StructureDefinition/Practitioner"
+                                           "http://hl7.org/fhir/StructureDefinition/PractitionerRole"}}}})
+
+
+  (def ares (sut/get-definition ztx "http://hl7.org/fhir/StructureDefinition/Address"))
+
+  (match-definition
+    ztx "http://hl7.org/fhir/StructureDefinition/Questionnaire"
+    {:|
+     {:description {}
+      :subjectType {}
+      :item
+      {:|
+       {:item {:recur [:item]}
+        :enableWhen
+        {:| {:question {}
+             :operator {}
+             :answer   {}}}}}}})
+  (comment
+    (inspect "/tmp/pres.html" (get-in @ztx [:fhir/inter "StructureDefinition"]) {:closed true})
+    )
+  )
