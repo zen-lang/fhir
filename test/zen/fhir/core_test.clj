@@ -682,6 +682,8 @@
 
   (def ares (sut/get-definition ztx "http://hl7.org/fhir/StructureDefinition/Address"))
 
+  (sut/get-definition ztx "http://hl7.org/fhir/StructureDefinition/Element")
+
   (match-definition
     ztx "http://hl7.org/fhir/StructureDefinition/Questionnaire"
     {:| {:description {}

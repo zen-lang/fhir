@@ -135,6 +135,19 @@
     el))
 
 
+
+
+(defn get-type-code[{code :code extension :extension}]
+  ;; wellknonw bug in FHIR SDs
+  ;; StructureDefinition generator has a bug
+  ;; instead of id type it uses exension type
+  ;; https://chat.fhir.org/#narrow/stream/179283-Da-Vinci/topic/Type.20of.20id/near/232607087
+  (or (some-> (utils/code-search :url
+                                 ["http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type"]
+                                 extension)
+              (utils/poly-get :value))
+      code))
+
 (defn normalize-polymorphic [el]
   (if (str/ends-with? (str (or (:path el) (:id el))) "[x]")
     (-> (assoc el :polymorphic true)
@@ -142,14 +155,14 @@
         (assoc :| (->> (:type el)
                          (reduce (fn [acc {c :code :as tp}]
                                    (assoc acc (keyword c) (-> (reference-profiles {:type [tp]})
-                                                              (assoc :type c))))
+                                                              (assoc :type (get-type-code tp)))))
                                  {})))
         (assoc :types (->> (:type el) (map :code) (into #{}))))
     (if-not (:type el)
       el
       (if (= 1 (count (:type el)))
         (let [tp  (first (:type el))
-              tpc (:code tp)]
+              tpc (get-type-code tp)]
           (-> el
               (reference-profiles)
               (extension-profiles)
@@ -378,10 +391,11 @@
   ;;       required/prohibited
   ;;       tragetProfile type profile
   (let [v? (some :vector base-els)
-        tp (->> base-els
-                (filter (fn [{tp :type}] (and (not (nil? tp))
-                                              (not (= "Element" tp)))))
-                (some :type))]
+        tp (or (:type el)
+               (->> base-els
+                    (filter (fn [{tp :type}] (and (not (nil? tp))
+                                                  (not (= "Element" tp)))))
+                    (some :type)))]
     (cond-> el
       v?       (assoc :vector true)
       (not v?) (dissoc :minItems :maxItems)
@@ -404,7 +418,7 @@
       subj
       (update subj :|
               #(reduce (fn [acc [k el]]
-                         (if (= :extension k)
+                         (if (and (= :extension k) (not (:element-definition? ctx)))
                            (->> (get-in el [:slicing :slices])
                                 (reduce (fn [acc [ext-k ext-el]]
                                           (assert (= ext-k (keyword (:sliceName ext-el))) (pr-str ext-k "!=" (:sliceName ext-el)))
@@ -504,11 +518,9 @@
           (let [bases (get-bases ztx subj)]
             (when (= "constraint" (:derivation subj))
               (println (pr-str :WARN :no-base url)))
-            (walk-with-bases ztx {:lvl 0 :path [url] :derivation (:derivation subj)}
-                             subj bases))
-
-          ;; :else subj
-          )]
+            (walk-with-bases ztx {:lvl 0 :path [url] :derivation (:derivation subj)
+                                  :element-definition? (= "http://hl7.org/fhir/StructureDefinition/Element" (:url subj))}
+                             subj bases)))]
     (assoc processed-sd :deps (collect-deps processed-sd))))
 
 
