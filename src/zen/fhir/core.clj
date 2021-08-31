@@ -59,7 +59,7 @@
                  (let [k (keyword k)]
                    (case tp
                      :key        (conj acc :| k)
-                     :slice      (conj acc :slice k)
+                     :slice      (conj acc :slicing :slices k)
                      :poly       (conj acc :| k)
                      :poly-slice (conj acc :| k))))
                [])))
@@ -129,7 +129,9 @@
 
 (defn extension-profiles [el]
   (if-let [ext-profs (:profile (first (:type el)))]
-    (assoc el :extension-profiles ext-profs)
+    (do
+      (assert (= 1 (count ext-profs)) (pr-str :unexpected-extension-profiles (:type el)))
+      (assoc el :fhir/extension (first ext-profs)))
     el))
 
 
@@ -148,8 +150,9 @@
       (if (= 1 (count (:type el)))
         (let [tp  (first (:type el))
               tpc (:code tp)]
-          (-> el (reference-profiles)
-              extension-profiles
+          (-> el
+              (reference-profiles)
+              (extension-profiles)
               (assoc :type tpc)))
         (throw (Exception. (pr-str el)))))))
 
@@ -164,15 +167,15 @@
     element))
 
 
-;; why not use settings of base for arity
-(defn fix-arity
-  "The first ElementDefinition (root element) usually has max=* which may be treated as a collection
-  but we are treating StructureDefinition as a tool to validate a single resource"
-  [{:as element el-type :type} {v :vector r :required base-type :type :as _base}]
-  (let [tp (or el-type base-type)]
-    (cond-> (merge element (utils/strip-nils {:vector v :required r}))
-      tp (assoc :type tp)
-      (not v) (dissoc :maxItems :minItems))))
+;; ;; why not use settings of base for arity
+;; (defn fix-arity
+;;   "The first ElementDefinition (root element) usually has max=* which may be treated as a collection
+;;   but we are treating StructureDefinition as a tool to validate a single resource"
+;;   [{:as element el-type :type} {v :vector r :required base-type :type :as _base}]
+;;   (let [tp (or el-type base-type)]
+;;     (cond-> (merge element (utils/strip-nils {:vector v :required r}))
+;;       tp (assoc :type tp)
+;;       (not v) (dissoc :maxItems :minItems))))
 
 (defn normalize-arity
   "The first ElementDefinition (root element) usually has max=* which may be treated as a collection
@@ -234,7 +237,7 @@
 
 
 (defn *normalize-extension [ext res]
-  (if-let [complex (get-in res [:| :extension :slice])]
+  (if-let [complex (get-in res [:| :extension :slicing :slices])]
     (-> (assoc res :| (->> complex
                            (reduce (fn [acc [k v]]
                                      (assert (= (name k) (:sliceName v)) (pr-str :slice-name k (:sliceName v)))
@@ -355,9 +358,10 @@
 
 
 (defn get-base-elements [ztx k el bases]
-  (let [elements-stack (cons el bases)
+  (let [elements-stack bases ;;(cons el bases) ;; ????
         base-elements  (keep #(get-in % [:| k]) (reverse elements-stack))
-        types          (set (keep #(get-in % [:type]) base-elements))
+        types          (cond-> (set (keep #(get-in % [:type]) base-elements))
+                         (:type el) (conj (:type el)))
         types-defs     (map (partial get-type-definition ztx) types)]
     (not-empty (vec (concat base-elements types-defs)))))
 
@@ -395,14 +399,10 @@
       (update subj :|
               #(reduce (fn [acc [k el]]
                          (if (= :extension k)
-                           (->> (:slice el)
+                           (->> (get-in el [:slicing :slices])
                                 (reduce (fn [acc [ext-k ext-el]]
-                                          (when (> 1 (count (:extension-profiles ext-el)))
-                                            (assert false (pr-str :multiple-et-profiles  ext-el)))
                                           (assert (= ext-k (keyword (:sliceName ext-el))) (pr-str ext-k "!=" (:sliceName ext-el)))
-                                          (assoc acc ext-k (-> ext-el
-                                                               (dissoc :type :sliceName)
-                                                               (assoc :fhir/extension (first (:extension-profiles ext-el))))))
+                                          (assoc acc ext-k (dissoc ext-el :type :sliceName)))
                                         acc))
                            (let [[k base-els] (search-base-elements ztx k el bases)]
                              (if base-els
@@ -415,7 +415,7 @@
                                        new-ctx  (-> (update ctx :lvl inc) (update :path conj poly-key))]
                                    (assoc acc poly-key (walk-with-bases ztx new-ctx poly-el base-els)))
                                  (do
-                                   #_(assert false (pr-str "!!" ctx k el))
+                                   ;; (assert false (pr-str :no-base (conj (:path ctx) k) el))
                                    (assoc acc k (assoc el :error :no-base))))))))
                        {}
                        %)))))
@@ -432,10 +432,9 @@
 
 
 (defn collect-extension-profiles [acc path v]
-  (reduce (fn [acc' url]
-            (update-in acc' [:extensions url] (comp vec distinct concat) [path]))
-          acc
-          (:extension-profiles v)))
+  (if-let [url (:fhir/extension v)]
+    (update-in acc [:extensions url] (comp vec distinct concat) [path])
+    acc))
 
 
 (defn collect-types [acc path v]
@@ -562,6 +561,7 @@
           }
 
 }
+
 ;; us-core.v2 {imports all us-core}
 {'ns 'us-core.v2.ValueSet
 
