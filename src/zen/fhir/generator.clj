@@ -54,8 +54,9 @@
                              (when (seq (:| el))
                                (els-schema fhir-inter [url el])))]
               (if (:vector el)
-                {:type 'zen/vector
-                 :every sch}
+                (merge {:type 'zen/vector
+                        :every sch}
+                       (select-keys el [:minItems :maxItems]))
                 sch)))]
     {:type 'zen/map
      :keys (sp/transform [sp/MAP-VALS]

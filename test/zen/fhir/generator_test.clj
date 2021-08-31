@@ -80,7 +80,14 @@
      'us-core.v3.us-core-patient
      {'ns     'us-core.v3.us-core-patient
       'import #(contains? % 'fhir.r4.Patient)
-      'schema {:confirms #(contains? % 'fhir.r4.Patient/schema)}}})
+      'schema {:confirms  #{'fhir.r4.Patient/schema}
+               :type 'zen/map
+               :keys {:identifier {:type     'zen/vector
+                                   :minItems 1
+                                   :every    {:confirms #{'fhir.r4.Identifier/schema}
+                                              :type 'zen/map
+                                              :keys {:system {:confirms #{'fhir.r4.uri/schema}}
+                                                     :value  {:confirms #{'fhir.r4.string/schema}}}}}}}}})
 
 
   (delete-directory-recursive (io/file "test-temp-zrc"))
