@@ -4,11 +4,19 @@
    [zen.fhir.core]
    [zen.core]
    [matcho.core :as matcho]
-   [clojure.test :as t]))
+   [clojure.test :as t]
+   [clojure.java.io :as io]))
+
+
+(defn delete-directory-recursive
+  [^java.io.File file]
+  (when (.isDirectory file)
+    (doseq [file-in-dir (.listFiles file)]
+      (delete-directory-recursive file-in-dir)))
+  (io/delete-file file))
 
 
 (t/deftest generate-project-integration
-
   (def ztx  (zen.core/new-context {}))
 
   (zen.fhir.core/load-all ztx "hl7.fhir.us.core"
@@ -17,7 +25,7 @@
 
   (get-in @ztx [:fhir/inter "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/patient-nationality"])
 
-  (sut/generate-zen-schemas ztx)
+  (t/is (= :done (sut/generate-zen-schemas ztx)))
 
   (matcho/match
     (:fhir.zen/ns @ztx)
@@ -42,4 +50,15 @@
      'us-core.v3.us-core-patient
      {'ns     'us-core.v3.us-core-patient
       'import #(contains? % 'fhir.r4.Patient)
-      'schema {:confirms #(contains? % 'fhir.r4.Patient/schema)}}}))
+      'schema {:confirms #(contains? % 'fhir.r4.Patient/schema)}}})
+
+
+  (delete-directory-recursive (io/file "test-temp-zrc"))
+
+  (t/is (= :done (sut/spit-zen-schemas ztx "test-temp-zrc/")))
+
+  (t/is (.exists (io/file "test-temp-zrc/fhir/r4/Element.edn")))
+  (t/is (.exists (io/file "test-temp-zrc/fhir/r4/Resource.edn")))
+  (t/is (.exists (io/file "test-temp-zrc/fhir/r4/DomainResource.edn")))
+  (t/is (.exists (io/file "test-temp-zrc/fhir/r4/Patient.edn")))
+  (t/is (.exists (io/file "test-temp-zrc/us-core/v3/us-core-patient.edn"))))
