@@ -347,27 +347,29 @@
                                   :|    {:attr {:vector true :type "prim"}}}}}}}))
 
   (t/testing "Dependency escalation"
-    (load-base
+
+    (load-type
+      {:name "ComplexType"
+       :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
+
+    (load-type
+      {:name "Reference"
+       :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
+
+    (load-profile
       {:name "BaseResource2"
        :base "DomainResource"
-       :els  [{:id   "complexattr"
-               :type [{:code "ComplexType"}]}
-              {:id      "complexattr.attr"
-               :type    [{:code "prim"}]
-               :binding {:strength "required", :valueSet "url://valueset"}}
-              {:id   "ref"
-               :type [{:code          "Reference" :targetProfile ["url://SomeResource"]}]}
-              {:id      "extension", :type [{:code "Extension"}] :slicing {:discriminator [{:type "value", :path "url"}]}}
-              {:id "extension:some-ext"
-               :type   [{:code    "Extension" :profile ["url://some-ext"]}]
-               :sliceName "some-ext"}
-              {:id      "polyattr[x]"
-               :type    [{:code "prim"} {:code "string"}]
-               :binding {:strength "required", :valueSet "url://valueset"}}]})
+       :els  [{:id  "complexattr" :type [{:code "ComplexType"}]}
+              {:id  "complexattr.attr" :type    [{:code "prim"}] :binding {:strength "required", :valueSet "url://valueset"}}
+              {:id  "ref" :type [{:code "Reference" :targetProfile ["url://SomeResource"]}]}
+              {:id  "extension", :type [{:code "Extension"}] :slicing {:discriminator [{:type "value", :path "url"}]}}
+              {:id  "extension:some-ext" :type   [{:code    "Extension" :profile ["url://some-ext"]}] :sliceName "some-ext"}
+              {:id  "polyattr[x]" :type  [{:code "prim"} {:code "string"}] :binding {:strength "required", :valueSet "url://valueset"}}]})
 
     (reload)
 
     (sut/get-definition aztx "url://BaseResource2")
+    (sut/get-base-elements aztx :key {:type "ComplexType"} [])
 
     (matcho/match
       (sut/get-definition aztx "url://BaseResource2")

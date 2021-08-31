@@ -351,9 +351,10 @@
 
 
 (defn get-base-elements [ztx k el bases]
-  (let [elements-stack (cons el bases)
+  (let [elements-stack bases ;;(cons el bases) ;; ????
         base-elements  (keep #(get-in % [:| k]) (reverse elements-stack))
-        types          (set (keep #(get-in % [:type]) base-elements))
+        types          (cond-> (set (keep #(get-in % [:type]) base-elements))
+                         (:type el) (conj (:type el)))
         types-defs     (map (partial get-type-definition ztx) types)]
     (not-empty (vec (concat base-elements types-defs)))))
 
@@ -407,7 +408,7 @@
                                        new-ctx  (-> (update ctx :lvl inc) (update :path conj poly-key))]
                                    (assoc acc poly-key (walk-with-bases ztx new-ctx poly-el base-els)))
                                  (do
-                                   (assert false (pr-str "!!" ctx k el))
+                                   ;; (assert false (pr-str :no-base (conj (:path ctx) k) el))
                                    (assoc acc k (assoc el :error :no-base))))))))
                        {}
                        %)))))
