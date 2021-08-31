@@ -328,8 +328,11 @@
 
 
 (defn get-type-definition [ztx type-name]
-  (let [definition (get-definition ztx (str "http://hl7.org/fhir/StructureDefinition/" type-name))]
-    (assert definition (str "Could not find type definition: " type-name))
+  (let [tp (if (str/starts-with? type-name "http://hl7.org/fhirpath/System.")
+             (str (str/lower-case (subs type-name 31 32)) (subs type-name 32))
+             type-name)
+        definition (get-definition ztx (str "http://hl7.org/fhir/StructureDefinition/" tp))]
+    (assert definition (str "Could not find type definition: " tp))
     definition))
 
 

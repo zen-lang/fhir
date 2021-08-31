@@ -536,7 +536,7 @@
 (t/deftest ^:kaocha/pending fhir-aidbox-poly-keys-mapping)
 
 
-#_(t/deftest fhir-aidbox-poly-keys-mapping
+(t/deftest fhir-aidbox-poly-keys-mapping
   (def ztx (zen.core/new-context {}))
 
   (sut/load-all ztx "hl7.fhir.r4.core")
