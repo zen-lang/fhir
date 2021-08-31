@@ -433,7 +433,9 @@
 
 (defn collect-types [acc path v]
   (reduce (fn [acc' el-type]
-            (update-in acc' [:types el-type] (comp vec distinct concat) [path]))
+            (update-in acc'
+                       [:types (str "http://hl7.org/fhir/StructureDefinition/" el-type)]
+                       (comp vec distinct concat) [path]))
           acc
           (cons (:type v) (:types v))))
 

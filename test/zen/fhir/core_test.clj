@@ -373,11 +373,11 @@
     (matcho/match
       (sut/get-definition aztx "url://BaseResource2")
       {:deps {:value-sets            {"url://valueset" [[:complexattr :attr]]}
-              :types                 {"ComplexType" [[:complexattr]]
-                                      "Reference"   [[:ref]]
-                                      "Extension"   [[:some-ext] [:ext]]
-                                      "prim"        [[:complexattr :attr] [:polyattr :prim]]
-                                      "string"      [[:polyattr :string]]}
+              :types                 {"http://hl7.org/fhir/StructureDefinition/ComplexType" [[:complexattr]]
+                                      "http://hl7.org/fhir/StructureDefinition/Reference"   [[:ref]]
+                                      "http://hl7.org/fhir/StructureDefinition/Extension"   [[:some-ext] [:ext]]
+                                      "http://hl7.org/fhir/StructureDefinition/prim"        [[:complexattr :attr] [:polyattr :prim]]
+                                      "http://hl7.org/fhir/StructureDefinition/string"      [[:polyattr :string]]}
               :extensions            {"url://some-ext" [[:some-ext]]}
               :references            {"url://SomeResource" [[:ref]]}
               :structure-definitions {"url://DomainResource" [[]]}}}))
