@@ -1,5 +1,72 @@
 (ns zen.fhir.generator
-  (:require [zen.fhir.utils :as utils]))
+  (:require [zen.fhir.utils :as utils]
+            [com.rpl.specter :as sp]))
+
+
+(defmulti generate-kind-schema
+  (fn [_fhir-inter [_url inter-res]]
+    (keyword (:kind inter-res))))
+
+
+(def fhir-primitive->zen-primitive
+  '{"boolean" zen/boolean
+
+    "decimal"     zen/number
+    "integer"     zen/integer
+    "unsignedInt" zen/integer
+    "positiveInt" zen/integer
+
+    "string"       zen/string
+    "markdown"     zen/string
+    "id"           zen/string
+    "uuid"         zen/string
+    "oid"          zen/string
+    "uri"          zen/string
+    "url"          zen/string
+    "canonical"    zen/string
+    "code"         zen/string
+    "base64Binary" zen/string
+    "xhtml"        zen/string
+
+    "instant"  zen/string
+    "dateTime" zen/datetime
+    "date"     zen/date
+    "time"     zen/string})
+
+
+(defmethod generate-kind-schema :primitive-type [_fhir-inter [_url inter-res]]
+  (let [tp         (get-in inter-res [:| :value :type])
+        zen-type   (fhir-primitive->zen-primitive tp)]
+    {:type zen-type}))
+
+
+(defn type-string->type-symbol [fhir-inter tp]
+  (let [tp-url (str "http://hl7.org/fhir/StructureDefinition/" tp)]
+    (when-let [tp-ns (get-in fhir-inter ["StructureDefinition" tp-url :zen.fhir/schema-ns])]
+      (symbol (name tp-ns) "schema"))))
+
+
+(defn el-schema [fhir-inter el]
+  {:confirms #{(type-string->type-symbol fhir-inter (:type el))}})
+
+
+(defn els-schema [fhir-inter [_url inter-res]]
+  {:type 'zen/map
+   :keys (sp/transform [sp/MAP-VALS]
+                       (partial el-schema fhir-inter)
+                       (:| inter-res))})
+
+
+(defmethod generate-kind-schema :complex-type [fhir-inter [url inter-res]]
+  (els-schema fhir-inter [url inter-res]))
+
+
+(defmethod generate-kind-schema :resource [fhir-inter [url inter-res]]
+  (els-schema fhir-inter [url inter-res]))
+
+
+(defmethod generate-kind-schema :logical [fhir-inter [url inter-res]]
+  (els-schema fhir-inter [url inter-res]))
 
 
 (defn generate-zen-schema [fhir-inter [url inter-res]]
@@ -10,12 +77,14 @@
                           (keys (apply concat (vals (:deps inter-res)))))
         base-schema (some-> (get-in sd-inter [(:baseDefinition inter-res) :zen.fhir/schema-ns])
                             name
-                            (symbol "schema"))]
+                            (symbol "schema"))
+        schema-part (generate-kind-schema fhir-inter [url inter-res])]
     {schema-ns {'ns     schema-ns
                 'import imports
                 'schema (utils/strip-nils
-                          {:zen/tags #{'zen/schema}
-                           :confirms (when base-schema #{base-schema})})}}))
+                          (merge {:zen/tags #{'zen/schema}
+                                  :confirms (when base-schema #{base-schema})}
+                                 schema-part))}}))
 
 
 (defn generate-zen-schemas* [fhir-inter]

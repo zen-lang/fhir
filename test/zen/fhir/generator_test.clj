@@ -24,28 +24,49 @@
                                     "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core.v3}}})
 
   (get-in @ztx [:fhir/inter "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/patient-nationality"])
+  (get-in @ztx [:fhir/inter "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/string"])
 
   (t/is (= :done (sut/generate-zen-schemas ztx)))
 
   (matcho/match
     (:fhir.zen/ns @ztx)
-    {'fhir.r4.Element
+    {'fhir.r4.string
+     {'ns     'fhir.r4.string
+      'schema {:zen/tags #{'zen/schema}
+               :type 'zen/string}}
+
+     'fhir.r4.Element
      {'ns     'fhir.r4.Element
-      'schema {}}
+      'schema {:zen/tags #{'zen/schema}
+               :type     'zen/map
+               :keys     {:id        {:confirms #{'fhir.r4.string/schema}}
+                          :extension {:confirms #{'fhir.r4.Extension/schema}}}}}
 
      'fhir.r4.Resource
      {'ns     'fhir.r4.Resource
-      'schema {}}
+      'schema {:zen/tags #{'zen/schema}
+               :type 'zen/map
+               :keys {:id            {:confirms #{'fhir.r4.string/schema}}
+                      :meta          {:confirms #{'fhir.r4.Meta/schema}}
+                      :implicitRules {:confirms #{'fhir.r4.uri/schema}}
+                      :language      {:confirms #{'fhir.r4.code/schema}}}}}
 
      'fhir.r4.DomainResource
      {'ns     'fhir.r4.DomainResource
       'import #(contains? % 'fhir.r4.Resource)
-      'schema {:confirms #(contains? % 'fhir.r4.Resource/schema)}}
+      'schema {:confirms #{'fhir.r4.Resource/schema}
+               :type 'zen/map
+               :keys {:text              {:confirms #{'fhir.r4.Narrative/schema}}
+                      :contained         {:confirms #{'fhir.r4.Resource/schema}}
+                      :extension         {:confirms #{'fhir.r4.Extension/schema}}
+                      :modifierExtension {:confirms #{'fhir.r4.Extension/schema}}}}}
 
      'fhir.r4.Patient
      {'ns     'fhir.r4.Patient
       'import #(contains? % 'fhir.r4.DomainResource)
-      'schema {:confirms #(contains? % 'fhir.r4.DomainResource/schema)}}
+      'schema {:confirms #{'fhir.r4.DomainResource/schema}
+               :type 'zen/map
+               :keys {:active {:confirms #{'fhir.r4.boolean/schema}}}}}
 
      'us-core.v3.us-core-patient
      {'ns     'us-core.v3.us-core-patient
