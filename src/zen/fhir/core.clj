@@ -268,13 +268,17 @@
     (assoc (*normalize-extension res res)
            :fhir/extension (:url res))))
 
+
 (defn load-intermidiate [res]
   (->> (get-in res [:differential :element])
        (mapv normalize-element)
        (group-elements (select-keys res [:kind :derivation :baseDefinition :description :fhirVersion :type :url]))
        (normalize-description)
-       (normalize-extension)))
-
+       (normalize-extension)
+       (merge
+         (when-let [package-ns (:zen.fhir/package-ns res)]
+           {:zen.fhir/package-ns package-ns
+            :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))}))))
 
 
 (defmulti process-on-load
@@ -301,9 +305,12 @@
     (println :WARN :no-resource-type header)))
 
 
-(defn load-json-file [ztx package header f]
+(defn load-json-file [ztx package header f & [{:keys [params]}]]
   (let [res (-> (cheshire.core/parse-string (slurp f) keyword)
-                (assoc :zen.fhir/header header :zen.fhir/package package :zen.fhir/file (.getPath f)))]
+                (assoc :zen.fhir/header header :zen.fhir/package package :zen.fhir/file (.getPath f))
+                (merge
+                  {:zen.fhir/package-ns (symbol (:name package))}
+                  (select-keys params #{:zen.fhir/package-ns})))]
     (load-definiton ztx package header res)))
 
 
@@ -438,7 +445,9 @@
 
 (defn collect-types [acc path v]
   (reduce (fn [acc' el-type]
-            (update-in acc' [:types el-type] (comp vec distinct concat) [path]))
+            (update-in acc'
+                       [:types (str "http://hl7.org/fhir/StructureDefinition/" el-type)]
+                       (comp vec distinct concat) [path]))
           acc
           (cons (:type v) (:types v))))
 
@@ -521,15 +530,20 @@
   (process-structure-definitions ztx))
 
 
-(defn load-all [ztx package]
+(defn load-all [ztx package & [{:keys [params]}]]
   (doseq [pkg-dir (.listFiles (io/file "node_modules"))
           :when   (and (.isDirectory pkg-dir)(not (str/starts-with? (.getName pkg-dir) ".")))
           :let    [package (read-json (str (.getPath pkg-dir) "/package.json"))
-                   index   (read-json (str (.getPath pkg-dir) "/.index.json"))]
+                   index   (read-json (str (.getPath pkg-dir) "/.index.json"))
+                   package-params (get params (:name package))]
+
           {filename :filename :as header} (:files index)]
-    (load-json-file ztx package header (io/file (str (.getPath pkg-dir) "/" filename))))
+    (load-json-file ztx package header
+                    (io/file (str (.getPath pkg-dir) "/" filename))
+                    {:params package-params}))
   (preprocess-resources ztx)
-  (process-resources ztx))
+  (process-resources ztx)
+  :done)
 
 
 ;; 1. depency to generate import in zen (profile, type, extension, valuesets)
