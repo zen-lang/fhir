@@ -418,7 +418,7 @@
       subj
       (update subj :|
               #(reduce (fn [acc [k el]]
-                         (if (and (= :extension k) (not (:element-definition? ctx)))
+                         (if (and (= :extension k) (not (:do-not-handle-first-class-ext? ctx)))
                            (->> (get-in el [:slicing :slices])
                                 (reduce (fn [acc [ext-k ext-el]]
                                           (assert (= ext-k (keyword (:sliceName ext-el))) (pr-str ext-k "!=" (:sliceName ext-el)))
@@ -519,7 +519,8 @@
             (when (= "constraint" (:derivation subj))
               (println (pr-str :WARN :no-base url)))
             (walk-with-bases ztx {:lvl 0 :path [url] :derivation (:derivation subj)
-                                  :element-definition? (= "http://hl7.org/fhir/StructureDefinition/Element" (:url subj))}
+                                  :do-not-handle-first-class-ext? (or (= "http://hl7.org/fhir/StructureDefinition/Element" (:url subj))
+                                                                      (= "http://hl7.org/fhir/StructureDefinition/DomainResource" (:url subj)))}
                              subj bases)))]
     (assoc processed-sd :deps (collect-deps processed-sd))))
 
