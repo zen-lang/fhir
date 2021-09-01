@@ -17,7 +17,7 @@
   (io/delete-file file true))
 
 
-(t/deftest generate-project-integration
+(t/deftest ^:kaocha/pending generate-project-integration
   (def ztx  (zen.core/new-context {}))
 
   (zen.fhir.core/load-all ztx "hl7.fhir.us.core"
