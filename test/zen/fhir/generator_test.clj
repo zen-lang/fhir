@@ -142,7 +142,8 @@
                                resource-schema
                                {:zen/tags #{zen/schema}
                                 :type     zen/map
-                                :keys     {:zenbox/resourceType {:type zen/string}}}
+                                :keys     {:zenbox/resourceType {:type zen/string}
+                                           :zenbox/profileUrl {:type zen/string}}}
 
                                base-schema
                                {:zen/tags #{zen/schema zen/tag}
