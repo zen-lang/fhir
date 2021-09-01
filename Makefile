@@ -29,3 +29,7 @@ uberjar:
 
 pub:
 	clj -A:deploy
+
+zen-profiles:
+	clj -M -m zen.fhir.tooling $(node_modules) $(zrc)
+
