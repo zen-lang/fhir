@@ -35,6 +35,7 @@
     {'fhir-r4.string
      {'ns     'fhir-r4.string
       'schema {:zen/tags #{'zen/schema}
+               :confirms #(not (contains? % 'fhir-r4.Element/schema))
                :type 'zen/string}}
 
      'fhir-r4.Element

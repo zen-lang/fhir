@@ -36,10 +36,20 @@
     "time"     zen/string})
 
 
-(defmethod generate-kind-schema :primitive-type [_fhir-inter [_url inter-res]]
+(defn confirms-base [fhir-inter [_url inter-res]]
+  (let [base-schema (some-> (get-in fhir-inter ["StructureDefinition" (:baseDefinition inter-res) :zen.fhir/schema-ns])
+                            name
+                            (symbol "schema"))]
+    {:confirms (when base-schema #{base-schema})}))
+
+
+(defmethod generate-kind-schema :primitive-type [fhir-inter [url inter-res]]
   (let [tp         (get-in inter-res [:| :value :type])
         zen-type   (fhir-primitive->zen-primitive tp)]
-    {:type zen-type}))
+    (merge {:type zen-type}
+           (when (not= "http://hl7.org/fhir/StructureDefinition/Element"
+                       (:baseDefinition inter-res))
+             (confirms-base fhir-inter [url inter-res])))))
 
 
 (defn type-string->type-symbol [fhir-inter tp]
@@ -74,15 +84,21 @@
 
 
 (defmethod generate-kind-schema :complex-type [fhir-inter [url inter-res]]
-  (els-schema fhir-inter [url inter-res]))
+  (merge
+    (confirms-base fhir-inter [url inter-res])
+    (els-schema fhir-inter [url inter-res])))
 
 
 (defmethod generate-kind-schema :resource [fhir-inter [url inter-res]]
-  (els-schema fhir-inter [url inter-res]))
+  (merge
+    (confirms-base fhir-inter [url inter-res])
+    (els-schema fhir-inter [url inter-res])))
 
 
 (defmethod generate-kind-schema :logical [fhir-inter [url inter-res]]
-  (els-schema fhir-inter [url inter-res]))
+  (merge
+    (confirms-base fhir-inter [url inter-res])
+    (els-schema fhir-inter [url inter-res])))
 
 
 (defn generate-zen-schema [fhir-inter [url inter-res]]
@@ -91,9 +107,6 @@
         imports     (into #{}
                           (keep (comp :zen.fhir/schema-ns sd-inter))
                           (keys (apply concat (vals (:deps inter-res)))))
-        base-schema (some-> (get-in sd-inter [(:baseDefinition inter-res) :zen.fhir/schema-ns])
-                            name
-                            (symbol "schema"))
 
         instantiated-resource? (and (not (:abstract inter-res))
                                     (= "resource" (:kind inter-res)))
@@ -107,8 +120,7 @@
                 'import imports
                 'schema (utils/strip-nils
                           (merge {:zen/tags (into #{'zen/schema}
-                                                  (when severity-tag [severity-tag]))
-                                  :confirms (when base-schema #{base-schema})}
+                                                  (when severity-tag [severity-tag]))}
                                  schema-part))}}))
 
 
