@@ -1,7 +1,8 @@
 (ns zen.fhir.generator
   (:require [zen.fhir.utils :as utils]
             [com.rpl.specter :as sp]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [cheshire.core :as json]))
 
 
 (defmulti generate-kind-schema
@@ -140,8 +141,18 @@
   :done)
 
 
-(defn spit-zen-npm-modules [& args]
-  :todo)
+(defn spit-zen-npm-modules [ztx zrc-dir]
+  (spit-zen-schemas ztx zrc-dir)
+  (let [packages (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
+                      vals
+                      (map :zen.fhir/package-ns)
+                      distinct)]
+    (run! (fn [package]
+            (let [file (str zrc-dir package "/package.json")]
+              (spit file (json/generate-string {:name package}
+                                               {:pretty true}))))
+          packages))
+  :done)
 
 ;; * resources, types
 ;;  -> sd (+deps => ctx)

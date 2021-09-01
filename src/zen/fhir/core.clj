@@ -549,8 +549,9 @@
   (process-structure-definitions ztx))
 
 
-(defn load-all [ztx package & [{:keys [params]}]]
-  (doseq [pkg-dir (.listFiles (io/file "node_modules"))
+(defn load-all [ztx package & [{:keys [params node-modules-folder]
+                                :or {node-modules-folder "node_modules"}}]]
+  (doseq [pkg-dir (.listFiles (io/file node-modules-folder))
           :when   (and (.isDirectory pkg-dir)(not (str/starts-with? (.getName pkg-dir) ".")))
           :let    [package (read-json (str (.getPath pkg-dir) "/package.json"))
                    index   (read-json (str (.getPath pkg-dir) "/.index.json"))

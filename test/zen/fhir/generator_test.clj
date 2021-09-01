@@ -22,7 +22,8 @@
 
   (zen.fhir.core/load-all ztx "hl7.fhir.us.core"
                           {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
-                                    "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}}})
+                                    "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}
+                                    "hl7.fhir.us.carin-bb" {:zen.fhir/package-ns 'carin-bb-v1}}})
 
   (get-in @ztx [:fhir/inter "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/patient-nationality"])
   (get-in @ztx [:fhir/inter "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/string"])
