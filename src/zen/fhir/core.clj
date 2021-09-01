@@ -281,11 +281,11 @@
     (assoc (*normalize-extension res res)
            :fhir/extension (:url res))))
 
-
 (defn load-intermidiate [res]
   (->> (get-in res [:differential :element])
        (mapv normalize-element)
-       (group-elements (select-keys res [:kind :derivation :baseDefinition :description :fhirVersion :type :url]))
+       (group-elements (select-keys res [:kind :abstract :derivation
+                                         :baseDefinition :description :fhirVersion :type :url]))
        (normalize-description)
        (normalize-extension)
        (merge

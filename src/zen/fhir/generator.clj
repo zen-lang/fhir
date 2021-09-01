@@ -94,11 +94,20 @@
         base-schema (some-> (get-in sd-inter [(:baseDefinition inter-res) :zen.fhir/schema-ns])
                             name
                             (symbol "schema"))
-        schema-part (generate-kind-schema fhir-inter [url inter-res])]
+
+        instantiated-resource? (and (not (:abstract inter-res))
+                                    (= "resource" (:kind inter-res)))
+        severity-tag           (when instantiated-resource?
+                                 (case (:derivation inter-res)
+                                   "constraint"     'zenbox/profile-schema
+                                   "specialization" 'zenbox/base-schema
+                                   nil))
+        schema-part            (generate-kind-schema fhir-inter [url inter-res])]
     {schema-ns {'ns     schema-ns
                 'import imports
                 'schema (utils/strip-nils
-                          (merge {:zen/tags #{'zen/schema}
+                          (merge {:zen/tags (into #{'zen/schema}
+                                                  (when severity-tag [severity-tag]))
                                   :confirms (when base-schema #{base-schema})}
                                  schema-part))}}))
 
