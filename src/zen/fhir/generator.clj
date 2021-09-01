@@ -104,7 +104,7 @@
 (defn generate-zen-schema [fhir-inter [url inter-res]]
   (let [sd-inter    (get fhir-inter "StructureDefinition")
         schema-ns   (:zen.fhir/schema-ns inter-res)
-        imports     (into #{}
+        imports     (into #{'zenbox}
                           (keep (comp :zen.fhir/schema-ns sd-inter))
                           (keys (apply concat (vals (:deps inter-res)))))
 
