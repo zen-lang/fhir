@@ -120,7 +120,9 @@
                 'import imports
                 'schema (utils/strip-nils
                           (merge {:zen/tags (into #{'zen/schema}
-                                                  (when severity-tag [severity-tag]))}
+                                                  (when severity-tag [severity-tag]))
+                                  :zenbox/resourceType (:type inter-res)
+                                  :zenbox/profileUrl url}
                                  schema-part))}}))
 
 

@@ -75,6 +75,8 @@
       'schema {:zen/tags #{'zen/schema 'zenbox/base-schema}
                :confirms #{'fhir-r4.DomainResource/schema}
                :type 'zen/map
+               :zenbox/resourceType "Patient"
+               :zenbox/profileUrl "http://hl7.org/fhir/StructureDefinition/Patient"
                :keys {:name {:type 'zen/vector
                              :every {:confirms #{'fhir-r4.HumanName/schema}}}
                       :active {:confirms #{'fhir-r4.boolean/schema}}
@@ -89,6 +91,8 @@
       'schema {:zen/tags #{'zen/schema 'zenbox/profile-schema}
                :confirms  #{'fhir-r4.Patient/schema}
                :type 'zen/map
+               :zenbox/resourceType "Patient"
+               :zenbox/profileUrl "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
                :keys {:race      {:confirms #{'us-core-v3.us-core-race/schema}}
                       :ethnicity {:confirms #{'us-core-v3.us-core-ethnicity/schema}}
                       :birthsex  {:confirms #{'us-core-v3.us-core-birthsex/schema}}
