@@ -128,4 +128,38 @@
                                io/file
                                slurp
                                (json/parse-string keyword))]
-               (= "us-core-v3" (:name package))))))
+               (= "us-core-v3" (:name package)))))
+
+  (def ztx (zen.core/new-context
+             {:paths "test-temp-zrc/"
+              :memory-store '{zenbox
+                              {ns zenbox
+
+                               resource-schema
+                               {:zen/tags #{zen/schema}
+                                :type     zen/map
+                                :keys     {:zenbox/resourceType {:type zen/string}}}
+
+                               base-schema
+                               {:zen/tags #{zen/schema zen/tag}
+                                :zen/desc "This schema should be used to validate all resources of its type"
+                                :confirms #{resource-schema}}
+
+                               profile-schema
+                               {:zen/tags #{zen/schema zen/tag}
+                                :zen/desc "This schema should be used only when mentioned in meta.profile"
+                                :confirms #{resource-schema}}}}}))
+
+  (zen.core/read-ns ztx 'us-core-v3.us-core-patient)
+
+  (t/is (empty? (:errors @ztx)))
+
+  (t/is (empty? (:errors (zen.core/validate ztx '#{fhir-r4.Patient/schema} {}))))
+
+  (def fhir-pat (read-string (slurp (io/resource "zen/fhir/aidbox-fhir-r4-patient-example.edn"))))
+
+  (t/is (empty? (:errors (zen.core/validate ztx '#{fhir-r4.Patient/schema} fhir-pat))))
+
+  (t/is (empty? (:errors (zen.core/validate ztx '#{us-core-v3.us-core-patient/schema} {}))))
+
+  )
