@@ -124,7 +124,7 @@
                                slurp
                                (json/parse-string keyword))]
                (matcho/match package
-                             {:name "fhir-r4"
+                             {:name "zen-fhir-r4"
                               :version "0.0.1-test"}))))
 
 
@@ -135,7 +135,7 @@
                                slurp
                                (json/parse-string keyword))]
                (matcho/match package
-                             {:name "us-core-v3"
+                             {:name "zen-us-core-v3"
                               :version "0.0.1-test"}))))
 
   (def ztx (zen.core/new-context

@@ -168,11 +168,11 @@
   (spit-zen-schemas ztx zrc-dir)
   (let [packages (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
                       vals
-                      (map :zen.fhir/package-ns)
+                      (map (comp name :zen.fhir/package-ns))
                       distinct)]
     (run! (fn [package]
             (let [file (str zrc-dir package "/package.json")]
-              (spit file (json/generate-string {:name    package
+              (spit file (json/generate-string {:name    (str "zen-" package)
                                                 :version ver
                                                 :author  "Health-Samurai" ;; TODO: parameterize this
                                                 :license "MIT"}
