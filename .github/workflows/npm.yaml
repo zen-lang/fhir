@@ -26,7 +26,7 @@ jobs:
 #        with:
 #          cli: 1.10.1.693
 
-      - run: npm whoiam
+      - run: npm whoami
         name: WhoAmI after
 
       - run: npm login
