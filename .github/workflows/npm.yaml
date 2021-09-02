@@ -28,8 +28,6 @@ jobs:
       - run: echo "//<npm-registry>:8080/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
         name: Save NPM token to .npmrc
 
-      - run: npm whoami
-        name: WhoAmI before
 
       - run: npm login
         name: npm login
