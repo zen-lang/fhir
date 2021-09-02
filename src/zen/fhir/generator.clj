@@ -166,11 +166,12 @@
   :done)
 
 
-(defn spit-zen-npm-modules [ztx zrc-node-modules-dir ver]
-  (let [packages (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
-                      vals
-                      (map (comp name :zen.fhir/package-ns))
-                      distinct)]
+(defn spit-zen-npm-modules [ztx zrc-node-modules-dir ver & [package-name]]
+  (let [packages (-> (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
+                          vals
+                          (map (comp name :zen.fhir/package-ns))
+                          distinct)
+                     (cond->> (some? package-name) (filter #{(name package-name)})))]
     (doseq [package packages
             :let [package-dir (str zrc-node-modules-dir \/ package \/)
                   package-file-path (str package-dir "/package.json")

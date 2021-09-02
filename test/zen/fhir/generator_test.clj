@@ -118,7 +118,7 @@
 
   (delete-directory-recursive (io/file "test-temp-zrc"))
 
-  (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test")))
+  (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test" "fhir-r4")))
 
   (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
   (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/package.json"))
@@ -130,7 +130,11 @@
                              {:name "@zen-lang/fhir-r4"
                               :version "0.0.1-test"}))))
 
+  (t/is (not (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn"))))
 
+  (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test")))
+
+  (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
   (t/is (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn")))
   (t/is (and (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/package.json"))
              (let [package (-> "test-temp-zrc/node_modules/us-core-v3/package.json"
@@ -163,7 +167,6 @@
                    {:zen/tags #{zen/schema zen/tag}
                     :zen/desc "This schema should be used only when mentioned in meta.profile"
                     :confirms #{resource-schema}}}}}))
-
 
     (zen.core/read-ns ztx 'us-core-v3.us-core-patient)
 
