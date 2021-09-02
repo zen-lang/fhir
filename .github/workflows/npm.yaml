@@ -28,6 +28,9 @@ jobs:
 
       - run: npm whoami
         name: WhoAmI after
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
 
       - run: npm login
         env:
