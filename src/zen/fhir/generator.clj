@@ -158,26 +158,27 @@
   (doseq [[zen-ns ns-content] (get-in @ztx [:fhir.zen/ns])
           :let [nss  (name zen-ns)
                 file (str zrc-dir (str/replace nss #"\." "/") ".edn")
-                package-name (some-> package name (str/split #"\." 2) first)]
+                package-name (first (str/split nss #"\." 2))]
           :when (or (nil? package) (= package package-name))]
     (clojure.java.io/make-parents file)
     (spit file (format-zen-ns ns-content)))
   :done)
 
 
-(defn spit-zen-npm-modules [ztx zrc-dir ver]
+(defn spit-zen-npm-modules [ztx zrc-node-modules-dir ver]
   (let [packages (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
                       vals
                       (map (comp name :zen.fhir/package-ns))
                       distinct)]
-    (doseq [package packages]
-      (spit-zen-schemas ztx (str zrc-dir \/ package \/) {:package package})
-      (let [file (str zrc-dir \/ package "/package.json")]
-        (spit file (json/generate-string {:name    (str "@zen-lang/" package)
-                                          :version ver
-                                          :author  "Health-Samurai" ;; TODO: parameterize this
-                                          :license "MIT"}
-                                         {:pretty true}))))
+    (doseq [package packages
+            :let [package-dir (str zrc-node-modules-dir \/ package \/)
+                  package-file-path (str package-dir "/package.json")
+                  package-file {:name    (str "@zen-lang/" package)
+                                :version ver
+                                :author  "Health-Samurai" ;; TODO: parameterize this
+                                :license "MIT"}]]
+      (spit-zen-schemas ztx package-dir {:package package})
+      (spit package-file-path (json/generate-string package-file {:pretty true})))
     :done))
 
 ;; * resources, types
