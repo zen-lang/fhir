@@ -115,7 +115,7 @@
   (t/is (.exists (io/file "test-temp-zrc/us-core-v3/us-core-patient.edn")))
 
 
-  (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/")))
+  (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test")))
 
   (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/Element.edn")))
   (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/package.json"))
@@ -123,7 +123,9 @@
                                io/file
                                slurp
                                (json/parse-string keyword))]
-               (= "fhir-r4" (:name package)))))
+               (matcho/match package
+                             {:name "fhir-r4"
+                              :version "0.0.1-test"}))))
 
 
   (t/is (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-patient.edn")))
@@ -132,7 +134,9 @@
                                io/file
                                slurp
                                (json/parse-string keyword))]
-               (= "us-core-v3" (:name package)))))
+               (matcho/match package
+                             {:name "us-core-v3"
+                              :version "0.0.1-test"}))))
 
   (def ztx (zen.core/new-context
              {:paths "test-temp-zrc/"

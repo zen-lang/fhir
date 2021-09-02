@@ -164,7 +164,7 @@
   :done)
 
 
-(defn spit-zen-npm-modules [ztx zrc-dir]
+(defn spit-zen-npm-modules [ztx zrc-dir ver]
   (spit-zen-schemas ztx zrc-dir)
   (let [packages (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
                       vals
@@ -172,7 +172,7 @@
                       distinct)]
     (run! (fn [package]
             (let [file (str zrc-dir package "/package.json")]
-              (spit file (json/generate-string {:name package}
+              (spit file (json/generate-string {:name package, :version ver}
                                                {:pretty true}))))
           packages))
   :done)
