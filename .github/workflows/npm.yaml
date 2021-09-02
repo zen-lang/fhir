@@ -25,9 +25,8 @@ jobs:
         with:
           cli: 1.10.1.693
 
-      - run: echo "//<npm-registry>:8080/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-        name: Save NPM token to .npmrc
-
+      - run: npm config set strict-ssl=false
+        name: disable strict mode
 
       - run: npm login
         name: npm login
