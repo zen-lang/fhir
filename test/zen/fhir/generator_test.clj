@@ -149,7 +149,7 @@
                   {ns zenbox
 
                    structure-schema
-                   {:zen/tags #{zen/schema}
+                   {:zen/tags #{zen/schema zen/tag}
                     :type     zen/map
                     :keys     {:zenbox/resourceType {:type zen/string}
                                :zenbox/profileUrl {:type zen/string}}}
