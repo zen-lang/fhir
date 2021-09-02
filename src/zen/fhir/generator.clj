@@ -110,11 +110,12 @@
 
         instantiated-resource? (and (not (:abstract inter-res))
                                     (= "resource" (:kind inter-res)))
-        severity-tag           (when instantiated-resource?
-                                 (case (:derivation inter-res)
-                                   "constraint"     'zenbox/profile-schema
-                                   "specialization" 'zenbox/base-schema
-                                   nil))
+        severity-tag           (case (and instantiated-resource?
+                                          (:derivation inter-res))
+                                 "constraint"     'zenbox/profile-schema
+                                 "specialization" 'zenbox/base-schema
+                                 'zenbox/structure-schema)
+
         schema-part            (generate-kind-schema fhir-inter [url inter-res])]
     {schema-ns {'ns     schema-ns
                 'import imports

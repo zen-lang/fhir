@@ -34,13 +34,13 @@
     (:fhir.zen/ns @ztx)
     {'fhir-r4.string
      {'ns     'fhir-r4.string
-      'schema {:zen/tags #{'zen/schema}
+      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
                :confirms #(not (contains? % 'fhir-r4.Element/schema))
                :type 'zen/string}}
 
      'fhir-r4.Element
      {'ns     'fhir-r4.Element
-      'schema {:zen/tags #{'zen/schema}
+      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
                :type     'zen/map
                :keys     {:id        {:confirms #{'fhir-r4.string/schema}}
                           :extension {:type  'zen/vector
@@ -48,7 +48,7 @@
 
      'fhir-r4.Resource
      {'ns     'fhir-r4.Resource
-      'schema {:zen/tags #{'zen/schema}
+      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
                :type 'zen/map
                :keys {:id            {:confirms #{'fhir-r4.string/schema}}
                       :meta          {:confirms #{'fhir-r4.Meta/schema}}
@@ -58,7 +58,8 @@
      'fhir-r4.DomainResource
      {'ns     'fhir-r4.DomainResource
       'import #(contains? % 'fhir-r4.Resource)
-      'schema {:confirms #{'fhir-r4.Resource/schema}
+      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+               :confirms #{'fhir-r4.Resource/schema}
                :type 'zen/map
                :keys {:text              {:confirms #{'fhir-r4.Narrative/schema}}
                       :contained         {:type  'zen/vector
@@ -147,7 +148,7 @@
                 '{zenbox
                   {ns zenbox
 
-                   resource-schema
+                   structure-schema
                    {:zen/tags #{zen/schema}
                     :type     zen/map
                     :keys     {:zenbox/resourceType {:type zen/string}
