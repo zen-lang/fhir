@@ -27,7 +27,6 @@ jobs:
         name: Install npm FHIR packages
       - run: make zen-profiles node_modules="node_modules/" zrc="zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
         name: Generate npm Zen packages
-      - Runyon
       - run:
           for folder in $(ls -d zrc/node_modules/*); do npm publish $folder --all; done
         name: Publish npm Zen packages
