@@ -173,7 +173,7 @@
     (doseq [package packages]
       (spit-zen-schemas ztx (str zrc-dir \/ package \/) {:package package})
       (let [file (str zrc-dir \/ package "/package.json")]
-        (spit file (json/generate-string {:name    (str "zen-" package)
+        (spit file (json/generate-string {:name    (str "@zen-lang/" package)
                                           :version ver
                                           :author  "Health-Samurai" ;; TODO: parameterize this
                                           :license "MIT"}
