@@ -172,7 +172,10 @@
                       distinct)]
     (run! (fn [package]
             (let [file (str zrc-dir package "/package.json")]
-              (spit file (json/generate-string {:name package, :version ver}
+              (spit file (json/generate-string {:name    package
+                                                :version ver
+                                                :author  "Health-Samurai" ;; TODO: parameterize this
+                                                :license "MIT"}
                                                {:pretty true}))))
           packages))
   :done)
