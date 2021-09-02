@@ -26,12 +26,13 @@ jobs:
 #        with:
 #          cli: 1.10.1.693
 
+      - run: npm whoiam
+        name: WhoAmI after
+
       - run: npm login
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - run: npm whoiam
-        name: WhoAmI after
 
 #      - run: make init
 #        name: Install npm FHIR packages
