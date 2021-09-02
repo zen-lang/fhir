@@ -154,31 +154,31 @@
   (clojure.pprint/write (order-zen-ns zen-ns-map) :stream nil))
 
 
-(defn spit-zen-schemas [ztx zrc-dir]
-  (run! (fn [[zen-ns ns-content]]
-          (let [nss (name zen-ns)
-                file (str zrc-dir (str/replace nss #"\." "/") ".edn")]
-            (clojure.java.io/make-parents file)
-            (spit file (format-zen-ns ns-content))))
-        (get-in @ztx [:fhir.zen/ns]))
+(defn spit-zen-schemas [ztx zrc-dir & [{:keys [package]}]]
+  (doseq [[zen-ns ns-content] (get-in @ztx [:fhir.zen/ns])
+          :let [nss  (name zen-ns)
+                file (str zrc-dir (str/replace nss #"\." "/") ".edn")
+                package-name (some-> package name (str/split #"\." 2) first)]
+          :when (or (nil? package) (= package package-name))]
+    (clojure.java.io/make-parents file)
+    (spit file (format-zen-ns ns-content)))
   :done)
 
 
 (defn spit-zen-npm-modules [ztx zrc-dir ver]
-  (spit-zen-schemas ztx zrc-dir)
   (let [packages (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
                       vals
                       (map (comp name :zen.fhir/package-ns))
                       distinct)]
-    (run! (fn [package]
-            (let [file (str zrc-dir package "/package.json")]
-              (spit file (json/generate-string {:name    (str "zen-" package)
-                                                :version ver
-                                                :author  "Health-Samurai" ;; TODO: parameterize this
-                                                :license "MIT"}
-                                               {:pretty true}))))
-          packages))
-  :done)
+    (doseq [package packages]
+      (spit-zen-schemas ztx (str zrc-dir \/ package \/) {:package package})
+      (let [file (str zrc-dir \/ package "/package.json")]
+        (spit file (json/generate-string {:name    (str "zen-" package)
+                                          :version ver
+                                          :author  "Health-Samurai" ;; TODO: parameterize this
+                                          :license "MIT"}
+                                         {:pretty true}))))
+    :done))
 
 ;; * resources, types
 ;;  -> sd (+deps => ctx)
