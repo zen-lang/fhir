@@ -28,8 +28,6 @@ jobs:
         name: Install npm FHIR packages
       - run: make zen-profiles node_modules="node_modules/" zrc="zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
         name: Generate npm Zen packages
-      - run: npm cache verify
-      - run: npm login
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run:
