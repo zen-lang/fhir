@@ -24,14 +24,16 @@ jobs:
       - uses: DeLaGuardo/setup-clojure@3.5
         with:
           cli: 1.10.1.693
-      - run: make init
-        name: Install npm FHIR packages
-      - run: make zen-profiles node_modules="node_modules/" zrc="zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
-        name: Generate npm Zen packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - run:
-          for folder in $(ls -d zrc/node_modules/*); do npm publish $folder --all; done
-        name: Publish npm Zen packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm whoami
+        name: WhoAmI
+#      - run: make init
+#        name: Install npm FHIR packages
+#      - run: make zen-profiles node_modules="node_modules/" zrc="zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
+#        name: Generate npm Zen packages
+#        env:
+#          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+#      - run:
+#          for folder in $(ls -d zrc/node_modules/*); do npm publish $folder --all; done
+#        name: Publish npm Zen packages
+#        env:
+#          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
