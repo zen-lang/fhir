@@ -549,14 +549,25 @@
   (process-structure-definitions ztx))
 
 
+(defn dir? [^java.io.File file]
+  (and (.isDirectory file)
+       (not (str/starts-with? (.getName file) "."))))
+
+
 (defn load-all [ztx package & [{:keys [params node-modules-folder]
                                 :or {node-modules-folder "node_modules"}}]]
-  (doseq [pkg-dir (.listFiles (io/file node-modules-folder))
-          :when   (and (.isDirectory pkg-dir)(not (str/starts-with? (.getName pkg-dir) ".")))
+  (doseq [pkg-dir (->> [(io/file node-modules-folder)
+                        (io/file (str node-modules-folder "/node_modules"))]
+                       (mapcat (fn [dir] (when (dir? dir) (cons dir (.listFiles dir)))))
+                       (mapcat (fn [x] (if (and (dir? x) (str/starts-with? (.getName x) "@"))
+                                         (.listFiles x)
+                                         [x])))
+                       (filter dir?)
+                       distinct)
+          :when   (.exists (io/file (str (.getPath pkg-dir) "/.index.json")))
           :let    [package (read-json (str (.getPath pkg-dir) "/package.json"))
                    index   (read-json (str (.getPath pkg-dir) "/.index.json"))
                    package-params (get params (:name package))]
-
           {filename :filename :as header} (:files index)]
     (load-json-file ztx package header
                     (io/file (str (.getPath pkg-dir) "/" filename))

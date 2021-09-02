@@ -31,4 +31,4 @@ pub:
 	clj -A:deploy
 
 zen-profiles:
-	clojure -M -m zen.fhir.tooling $(node_modules) $(zrc) $(ver)
+	clojure -M -m zen.fhir.tooling $(node_modules) $(zrc) $(ver) $(package)
