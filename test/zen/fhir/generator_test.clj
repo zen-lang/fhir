@@ -76,8 +76,8 @@
       'schema {:zen/tags #{'zen/schema 'zenbox/base-schema}
                :confirms #{'fhir-r4.DomainResource/schema}
                :type 'zen/map
-               :zenbox/resourceType "Patient"
-               :zenbox/profileUrl "http://hl7.org/fhir/StructureDefinition/Patient"
+               :zenbox/type "Patient"
+               :zenbox/profileUri "http://hl7.org/fhir/StructureDefinition/Patient"
                :keys {:name {:type 'zen/vector
                              :every {:confirms #{'fhir-r4.HumanName/schema}}}
                       :active {:confirms #{'fhir-r4.boolean/schema}}
@@ -90,10 +90,10 @@
       'import #(and (contains? % 'fhir-r4.Patient)
                     (contains? % 'zenbox))
       'schema {:zen/tags #{'zen/schema 'zenbox/profile-schema}
-               :confirms  #{'fhir-r4.Patient/schema}
+               :confirms #{'fhir-r4.Patient/schema}
                :type 'zen/map
-               :zenbox/resourceType "Patient"
-               :zenbox/profileUrl "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+               :zenbox/type "Patient"
+               :zenbox/profileUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
                :keys {:race      {:confirms #{'us-core-v3.us-core-race/schema}}
                       :ethnicity {:confirms #{'us-core-v3.us-core-ethnicity/schema}}
                       :birthsex  {:confirms #{'us-core-v3.us-core-birthsex/schema}}
@@ -155,18 +155,22 @@
                    structure-schema
                    {:zen/tags #{zen/schema zen/tag}
                     :type     zen/map
-                    :keys     {:zenbox/resourceType {:type zen/string}
-                               :zenbox/profileUrl {:type zen/string}}}
+                    :keys     {:zenbox/type {:type zen/string}
+                               :zenbox/profileUri {:type zen/string}}}
 
                    base-schema
                    {:zen/tags #{zen/schema zen/tag}
                     :zen/desc "This schema should be used to validate all resources of its type"
-                    :confirms #{resource-schema}}
+                    :confirms #{structure-schema}
+                    :type     zen/map
+                    :require  #{:zenbox/type}}
 
                    profile-schema
                    {:zen/tags #{zen/schema zen/tag}
                     :zen/desc "This schema should be used only when mentioned in meta.profile"
-                    :confirms #{resource-schema}}}}}))
+                    :confirms #{structure-schema}
+                    :type     zen/map
+                    :require  #{:zenbox/profileUri}}}}}))
 
     (zen.core/read-ns ztx 'us-core-v3.us-core-patient)
 

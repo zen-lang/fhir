@@ -122,8 +122,8 @@
                 'schema (utils/strip-nils
                           (merge {:zen/tags (into #{'zen/schema}
                                                   (when severity-tag [severity-tag]))
-                                  :zenbox/resourceType (:type inter-res)
-                                  :zenbox/profileUrl url}
+                                  :zenbox/type (:type inter-res)
+                                  :zenbox/profileUri url}
                                  schema-part))}}))
 
 
