@@ -46,4 +46,20 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}          
+
+      - name: Fetch latest release
+        id: fetch-latest-release
+        uses: thebritican/fetch-latest-release@v2.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1.0.2
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.fetch-latest-release.outputs.upload_url }}
+          asset_path: ./zen-fhir-latest.jar
+          asset_name: zen-fhir-latest.jar
+          asset_content_type: application/java-archive
