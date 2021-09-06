@@ -1,5 +1,5 @@
 .EXPORT_ALL_VARIABLES:
-.PHONY: test
+.PHONY: test build
 
 SHELL = bash
 
@@ -12,5 +12,9 @@ repl:
 test:
 	clojure -M:test:kaocha
 
+build:
+	clojure -X:build all
+
 zen-profiles:
 	clojure -M -m zen.fhir.tooling $(node_modules) $(zrc) $(ver) $(package)
+

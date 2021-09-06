@@ -28,4 +28,12 @@
   {:extra-deps {lambdaisland/kaocha  {:mvn/version "1.0-612"}}
    :extra-paths ["runner" "test"]
    :jvm-opts    ^:replace ["-XX:-OmitStackTraceInFastThrow"]
-   :main-opts   ["-m" "kaocha.runner" "--config-file" "test/test.edn"]}}}
+   :main-opts   ["-m" "kaocha.runner" "--config-file" "test/test.edn"]}
+
+  :build
+  {:extra-paths ["build"]
+   :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]
+   :extra-deps {io.github.clojure/tools.build {:git/url "https://github.com/clojure/tools.build"
+                                               :tag "v0.2.1"
+                                               :sha "68c494645d127d5e24c705d5f9014370c8054d04"}}
+   :ns-default  build}}}

@@ -1,4 +1,5 @@
 (ns zen.fhir.tooling
+  (:gen-class)
   (:require [zen.core :as zen-core]
             [zen.fhir.core :refer [load-all]]
             [zen.fhir.generator :refer [spit-zen-npm-modules
