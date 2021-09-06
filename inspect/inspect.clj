@@ -1,6 +1,5 @@
-(ns zen.fhir.inspect
-  (:require [zen.core]
-            [clojure.pprint]
+(ns inspect
+  (:require [clojure.pprint]
             [hiccup.core :as hiccup]))
 
 (defn inspect [file data]

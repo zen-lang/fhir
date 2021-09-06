@@ -1,6 +1,6 @@
 (ns zen.fhir.core-test
   (:require [zen.fhir.core :as sut]
-            [zen.fhir.inspect :as inspect]
+            [inspect]
             [clojure.test :as t]
             [zen.core]
             [clojure.pprint]
