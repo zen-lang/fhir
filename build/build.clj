@@ -1,32 +1,52 @@
 (ns build
-  (:require [clojure.tools.build.api :as b]))
+  (:require [clojure.tools.build.api :as b]
+            [clojure.string :as str]))
 
-(def lib 'my/lib1)
-(def version (format "1.2.%s" (b/git-count-revs nil)))
+
+(def lib 'zen-lang/zen.fhir)
+
+(def main-ns 'zen.fhir.tooling)
+
+(def tag (-> {:command-args ["git" "describe" "--tags"]
+              :dir "./."
+              :out :capture}
+             b/process
+             :out
+             str/trim))
+
 (def class-dir "target/classes")
+
 (def basis (b/create-basis {:project "deps.edn"}))
-(def uber-file (format "target/zen-fhir-standalone.jar" (name lib) version))
+
+(def uber-file
+  (format "target/%s-%s-standalone.jar"
+          (str/replace (name lib) #"\." "-")
+          tag))
+
 
 (defn clean [_]
   (b/delete {:path "target"}))
 
+
 (defn prep [_]
   (b/write-pom {:class-dir class-dir
-                :lib lib
-                :version version
-                :basis basis
-                :src-dirs ["src"]})
+                :lib       lib
+                :version   tag
+                :basis     basis
+                :src-dirs  ["src"]})
   (b/copy-dir {:src-dirs ["src" "resources"]
                :target-dir class-dir}))
 
+
 (defn uber [_]
-  (b/compile-clj {:basis basis
-                  :src-dirs ["src"]
+  (b/compile-clj {:basis     basis
+                  :src-dirs  ["src"]
                   :class-dir class-dir})
   (b/uber {:class-dir class-dir
            :uber-file uber-file
-           :basis basis
-           :main 'zen.fhir.tooling}))
+           :basis     basis
+           :main      main-ns}))
+
 
 (defn all [_]
   (clean nil)
