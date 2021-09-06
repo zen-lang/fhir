@@ -8,13 +8,11 @@ on:
       - "*"
       
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
-      - name: Set tag env
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       - uses: actions/setup-java@v2
         with:
@@ -25,41 +23,12 @@ jobs:
         with:
           cli: 1.10.1.693
           
-      - run: make build
-        name: Build jar
-
-      - name: Upload result of build
-        uses: actions/upload-artifact@v2
-        with:
-          name: zen-fhir-latest.jar
-          path: target/zen-fhir-standalone.jar
-        
-  publish:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Download jar
-        uses: actions/download-artifact@v2
-        with:
-          name: zen-fhir-latest.jar
-
+      - name: Build jar
+        run: make build
+          
       - name: Release
         uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}          
-
-      - name: Fetch latest release
-        id: fetch-latest-release
-        uses: thebritican/fetch-latest-release@v2.0.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1.0.2
+          files: target/zen-fhir-standalone.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.fetch-latest-release.outputs.upload_url }}
-          asset_path: ./zen-fhir-latest.jar
-          asset_name: zen-fhir-latest.jar
-          asset_content_type: application/java-archive
