@@ -20,133 +20,136 @@
 (t/deftest generate-project-integration
   (def ztx  (zen.core/new-context {}))
 
-  (zen.fhir.core/load-all ztx "hl7.fhir.us.core"
-                          {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
-                                    "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}
-                                    "hl7.fhir.us.carin-bb" {:zen.fhir/package-ns 'carin-bb-v1}}})
+  (t/testing "generating zen"
+    (zen.fhir.core/load-all ztx "hl7.fhir.us.core"
+                            {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
+                                      "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}
+                                      "hl7.fhir.us.carin-bb" {:zen.fhir/package-ns 'carin-bb-v1}}})
 
-  #_(get-in @ztx [:fhir/inter "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Resource"])
+    #_(get-in @ztx [:fhir/inter "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Resource"])
 
-  (t/is (= :done (sut/generate-zen-schemas ztx)))
+    (t/is (= :done (sut/generate-zen-schemas ztx)))
 
-  (matcho/match
-    (:fhir.zen/ns @ztx)
-    {'fhir-r4.string
-     {'ns     'fhir-r4.string
-      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
-               :confirms #(not (contains? % 'fhir-r4.Element/schema))
-               :type 'zen/string}}
+    (matcho/match
+      (:fhir.zen/ns @ztx)
+      {'fhir-r4.string
+       {'ns     'fhir-r4.string
+        'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+                 :confirms #(not (contains? % 'fhir-r4.Element/schema))
+                 :type 'zen/string}}
 
-     'fhir-r4.Element
-     {'ns     'fhir-r4.Element
-      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
-               :type     'zen/map
-               :keys     {:id        {:confirms #{'fhir-r4.string/schema}}
-                          :extension {:type  'zen/vector
-                                      :every {:confirms #{'fhir-r4.Extension/schema}}}}}}
+       'fhir-r4.Element
+       {'ns     'fhir-r4.Element
+        'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+                 :type     'zen/map
+                 :keys     {:id        {:confirms #{'fhir-r4.string/schema}}
+                            :extension {:type  'zen/vector
+                                        :every {:confirms #{'fhir-r4.Extension/schema}}}}}}
 
-     'fhir-r4.Resource
-     {'ns     'fhir-r4.Resource
-      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
-               :type 'zen/map
-               :keys {:id            {:confirms #{'fhir-r4.string/schema}
-                                      :fhir/flags #{:SU}}
-                      :meta          {:confirms #{'fhir-r4.Meta/schema}
-                                      :fhir/flags #{:SU}}
-                      :implicitRules {:confirms #{'fhir-r4.uri/schema}
-                                      :fhir/flags #{:SU :?!}}
-                      :language      {:confirms #{'fhir-r4.code/schema}
-                                      :fhir/flags nil?}}}}
+       'fhir-r4.Resource
+       {'ns     'fhir-r4.Resource
+        'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+                 :type 'zen/map
+                 :keys {:id            {:confirms #{'fhir-r4.string/schema}
+                                        :fhir/flags #{:SU}}
+                        :meta          {:confirms #{'fhir-r4.Meta/schema}
+                                        :fhir/flags #{:SU}}
+                        :implicitRules {:confirms #{'fhir-r4.uri/schema}
+                                        :fhir/flags #{:SU :?!}}
+                        :language      {:confirms #{'fhir-r4.code/schema}
+                                        :fhir/flags nil?}}}}
 
-     'fhir-r4.DomainResource
-     {'ns     'fhir-r4.DomainResource
-      'import #(contains? % 'fhir-r4.Resource)
-      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
-               :confirms #{'fhir-r4.Resource/schema}
-               :type 'zen/map
-               :keys {:text              {:confirms #{'fhir-r4.Narrative/schema}}
-                      :contained         {:type  'zen/vector
-                                          :every {:confirms #{'fhir-r4.Resource/schema}}}
-                      :extension         {:type  'zen/vector
-                                          :every {:confirms #{'fhir-r4.Extension/schema}}}
-                      :modifierExtension {:type  'zen/vector
-                                          :every {:confirms #{'fhir-r4.Extension/schema}}}}}}
+       'fhir-r4.DomainResource
+       {'ns     'fhir-r4.DomainResource
+        'import #(contains? % 'fhir-r4.Resource)
+        'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+                 :confirms #{'fhir-r4.Resource/schema}
+                 :type 'zen/map
+                 :keys {:text              {:confirms #{'fhir-r4.Narrative/schema}}
+                        :contained         {:type  'zen/vector
+                                            :every {:confirms #{'fhir-r4.Resource/schema}}}
+                        :extension         {:type  'zen/vector
+                                            :every {:confirms #{'fhir-r4.Extension/schema}}}
+                        :modifierExtension {:type  'zen/vector
+                                            :every {:confirms #{'fhir-r4.Extension/schema}}}}}}
 
-     'fhir-r4.Patient
-     {'ns     'fhir-r4.Patient
-      'import #(and (contains? % 'fhir-r4.DomainResource)
-                    (contains? % 'zenbox))
-      'schema {:zen/tags #{'zen/schema 'zenbox/base-schema}
-               :confirms #{'fhir-r4.DomainResource/schema}
-               :type 'zen/map
-               :zenbox/type "Patient"
-               :zenbox/profileUri "http://hl7.org/fhir/StructureDefinition/Patient"
-               :keys {:name {:type 'zen/vector
-                             :every {:confirms #{'fhir-r4.HumanName/schema}}}
-                      :active {:confirms #{'fhir-r4.boolean/schema}}
-                      :deceased {:type 'zen/map
-                                 :keys {:boolean {:confirms #{'fhir-r4.boolean/schema}}
-                                        :dateTime {:confirms #{'fhir-r4.dateTime/schema}}}}}}}
+       'fhir-r4.Patient
+       {'ns     'fhir-r4.Patient
+        'import #(and (contains? % 'fhir-r4.DomainResource)
+                      (contains? % 'zenbox))
+        'schema {:zen/tags #{'zen/schema 'zenbox/base-schema}
+                 :confirms #{'fhir-r4.DomainResource/schema}
+                 :type 'zen/map
+                 :zenbox/type "Patient"
+                 :zenbox/profileUri "http://hl7.org/fhir/StructureDefinition/Patient"
+                 :keys {:name {:type 'zen/vector
+                               :every {:confirms #{'fhir-r4.HumanName/schema}}}
+                        :active {:confirms #{'fhir-r4.boolean/schema}}
+                        :deceased {:type 'zen/map
+                                   :keys {:boolean {:confirms #{'fhir-r4.boolean/schema}}
+                                          :dateTime {:confirms #{'fhir-r4.dateTime/schema}}}}}}}
 
-     'us-core-v3.us-core-patient
-     {'ns     'us-core-v3.us-core-patient
-      'import #(and (contains? % 'fhir-r4.Patient)
-                    (contains? % 'zenbox))
-      'schema {:zen/tags #{'zen/schema 'zenbox/profile-schema}
-               :confirms #{'fhir-r4.Patient/schema}
-               :type 'zen/map
-               :zenbox/type "Patient"
-               :zenbox/profileUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
-               :keys {:race      {:confirms #{'us-core-v3.us-core-race/schema}}
-                      :ethnicity {:confirms #{'us-core-v3.us-core-ethnicity/schema}}
-                      :birthsex  {:confirms #{'us-core-v3.us-core-birthsex/schema}}
-                      :identifier {:type     'zen/vector
-                                   :minItems 1
-                                   :every    {:confirms #{'fhir-r4.Identifier/schema}
-                                              :type 'zen/map
-                                              :keys {:system {:confirms #{'fhir-r4.uri/schema}}
-                                                     :value  {:confirms #{'fhir-r4.string/schema}}}}}}}}})
+       'us-core-v3.us-core-patient
+       {'ns     'us-core-v3.us-core-patient
+        'import #(and (contains? % 'fhir-r4.Patient)
+                      (contains? % 'zenbox))
+        'schema {:zen/tags #{'zen/schema 'zenbox/profile-schema}
+                 :confirms #{'fhir-r4.Patient/schema}
+                 :type 'zen/map
+                 :zenbox/type "Patient"
+                 :zenbox/profileUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+                 :keys {:race      {:confirms #{'us-core-v3.us-core-race/schema}}
+                        :ethnicity {:confirms #{'us-core-v3.us-core-ethnicity/schema}}
+                        :birthsex  {:confirms #{'us-core-v3.us-core-birthsex/schema}}
+                        :identifier {:type     'zen/vector
+                                     :minItems 1
+                                     :every    {:confirms #{'fhir-r4.Identifier/schema}
+                                                :type 'zen/map
+                                                :keys {:system {:confirms #{'fhir-r4.uri/schema}}
+                                                       :value  {:confirms #{'fhir-r4.string/schema}}}}}}}}}))
+
+  (t/testing "spit"
+    (t/testing "zen-schemas"
+      (delete-directory-recursive (io/file "test-temp-zrc"))
+
+      (t/is (= :done (sut/spit-zen-schemas ztx "test-temp-zrc/")))
+
+      (t/is (.exists (io/file "test-temp-zrc/fhir-r4/Element.edn")))
+      (t/is (.exists (io/file "test-temp-zrc/fhir-r4/Resource.edn")))
+      (t/is (.exists (io/file "test-temp-zrc/fhir-r4/DomainResource.edn")))
+      (t/is (.exists (io/file "test-temp-zrc/fhir-r4/Patient.edn")))
+      (t/is (.exists (io/file "test-temp-zrc/us-core-v3/us-core-patient.edn"))))
 
 
-  (delete-directory-recursive (io/file "test-temp-zrc"))
+    (t/testing "zen-npm-modules"
+      (delete-directory-recursive (io/file "test-temp-zrc"))
 
-  (t/is (= :done (sut/spit-zen-schemas ztx "test-temp-zrc/")))
+      (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test" "fhir-r4")))
 
-  (t/is (.exists (io/file "test-temp-zrc/fhir-r4/Element.edn")))
-  (t/is (.exists (io/file "test-temp-zrc/fhir-r4/Resource.edn")))
-  (t/is (.exists (io/file "test-temp-zrc/fhir-r4/DomainResource.edn")))
-  (t/is (.exists (io/file "test-temp-zrc/fhir-r4/Patient.edn")))
-  (t/is (.exists (io/file "test-temp-zrc/us-core-v3/us-core-patient.edn")))
+      (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
+      (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/package.json"))
+                 (let [package (-> "test-temp-zrc/node_modules/fhir-r4/package.json"
+                                   io/file
+                                   slurp
+                                   (json/parse-string keyword))]
+                   (matcho/match package
+                                 {:name "@zen-lang/fhir-r4"
+                                  :version "0.0.1-test"}))))
 
+      (t/is (not (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn"))))
 
-  (delete-directory-recursive (io/file "test-temp-zrc"))
+      (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test")))
 
-  (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test" "fhir-r4")))
-
-  (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
-  (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/package.json"))
-             (let [package (-> "test-temp-zrc/node_modules/fhir-r4/package.json"
-                               io/file
-                               slurp
-                               (json/parse-string keyword))]
-               (matcho/match package
-                             {:name "@zen-lang/fhir-r4"
-                              :version "0.0.1-test"}))))
-
-  (t/is (not (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn"))))
-
-  (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test")))
-
-  (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
-  (t/is (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn")))
-  (t/is (and (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/package.json"))
-             (let [package (-> "test-temp-zrc/node_modules/us-core-v3/package.json"
-                               io/file
-                               slurp
-                               (json/parse-string keyword))]
-               (matcho/match package
-                             {:name "@zen-lang/us-core-v3"
-                              :version "0.0.1-test"}))))
+      (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
+      (t/is (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn")))
+      (t/is (and (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/package.json"))
+                 (let [package (-> "test-temp-zrc/node_modules/us-core-v3/package.json"
+                                   io/file
+                                   slurp
+                                   (json/parse-string keyword))]
+                   (matcho/match package
+                                 {:name "@zen-lang/us-core-v3"
+                                  :version "0.0.1-test"}))))))
 
   (t/testing "zen validation"
     (def ztx (zen.core/new-context
