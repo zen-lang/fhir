@@ -41,6 +41,7 @@
        'fhir-r4.Element
        {'ns     'fhir-r4.Element
         'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+                 :confirms empty?
                  :type     'zen/map
                  :keys     {:id        {:confirms #{'fhir-r4.string/schema}}
                             :extension {:type  'zen/vector
@@ -49,6 +50,7 @@
        'fhir-r4.Resource
        {'ns     'fhir-r4.Resource
         'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+                 :confirms #{'zenbox/Resource}
                  :type 'zen/map
                  :keys {:id            {:confirms #{'fhir-r4.string/schema}
                                         :fhir/flags #{:SU}}
@@ -63,7 +65,7 @@
        {'ns     'fhir-r4.DomainResource
         'import #(contains? % 'fhir-r4.Resource)
         'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
-                 :confirms #{'fhir-r4.Resource/schema}
+                 :confirms #{'fhir-r4.Resource/schema 'zenbox/Resource}
                  :type 'zen/map
                  :keys {:text              {:confirms #{'fhir-r4.Narrative/schema}}
                         :contained         {:type  'zen/vector
@@ -78,7 +80,7 @@
         'import #(and (contains? % 'fhir-r4.DomainResource)
                       (contains? % 'zenbox))
         'schema {:zen/tags #{'zen/schema 'zenbox/base-schema}
-                 :confirms #{'fhir-r4.DomainResource/schema}
+                 :confirms #{'fhir-r4.DomainResource/schema 'zenbox/Resource}
                  :type 'zen/map
                  :zenbox/type "Patient"
                  :zenbox/profileUri "http://hl7.org/fhir/StructureDefinition/Patient"
@@ -94,7 +96,7 @@
         'import #(and (contains? % 'fhir-r4.Patient)
                       (contains? % 'zenbox))
         'schema {:zen/tags #{'zen/schema 'zenbox/profile-schema}
-                 :confirms #{'fhir-r4.Patient/schema}
+                 :confirms #{'fhir-r4.Patient/schema 'zenbox/Resource}
                  :type 'zen/map
                  :zenbox/type "Patient"
                  :zenbox/profileUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
@@ -157,6 +159,13 @@
                 :memory-store
                 '{zenbox
                   {ns zenbox
+
+                   Resource
+                   {:zen/tags #{zen/tag zen/schema}
+                    :type zen/map
+                    :keys {:resourceType {:type zen/string}
+                           :id {:type zen/string}
+                           :meta {:type zen/map :values {:type zen/any}}}}
 
                    nested-schema
                    {:zen/tags #{zen/schema}

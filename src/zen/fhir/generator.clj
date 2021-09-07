@@ -92,7 +92,9 @@
 
 
 (defmethod generate-kind-schema :resource [fhir-inter [url inter-res]]
-  (merge
+  (merge-with
+    into
+    {:confirms #{'zenbox/Resource}}
     (confirms-base fhir-inter [url inter-res])
     (els-schema fhir-inter [url inter-res])))
 
