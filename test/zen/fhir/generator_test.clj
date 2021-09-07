@@ -189,7 +189,7 @@
 
     #_(zen.core/get-symbol ztx 'us-core-v3.us-core-patient/schema)
 
-    #_(t/is (empty? (:errors @ztx))) ;; FIXME
+    (t/is (empty? (:errors @ztx)))
 
     (t/is (every? #(contains? (:ns @ztx) %)
                   ['us-core-v3.us-core-patient
