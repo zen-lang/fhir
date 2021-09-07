@@ -25,8 +25,7 @@
                                     "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}
                                     "hl7.fhir.us.carin-bb" {:zen.fhir/package-ns 'carin-bb-v1}}})
 
-  (get-in @ztx [:fhir/inter "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/patient-nationality"])
-  (get-in @ztx [:fhir/inter "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/string"])
+  #_(get-in @ztx [:fhir/inter "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Resource"])
 
   (t/is (= :done (sut/generate-zen-schemas ztx)))
 
@@ -50,10 +49,14 @@
      {'ns     'fhir-r4.Resource
       'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
                :type 'zen/map
-               :keys {:id            {:confirms #{'fhir-r4.string/schema}}
-                      :meta          {:confirms #{'fhir-r4.Meta/schema}}
-                      :implicitRules {:confirms #{'fhir-r4.uri/schema}}
-                      :language      {:confirms #{'fhir-r4.code/schema}}}}}
+               :keys {:id            {:confirms #{'fhir-r4.string/schema}
+                                      :fhir/flags #{:SU}}
+                      :meta          {:confirms #{'fhir-r4.Meta/schema}
+                                      :fhir/flags #{:SU}}
+                      :implicitRules {:confirms #{'fhir-r4.uri/schema}
+                                      :fhir/flags #{:SU :?!}}
+                      :language      {:confirms #{'fhir-r4.code/schema}
+                                      :fhir/flags nil?}}}}
 
      'fhir-r4.DomainResource
      {'ns     'fhir-r4.DomainResource
@@ -152,11 +155,21 @@
                 '{zenbox
                   {ns zenbox
 
+                   nested-schema
+                   {:zen/tags #{zen/schema}
+                    :type zen/map
+                    :keys {:fhir/flags {:type zen/set}
+                           :keys {:type zen/map
+                                  :values {:confirms #{nested-schema}}}
+                           :every {:confirms #{nested-schema}}}}
+
                    structure-schema
                    {:zen/tags #{zen/schema zen/tag}
                     :type     zen/map
                     :keys     {:zenbox/type {:type zen/string}
-                               :zenbox/profileUri {:type zen/string}}}
+                               :zenbox/profileUri {:type zen/string}
+                               :keys {:type zen/map
+                                      :values {:confirms #{nested-schema}}}}}
 
                    base-schema
                    {:zen/tags #{zen/schema zen/tag}
@@ -173,6 +186,8 @@
                     :require  #{:zenbox/profileUri}}}}}))
 
     (zen.core/read-ns ztx 'us-core-v3.us-core-patient)
+
+    #_(zen.core/get-symbol ztx 'us-core-v3.us-core-patient/schema)
 
     #_(t/is (empty? (:errors @ztx))) ;; FIXME
 

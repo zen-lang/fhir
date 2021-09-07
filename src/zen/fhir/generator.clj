@@ -71,7 +71,9 @@
                              (when-let [ext-sym (some->> (:fhir/extension el) (ext-url->ext-symbol fhir-inter))]
                                {:confirms #{ext-sym}})
                              (when (seq (:| el))
-                               (els-schema fhir-inter [url el])))]
+                               (els-schema fhir-inter [url el]))
+                             (when (seq (:fhir/flags el))
+                               (select-keys el #{:fhir/flags})))]
               (if (:vector el)
                 (merge {:type 'zen/vector
                         :every sch}
