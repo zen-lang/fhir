@@ -322,7 +322,7 @@
   (let [res (-> (cheshire.core/parse-string (slurp f) keyword)
                 (assoc :zen.fhir/header header :zen.fhir/package package :zen.fhir/file (.getPath f))
                 (merge
-                  {:zen.fhir/package-ns (symbol (:name package))}
+                  {:zen.fhir/package-ns (some-> package :name (str/replace #"\." "-") symbol)}
                   (select-keys params #{:zen.fhir/package-ns})))]
     (load-definiton ztx package header res)))
 
