@@ -90,8 +90,9 @@
                         :deceased {:type 'zen/map
                                    :keys {:boolean {:confirms #{'fhir-r4.boolean/schema}}
                                           :dateTime {:confirms #{'fhir-r4.dateTime/schema}}}}
-                        :managingOrganization
-                        {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}}}}}
+                        :managingOrganization {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}}
+                        :link {:type 'zen/vector
+                               :every {:require #{:other :type}}}}}}
 
        'us-core-v3.us-core-patient
        {'ns     'us-core-v3.us-core-patient
@@ -102,6 +103,7 @@
                  :type 'zen/map
                  :zenbox/type "Patient"
                  :zenbox/profileUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+                 :require #{:name :gender :identifier}
                  :keys {:race      {:confirms #{'us-core-v3.us-core-race/schema}}
                         :ethnicity {:confirms #{'us-core-v3.us-core-ethnicity/schema}}
                         :birthsex  {:confirms #{'us-core-v3.us-core-birthsex/schema}}
@@ -223,4 +225,9 @@
 
     (t/is (empty? (:errors (zen.core/validate ztx '#{fhir-r4.Patient/schema} fhir-pat))))
 
-    (t/is (empty? (:errors (zen.core/validate ztx '#{us-core-v3.us-core-patient/schema} {}))))))
+    (matcho/match
+      (:errors (zen.core/validate ztx '#{us-core-v3.us-core-patient/schema} {}))
+      [{:path [:name], :type "require"}
+       {:path [:identifier], :type "require"}
+       {:path [:gender], :type "require"}
+       nil])))

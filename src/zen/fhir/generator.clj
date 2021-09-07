@@ -83,10 +83,17 @@
                         :every sch}
                        (select-keys el [:minItems :maxItems]))
                 sch)))]
-    {:type 'zen/map
-     :keys (sp/transform [sp/MAP-VALS]
-                         (partial el-schema fhir-inter)
-                         (:| inter-res))}))
+    (merge {:type 'zen/map
+            :keys (sp/transform [sp/MAP-VALS]
+                                (partial el-schema fhir-inter)
+                                (:| inter-res))}
+           (when-let [requires (->> (:| inter-res)
+                                    (into #{}
+                                          (comp
+                                            (filter (comp :required val))
+                                            (map key)))
+                                    not-empty)]
+             {:require requires}))))
 
 
 (defmethod generate-kind-schema :complex-type [fhir-inter [url inter-res]]
