@@ -89,7 +89,9 @@
                         :active {:confirms #{'fhir-r4.boolean/schema}}
                         :deceased {:type 'zen/map
                                    :keys {:boolean {:confirms #{'fhir-r4.boolean/schema}}
-                                          :dateTime {:confirms #{'fhir-r4.dateTime/schema}}}}}}}
+                                          :dateTime {:confirms #{'fhir-r4.dateTime/schema}}}}
+                        :managingOrganization
+                        {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}}}}}
 
        'us-core-v3.us-core-patient
        {'ns     'us-core-v3.us-core-patient
@@ -167,6 +169,14 @@
                            :id {:type zen/string}
                            :meta {:type zen/map :values {:type zen/any}}}}
 
+                   Reference
+                   {:zen/tags #{zen/schema}
+                    :zen/desc "reference datatype"
+                    :type zen/map
+                    :keys {:id {:type zen/string}
+                           :resourceType {:type zen/string}
+                           :display {:type zen/string}}}
+
                    nested-schema
                    {:zen/tags #{zen/schema}
                     :type zen/map
@@ -211,6 +221,6 @@
 
     (def fhir-pat (read-string (slurp (io/resource "zen/fhir/aidbox-fhir-r4-patient-example.edn"))))
 
-    #_(t/is (empty? (:errors (zen.core/validate ztx '#{fhir-r4.Patient/schema} fhir-pat)))) ;; FIXME
+    (t/is (empty? (:errors (zen.core/validate ztx '#{fhir-r4.Patient/schema} fhir-pat))))
 
     (t/is (empty? (:errors (zen.core/validate ztx '#{us-core-v3.us-core-patient/schema} {}))))))

@@ -65,15 +65,19 @@
 
 (defn els-schema [fhir-inter [url inter-res]]
   (letfn [(el-schema [fhir-inter el]
-            (let [sch (merge {}
-                             (when-let [type-sym (some->> (:type el) (type-string->type-symbol fhir-inter))]
-                               {:confirms #{type-sym}})
-                             (when-let [ext-sym (some->> (:fhir/extension el) (ext-url->ext-symbol fhir-inter))]
-                               {:confirms #{ext-sym}})
-                             (when (seq (:| el))
-                               (els-schema fhir-inter [url el]))
-                             (when (seq (:fhir/flags el))
-                               (select-keys el #{:fhir/flags})))]
+            (let [sch (merge-with
+                        into
+                        {}
+                        (when-let [type-sym (some->> (:type el) (type-string->type-symbol fhir-inter))]
+                          {:confirms #{type-sym}})
+                        (when-let [ext-sym (some->> (:fhir/extension el) (ext-url->ext-symbol fhir-inter))]
+                          {:confirms #{ext-sym}})
+                        (when (seq (:| el))
+                          (els-schema fhir-inter [url el]))
+                        (when (seq (:fhir/flags el))
+                          (select-keys el #{:fhir/flags}))
+                        (when (= "Reference" (:type el))
+                          {:confirms #{'zenbox/Reference}}))]
               (if (:vector el)
                 (merge {:type 'zen/vector
                         :every sch}
