@@ -63,6 +63,11 @@
     (symbol (name ext-ns) "schema")))
 
 
+(defn url->symbol [fhir-inter url]
+  (when-let [ext-ns (get-in fhir-inter ["StructureDefinition" url :zen.fhir/schema-ns])]
+    (symbol (name ext-ns) "schema")))
+
+
 (defn els-schema [fhir-inter [url inter-res]]
   (letfn [(el-schema [fhir-inter el]
             (let [sch (merge-with
@@ -77,7 +82,10 @@
                         (when (seq (:fhir/flags el))
                           (select-keys el #{:fhir/flags}))
                         (when (= "Reference" (:type el))
-                          {:confirms #{'zenbox/Reference}}))]
+                          {:confirms #{'zenbox/Reference}
+                           :zenbox/refers (into #{}
+                                                (map (partial url->symbol fhir-inter))
+                                                (:profiles el))}))]
               (if (:vector el)
                 (merge {:type 'zen/vector
                         :every sch}
