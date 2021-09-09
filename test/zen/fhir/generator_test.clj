@@ -90,7 +90,8 @@
                         :deceased {:type 'zen/map
                                    :keys {:boolean {:confirms #{'fhir-r4.boolean/schema}}
                                           :dateTime {:confirms #{'fhir-r4.dateTime/schema}}}}
-                        :managingOrganization {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}}
+                        :managingOrganization {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}
+                                               :zenbox/refers #{'fhir-r4.Organization/schema}}
                         :link {:type 'zen/vector
                                :every {:require #{:other :type}}}}}}
 
@@ -183,6 +184,9 @@
                    {:zen/tags #{zen/schema}
                     :type zen/map
                     :keys {:fhir/flags {:type zen/set}
+                           :zenbox/refers {:type zen/set
+                                           :every {:type zen/symbol
+                                                   #_#_:tags #{#{zenbox/base-schema zenbox/profile-schema}}}} ;; TODO
                            :keys {:type zen/map
                                   :values {:confirms #{nested-schema}}}
                            :every {:confirms #{nested-schema}}}}
