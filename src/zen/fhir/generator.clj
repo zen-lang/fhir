@@ -52,17 +52,6 @@
              (confirms-base fhir-inter [url inter-res])))))
 
 
-(defn type-string->type-symbol [fhir-inter tp]
-  (let [tp-url (str "http://hl7.org/fhir/StructureDefinition/" tp)]
-    (when-let [tp-ns (get-in fhir-inter ["StructureDefinition" tp-url :zen.fhir/schema-ns])]
-      (symbol (name tp-ns) "schema"))))
-
-
-(defn ext-url->ext-symbol [fhir-inter ext-url]
-  (when-let [ext-ns (get-in fhir-inter ["StructureDefinition" ext-url :zen.fhir/schema-ns])]
-    (symbol (name ext-ns) "schema")))
-
-
 (defn url->symbol [fhir-inter url]
   (when-let [ext-ns (get-in fhir-inter ["StructureDefinition" url :zen.fhir/schema-ns])]
     (symbol (name ext-ns) "schema")))
@@ -73,9 +62,11 @@
             (let [sch (merge-with
                         into
                         {}
-                        (when-let [type-sym (some->> (:type el) (type-string->type-symbol fhir-inter))]
+                        (when-let [type-sym (some->> (:type el)
+                                                     (str "http://hl7.org/fhir/StructureDefinition/")
+                                                     (url->symbol fhir-inter))]
                           {:confirms #{type-sym}})
-                        (when-let [ext-sym (some->> (:fhir/extension el) (ext-url->ext-symbol fhir-inter))]
+                        (when-let [ext-sym (some->> (:fhir/extension el) (url->symbol fhir-inter))]
                           {:confirms #{ext-sym}})
                         (when (seq (:| el))
                           (els-schema fhir-inter [url el]))
