@@ -2,6 +2,9 @@
     "dependencies": {
         "hl7.fhir.r4.core": "^4.0.1",
         "hl7.fhir.us.carin-bb": "^1.1.0",
-        "hl7.fhir.us.core": "3.1.1"
+        "hl7.fhir.us.core": "3.1.1",
+        "hl7.fhir.us.Davinci-drug-formulary": "^1.0.0",
+        "hl7.fhir.us.davinci-pdex": "^1.0.0",
+        "hl7.fhir.us.mcode": "^1.16.0"
     }
 }
