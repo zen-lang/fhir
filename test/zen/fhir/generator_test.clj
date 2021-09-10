@@ -90,7 +90,8 @@
                         :deceased {:type 'zen/map
                                    :keys {:boolean {:confirms #{'fhir-r4.boolean/schema}}
                                           :dateTime {:confirms #{'fhir-r4.dateTime/schema}}}}
-                        :managingOrganization {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}
+                        :managingOrganization {:zen/desc "Organization that is the custodian of the patient record"
+                                               :confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}
                                                :zenbox/refers #{'fhir-r4.Organization/schema}}
                         :link {:type 'zen/vector
                                :every {:require #{:other :type}}}}}}
@@ -100,6 +101,7 @@
         'import #(and (contains? % 'fhir-r4.Patient)
                       (contains? % 'zenbox))
         'schema {:zen/tags #{'zen/schema 'zenbox/profile-schema}
+                 :zen/desc "Defines constraints and extensions on the patient resource for the minimal set of data to query and retrieve patient demographic information."
                  :confirms #{'fhir-r4.Patient/schema 'zenbox/Resource}
                  :type 'zen/map
                  :zenbox/type "Patient"
@@ -113,7 +115,8 @@
                                      :every    {:confirms #{'fhir-r4.Identifier/schema}
                                                 :type 'zen/map
                                                 :keys {:system {:confirms #{'fhir-r4.uri/schema}}
-                                                       :value  {:confirms #{'fhir-r4.string/schema}}}}}}}}}))
+                                                       :value  {:zen/desc "The value that is unique within the system."
+                                                                :confirms #{'fhir-r4.string/schema}}}}}}}}}))
 
   (t/testing "spit"
     (t/testing "zen-schemas"

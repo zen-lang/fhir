@@ -245,7 +245,7 @@
 
 (defn normalize-description [res]
   (-> (dissoc res :description :short)
-      (assoc :short (or (:short res) (:description res)))))
+      (assoc :text-description (or (:short res) (:description res)))))
 ;; ADD check by http://www.hl7.org/fhir/elementdefinition.html#interpretation
 
 

@@ -76,7 +76,9 @@
                           {:confirms #{'zenbox/Reference}
                            :zenbox/refers (into #{}
                                                 (map (partial url->symbol fhir-inter))
-                                                (:profiles el))}))]
+                                                (:profiles el))})
+                        (when-let [text (or (:short el) (:definiton el))]
+                          {:zen/desc text}))]
               (if (:vector el)
                 (merge {:type 'zen/vector
                         :every sch}
@@ -131,11 +133,13 @@
                                  'zenbox/structure-schema)
 
         schema-part            (generate-kind-schema fhir-inter [url inter-res])]
+
     {schema-ns {'ns     schema-ns
                 'import imports
                 'schema (utils/strip-nils
                           (merge {:zen/tags (into #{'zen/schema}
                                                   (when severity-tag [severity-tag]))
+                                  :zen/desc (:text-description inter-res)
                                   :zenbox/type (:type inter-res)
                                   :zenbox/profileUri url}
                                  schema-part))}}))
