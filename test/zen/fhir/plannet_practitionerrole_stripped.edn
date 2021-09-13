@@ -28,26 +28,6 @@
     :type
     [{:code "Extension",
       :profile
-      ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients"]}]}
-   {:id "PractitionerRole.extension:qualification",
-    :path "PractitionerRole.extension",
-    :sliceName "qualification",
-    :short "Qualification",
-    :min 0,
-    :max "*",
-    :type
-    [{:code "Extension",
-      :profile
-      ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/qualification"]}]}
-   {:id "PractitionerRole.extension:qualification.extension:code",
-    :path "PractitionerRole.extension.extension",
-    :sliceName "code"}
-   {:id
-    "PractitionerRole.extension:qualification.extension:code.value[x]",
-    :path "PractitionerRole.extension.extension.value[x]",
-    :binding
-    {:strength "extensible",
-     :valueSet
-     "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualSpecialtyAndDegreeLicenseCertificateVS"}}]},
+      ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients"]}]}]},
  :baseDefinition
  "http://hl7.org/fhir/StructureDefinition/PractitionerRole"}

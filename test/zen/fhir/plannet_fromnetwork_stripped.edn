@@ -1,0 +1,37 @@
+{:resourceType "StructureDefinition",
+ :id "plannet-AcceptingPatients-extension",
+ :url
+ "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-AcceptingPatients-extension",
+ :name "AcceptingPatients",
+ :title "plannet-AcceptingPatients",
+ :description
+ "Boolean flag indicating whether the practitioner is accepting new patients.  This is a component of the NewPatients extension.",
+ :fhirVersion "4.0.0",
+ :kind "complex-type",
+ :abstract false,
+ :context [{:type "element", :expression "*"}],
+ :type "Extension",
+ :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension",
+ :derivation "constraint",
+ :differential
+ {:element
+  [{:id "Extension",
+    :path "Extension",
+    :short "AcceptingPatients",
+    :definition
+    "Boolean flag indicating whether the practitioner is accepting new patients.  This is a component of the NewPatients extension.",
+    :min 0,
+    :max "*"}
+   {:id "Extension.extension",
+    :path "Extension.extension",
+    :min 0,
+    :max "0"}
+   {:id "Extension.url",
+    :path "Extension.url",
+    :type [{:code "uri"}],
+    :fixedUri
+    "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-AcceptingPatients-extension"}
+   {:id "Extension.valueBoolean",
+    :path "Extension.valueBoolean",
+    :min 1,
+    :type [{:code "boolean"}]}]}}

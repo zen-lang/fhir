@@ -41,43 +41,21 @@
     {:strength "required",
      :valueSet
      "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/AcceptingPatientsVS"}}
-   {:id "Extension.extension:fromNetwork",
+   {:id "Extension.extension:fromnetwork",
     :path "Extension.extension",
-    :sliceName "fromNetwork",
-    :short "From Network",
+    :sliceName "fromnetwork",
+    :definition
+    "A reference to a healthcare provider insurance network (plannet-Network) for which the entity is/isn’t accepting new patients. This is a component of the NewPatients extension.",
     :min 0,
     :max "1",
-    :mustSupport true}
-   {:id "Extension.extension:fromNetwork.extension",
-    :path "Extension.extension.extension",
-    :max "0"}
-   {:id "Extension.extension:fromNetwork.url",
-    :path "Extension.extension.url",
-    :fixedUri "fromNetwork"}
-   {:id "Extension.extension:fromNetwork.value[x]",
-    :path "Extension.extension.value[x]",
-    :min 1,
+    :base {:path "Element.extension", :min 0, :max "*"},
     :type
-    [{:code "Reference",
-      :targetProfile
-      ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Network"]}]}
-   {:id "Extension.extension:characteristics",
-    :path "Extension.extension",
-    :sliceName "characteristics",
-    :short "Characteristics of accepted patients",
-    :min 0,
-    :max "*",
-    :mustSupport true}
-   {:id "Extension.extension:characteristics.extension",
-    :path "Extension.extension.extension",
-    :max "0"}
-   {:id "Extension.extension:characteristics.url",
-    :path "Extension.extension.url",
-    :fixedUri "characteristics"}
-   {:id "Extension.extension:characteristics.value[x]",
-    :path "Extension.extension.value[x]",
-    :min 1,
-    :type [{:code "string"}]}
+    [{:code "Extension",
+      :profile
+      ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-FromNetwork-extension"]}],
+    :isModifier false,
+    :isSummary false,
+    :mapping [{:identity "rim", :map "n/a"}]},
    {:id "Extension.url",
     :path "Extension.url",
     :fixedUri

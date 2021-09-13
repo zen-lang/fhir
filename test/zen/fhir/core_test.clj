@@ -715,6 +715,11 @@
 (t/deftest ^:kaocha/pending nested-extensions
   (def ztx (zen.core/new-context {}))
 
+  (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn"
+                                     io/resource
+                                     slurp
+                                     read-string))
+
   (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn"
                                   io/resource
                                   slurp
@@ -725,17 +730,11 @@
                                      slurp
                                      read-string))
 
-  (zen.fhir.core/load-definiton
-   ztx
-   nil
-   {:url (:url practitioner-role-profile)}
-   practitioner-role-profile )
+  (zen.fhir.core/load-definiton ztx nil {:url (:url practitioner-role-profile)} practitioner-role-profile)
 
-  (zen.fhir.core/load-definiton
-   ztx
-   nil
-   {:url (:url new-patients-extension)}
-   new-patients-extension)
+  (zen.fhir.core/load-definiton ztx nil {:url (:url new-patients-extension)} new-patients-extension)
+
+  (zen.fhir.core/load-definiton ztx nil {:url (:url from-network-extension)} from-network-extension)
 
   (sut/load-all ztx "hl7.fhir.r4.core")
 
@@ -746,5 +745,4 @@
    {:|
     {:newpatients
      {:| {:acceptingPatients {}
-          :fromNetwork {}
-          :characteristics {}}}}}))
+          :fromNetwork {}}}}}))
