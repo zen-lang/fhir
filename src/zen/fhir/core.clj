@@ -278,6 +278,11 @@
     (merge (dissoc res :| :fhir-poly-keys)
            (dissoc (first (vals (dissoc (:| res) :url :extension))) :minItems :maxItems :required))
 
+    (and (= "Extension" (:type res)) ;; nested extension
+         (contains? res :fhir/extension)
+         (empty? (:| res)))
+    (dissoc res :type)
+
     :else
     (assert false  (pr-str :extension-values (:url ext) (dissoc (:| res) :url :extension)))))
 

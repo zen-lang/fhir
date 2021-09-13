@@ -715,7 +715,7 @@
 (t/deftest ^:kaocha/pending nested-extensions
   (def ztx (zen.core/new-context {}))
 
-  #_(def from-network-extension ;; TODO: doulble nested extensions
+  (def from-network-extension ;; TODO: doulble nested extensions
     (-> "zen/fhir/plannet_fromnetwork_stripped.edn"
         io/resource
         slurp
@@ -737,15 +737,22 @@
 
   (zen.fhir.core/load-definiton ztx nil {:url (:url new-patients-extension)} new-patients-extension)
 
-  #_(zen.fhir.core/load-definiton ztx nil {:url (:url from-network-extension)} from-network-extension)
+  (zen.fhir.core/load-definiton ztx nil {:url (:url from-network-extension)} from-network-extension)
 
   (sut/load-all ztx "hl7.fhir.r4.core")
 
   ;; (keys (get-in @ztx [:fhir/src "StructureDefinition"]))
 
   (matcho/match
-   (zen.fhir.core/get-definition ztx (:url practitioner-role-profile))
-   {:|
-    {:newpatients
-     {:| {:acceptingPatients {}
-          #_#_:fromNetwork {}}}}}))
+    (zen.fhir.core/get-definition ztx (:url practitioner-role-profile))
+    {:|
+     {:newpatients
+      {:fhir/extension
+       "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients"}}})
+
+
+  (matcho/match
+    (zen.fhir.core/get-definition ztx (:url new-patients-extension))
+    {:|
+     {:acceptingPatients {}
+      :fromnetwork {:fhir/extension "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-FromNetwork-extension"}}}))
