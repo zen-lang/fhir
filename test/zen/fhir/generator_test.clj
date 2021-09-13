@@ -26,8 +26,6 @@
                                       "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}
                                       "hl7.fhir.us.carin-bb" {:zen.fhir/package-ns 'carin-bb-v1}}})
 
-    #_(get-in @ztx [:fhir/inter "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Resource"])
-
     (t/is (= :done (sut/generate-zen-schemas ztx)))
 
     (matcho/match
@@ -238,3 +236,42 @@
        {:path [:identifier], :type "require"}
        {:path [:gender], :type "require"}
        nil])))
+
+
+(t/deftest ^:kaocha/pending nested-extension
+  (def ztx (zen.core/new-context {}))
+
+  (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
+  (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
+  (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
+  (zen.fhir.core/load-definiton ztx nil {:url (:url practitioner-role-profile)} (assoc practitioner-role-profile :zen.fhir/package-ns "plannet"))
+  (zen.fhir.core/load-definiton ztx nil {:url (:url new-patients-extension)} (assoc new-patients-extension :zen.fhir/package-ns "plannet"))
+  (zen.fhir.core/load-definiton ztx nil {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet"))
+  (zen.fhir.core/load-all ztx "hl7.fhir.r4.core")
+
+  (t/testing "Nested extensions correct namespaces & symbol links are created"
+    (t/is (= :done (sut/generate-zen-schemas ztx)))
+
+    (matcho/match
+      (-> (:fhir.zen/ns @ztx)
+          (select-keys '[plannet.plannet-PractitionerRole
+                         plannet.newpatients
+                         plannet.plannet-AcceptingPatients-extension]))
+      {'plannet.plannet-PractitionerRole
+       {'ns 'plannet.plannet-PractitionerRole
+        'import #(contains? % 'plannet.newpatients)
+
+        'schema {:keys {:newpatients {:every {:confirms #{'plannet.newpatients/schema}}}}}}
+
+       'plannet.newpatients
+       {'ns 'plannet.newpatients
+        'import #(contains? % 'plannet.plannet-AcceptingPatients-extension)
+
+        'schema {:require #{:acceptingPatients :fromnetwork}
+                 :keys {:acceptingPatients {:confirms #{'hl7-fhir-r4-core.CodeableConcept/schema}}
+                        :fromnetwork {:confirms #{'plannet.plannet-AcceptingPatients-extension/schema}}}}}
+
+       'plannet.plannet-AcceptingPatients-extension
+       {'ns 'plannet.plannet-AcceptingPatients-extension
+
+        'schema {:confirms #{'hl7-fhir-r4-core/boolean}}}})))
