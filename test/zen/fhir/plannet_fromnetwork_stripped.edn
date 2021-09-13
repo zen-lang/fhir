@@ -1,11 +1,12 @@
 {:resourceType "StructureDefinition",
- :id "plannet-AcceptingPatients-extension",
+ :id "plannet-FromNetwork-extension",
  :url
- "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-AcceptingPatients-extension",
- :name "AcceptingPatients",
- :title "plannet-AcceptingPatients",
+ "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-FromNetwork-extension",
+ :name "FromNetwork",
+ :title "plannet-FromNetwork",
+ :status "draft",
  :description
- "Boolean flag indicating whether the practitioner is accepting new patients.  This is a component of the NewPatients extension.",
+ "A reference to a healthcare provider insurance network (plannet-Network) for which the entity is/isn’t accepting new patients. This is a component of the NewPatients extension.",
  :fhirVersion "4.0.0",
  :kind "complex-type",
  :abstract false,
@@ -17,9 +18,9 @@
  {:element
   [{:id "Extension",
     :path "Extension",
-    :short "AcceptingPatients",
+    :short "FromNetwork",
     :definition
-    "Boolean flag indicating whether the practitioner is accepting new patients.  This is a component of the NewPatients extension.",
+    "A reference to a healthcare provider insurance network (plannet-Network) for which the entity is/isn’t accepting new patients. This is a component of the NewPatients extension.",
     :min 0,
     :max "*"}
    {:id "Extension.extension",
@@ -30,8 +31,11 @@
     :path "Extension.url",
     :type [{:code "uri"}],
     :fixedUri
-    "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-AcceptingPatients-extension"}
-   {:id "Extension.valueBoolean",
-    :path "Extension.valueBoolean",
+    "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-FromNetwork-extension"}
+   {:id "Extension.valueReference",
+    :path "Extension.valueReference",
     :min 1,
-    :type [{:code "boolean"}]}]}}
+    :type
+    [{:code "Reference",
+      :targetProfile
+      ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Network"]}]}]}}

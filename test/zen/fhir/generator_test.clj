@@ -261,7 +261,7 @@
       (-> (:fhir.zen/ns @ztx)
           (select-keys '[plannet.plannet-PractitionerRole
                          plannet.newpatients
-                         plannet.plannet-AcceptingPatients-extension]))
+                         plannet.plannet-FromNetwork-extension]))
       {'plannet.plannet-PractitionerRole
        {'ns 'plannet.plannet-PractitionerRole
         'import #(contains? % 'plannet.newpatients)
@@ -270,13 +270,13 @@
 
        'plannet.newpatients
        {'ns 'plannet.newpatients
-        'import #(contains? % 'plannet.plannet-AcceptingPatients-extension)
+        'import #(contains? % 'plannet.plannet-FromNetwork-extension)
 
-        'schema {:require #{:acceptingPatients :fromnetwork}
+        'schema {:require #{:acceptingPatients}
                  :keys {:acceptingPatients {:confirms #{'hl7-fhir-r4-core.CodeableConcept/schema}}
-                        :fromnetwork {:confirms #{'plannet.plannet-AcceptingPatients-extension/schema}}}}}
+                        :fromnetwork {:confirms #{'plannet.plannet-FromNetwork-extension/schema}}}}}
 
-       'plannet.plannet-AcceptingPatients-extension
-       {'ns 'plannet.plannet-AcceptingPatients-extension
+       #_#_'plannet.plannet-FromNetwork-extension ;; TODO: fhir/inter shouldn't have baseDefinition
+       {'ns 'plannet.plannet-FromNetwork-extension
 
-        'schema {:confirms #{'hl7-fhir-r4-core/boolean}}}})))
+        'schema {:confirms #{'hl7-fhir-r4-core/Reference}}}})))
