@@ -251,7 +251,7 @@
 
 (defn *normalize-extension [ext res]
   (cond
-    (get-in res [:| :extension :slicing :slices])
+    (get-in res [:| :extension :slicing :slices]) ;; slices for different extensions
     (-> (assoc res
                :fhir/extension (get-in res [:| :url :fixedUri])
                :| (->> (get-in res [:| :extension :slicing :slices])
@@ -261,20 +261,20 @@
                                    {})))
         (dissoc :fhir-poly-keys))
 
-    (= 1 (count (get-in res [:| :value :types])))
+    (= 1 (count (get-in res [:| :value :types]))) ;; value[x] with a single type
     (merge (dissoc res :| :fhir-poly-keys)
            {:type (first (get-in res [:| :value :types]))})
 
-    (< 1 (count (get-in res [:| :value :types])))
+    (< 1 (count (get-in res [:| :value :types]))) ;; value[x] with multile types
     (merge
       (dissoc res :| :fhir-poly-keys)
       (dissoc (get-in res [:| :value]) :minItems :maxItems :vector :required :fhir-poly-keys))
 
-    (and (get-in res [:| :value])
+    (and (get-in res [:| :value]) ;; has value[x], but no types in it
          (empty? (get-in res [:| :value :types])))
     (assert false (pr-str :no-types res))
 
-    (= 1 (count (dissoc (:| res) :url :extension)))
+    (= 1 (count (dissoc (:| res) :url :extension))) ;; extension with a single value
     (merge (dissoc res :| :fhir-poly-keys)
            (dissoc (first (vals (dissoc (:| res) :url :extension))) :minItems :maxItems :required))
 
@@ -284,7 +284,7 @@
     (dissoc res :type)
 
     :else
-    (assert false  (pr-str :extension-values (:url ext) (dissoc (:| res) :url :extension)))))
+    (assert false (pr-str :extension-values (:url ext) (dissoc (:| res) :url :extension)))))
 
 
 (defn normalize-extension [res]
@@ -292,6 +292,7 @@
     (assoc (*normalize-extension res res)
            :fhir/extension (:url res))
     res))
+
 
 (defn load-intermidiate [res]
   (->> (get-in res [:differential :element])
