@@ -276,10 +276,10 @@
           (assert false  (pr-str :extension-values (:url ext) values)))))))
 
 (defn normalize-extension [res]
-  (if-not (= "Extension" (:type res))
-    res
+  (if (= "Extension" (:type res))
     (assoc (*normalize-extension res res)
-           :fhir/extension (:url res))))
+           :fhir/extension (:url res))
+    res))
 
 (defn load-intermidiate [res]
   (->> (get-in res [:differential :element])
@@ -402,16 +402,41 @@
       tp (assoc :type tp))))
 
 
+(defn make-first-class-ext-keys [acc el]
+  (->> (get-in el [:slicing :slices])
+       (reduce (fn [acc [ext-k ext-el]]
+                 (assert (= ext-k (keyword (:sliceName ext-el))) (pr-str ext-k "!=" (:sliceName ext-el)))
+                 (assoc acc ext-k (dissoc ext-el :type :sliceName)))
+               acc)))
+
+
 (defn search-base-elements [ztx k el bases]
   (if-let [b-els (get-base-elements ztx k el bases)]
-    [k b-els]
+    {:el-key k, :element el, :base-elements b-els}
     (let [fix-poly-k (keyword (decapitalize-first-letter (name k)))]
-      (if-let [b-els (get-base-elements ztx fix-poly-k el bases)]
-        [fix-poly-k b-els]
-        [k]))))
+      (when-let [b-els (get-base-elements ztx fix-poly-k el bases)]
+        {:el-key fix-poly-k, :element el, :base-elements b-els}))))
 
 
-;; one of the most complicated places now
+(defn find-poly-base-el [ztx k el bases]
+  (when-let [{poly-key :key, poly-type :type} (get-base-poly-key ztx k bases)]
+    (let [poly-el  {:| {(keyword poly-type) (assoc el :type poly-type)}}
+          base-els (get-base-elements ztx poly-key poly-el bases)]
+      {:el-key        poly-key
+       :element       poly-el
+       :base-elements base-els})))
+
+
+(defn find-base-els [ztx k el bases]
+  (let [{:as   search-result
+         :keys [el-key element base-elements]
+         :or   {el-key k, element el, base-elements []}}
+        (search-base-elements ztx k el bases)]
+    (if (seq base-elements)
+      search-result
+      (find-poly-base-el ztx el-key element bases))))
+
+
 (defn walk-with-bases [ztx ctx subj bases]
   (let [subj (enrich-element subj bases)]
     (if (empty? (:| subj))
@@ -419,30 +444,18 @@
       (update subj :|
               #(reduce (fn [acc [k el]]
                          (if (and (= :extension k) (not (:do-not-handle-first-class-ext? ctx)))
-                           (->> (get-in el [:slicing :slices])
-                                (reduce (fn [acc [ext-k ext-el]]
-                                          (assert (= ext-k (keyword (:sliceName ext-el))) (pr-str ext-k "!=" (:sliceName ext-el)))
-                                          (assoc acc ext-k (dissoc ext-el :type :sliceName)))
-                                        acc))
-                           (let [[k base-els] (search-base-elements ztx k el bases)]
-                             (if base-els
-                               (assoc acc k
-                                      (let [new-ctx (-> (update ctx :lvl inc) (update :path conj k))]
-                                        (walk-with-bases ztx new-ctx el base-els)))
-                               (if-let [{poly-key :key, poly-type :type} (get-base-poly-key ztx k bases)]
-                                 (let [poly-el  {:| {(keyword poly-type) (assoc el :type poly-type)}}
-                                       base-els (get-base-elements ztx poly-key poly-el bases)
-                                       new-ctx  (-> (update ctx :lvl inc) (update :path conj poly-key))]
-                                   (assoc acc poly-key (walk-with-bases ztx new-ctx poly-el base-els)))
-                                 (if (= "specialization" (:derivation ctx))
-                                   (assoc acc k
-                                          (let [new-ctx (-> (update ctx :lvl inc) (update :path conj k))]
-                                            (walk-with-bases ztx new-ctx el [])))
-                                   (do
-                                     (println :WARN :no-base (conj (:path ctx) k) el)
-                                     (assoc acc k
-                                            (let [new-ctx (-> (update ctx :lvl inc) (update :path conj k))]
-                                              (walk-with-bases ztx new-ctx el []))))))))))
+                           (make-first-class-ext-keys acc el)
+
+                           (let [{:keys [el-key element base-elements]
+                                  :or   {el-key k, element el, base-elements []}}
+                                 (find-base-els ztx k el bases)
+
+                                 new-ctx
+                                 (-> (update ctx :lvl inc) (update :path conj el-key))]
+                             (when (and (not= "specialization" (:derivation ctx))
+                                        (empty? base-elements))
+                               (println :WARN :no-base (conj (:path ctx) k) el))
+                             (assoc acc el-key (walk-with-bases ztx new-ctx element base-elements)))))
                        {}
                        %)))))
 
@@ -509,29 +522,27 @@
 
 (defn process-sd [ztx url subj]
   (let [processed-sd
-        (cond
-          (is-extension? url subj)
+        (if (is-extension? url subj)
           (process-extension ztx url subj)
-
-          ;; (is-profile? url subj)
-          :else
           (let [bases (get-bases ztx subj)]
             (when (= "constraint" (:derivation subj))
               (println (pr-str :WARN :no-base url)))
-            (walk-with-bases ztx {:lvl 0 :path [url] :derivation (:derivation subj)
-                                  :do-not-handle-first-class-ext? (or (= "http://hl7.org/fhir/StructureDefinition/Element" (:url subj))
-                                                                      (= "http://hl7.org/fhir/StructureDefinition/DomainResource" (:url subj)))}
-                             subj bases)))]
+            (walk-with-bases ztx {:lvl 0
+                                  :path [url]
+                                  :derivation (:derivation subj)
+                                  :do-not-handle-first-class-ext?
+                                  (or (= "http://hl7.org/fhir/StructureDefinition/Element" (:url subj))
+                                      (= "http://hl7.org/fhir/StructureDefinition/DomainResource" (:url subj)))}
+                             subj
+                             bases)))]
     (assoc processed-sd :deps (collect-deps processed-sd))))
 
 
 (defn process-structure-definitions [ztx]
   (swap! ztx update-in [:fhir/inter "StructureDefinition"]
-         (fn [old]
-           (->> old
-                (reduce (fn [acc [url resource]]
-                          (assoc acc url (process-sd ztx url resource)))
-                        {})))))
+         (partial reduce (fn [acc [url resource]]
+                           (assoc acc url (process-sd ztx url resource)))
+                  {})))
 
 
 (defn preprocess-resources
