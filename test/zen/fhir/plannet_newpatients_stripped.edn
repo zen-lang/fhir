@@ -41,7 +41,7 @@
     {:strength "required",
      :valueSet
      "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/AcceptingPatientsVS"}}
-   {:id "Extension.extension:fromnetwork",
+   #_{:id "Extension.extension:fromnetwork",
     :path "Extension.extension",
     :sliceName "fromnetwork",
     :definition
