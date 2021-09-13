@@ -7,18 +7,6 @@
             [zen.fhir.utils :as utils]
             [com.rpl.specter :as sp]))
 
-;; load resources into memory [rt id]
-;; transform to zen (two phase?)
-;; elements => nested structure => keys
-;; id and namespace based on url
-
-
-;; min/max => vector? required minItems/maxItems
-;; type -> polymorphic, type, profiles
-;; references to extensions etc
-;; group and analyze slicing
-;; analyze valuesets
-
 
 (def poly-id-terminator "[x]")
 
@@ -599,41 +587,3 @@
   (preprocess-resources ztx)
   (process-resources ztx)
   :done)
-
-
-;; 1. depency to generate import in zen (profile, type, extension, valuesets)
-;; 2. extensions as first class
-;; 3. polymoric shortcats - valueQuantity -> value.Quantity
-;; 4. P.meta. <- BP <- DomainResource.meta...
-;; 5. Slicing on arrays (filter, matcho)
-
-;; Generation
-;; 1. load into intermidiate
-;; 2. Dump to zen-schema
-;; * dump only specific package or dump all
-;; * one SD - one ns
-;;    * -  us-core.v2.Patient/schema
-;;    * -  us-core.v2.Patient/Patient
-;;    * -  us-core.v2.Patient/resource
-;; *  url of module to namespace (transformation?)
-{'ns 'us-core.v2.Patient
- 'import #{'fhir/resource 'fhir.r4.Patient/schema}
- 'schema {:zen/tags #{'fhir/resource}
-          :confirms #{ 'fhir.r4.Patient/schema}
-          :keys {:race {:confirms #{'us-core.v2.patient-race/schema}
-                        :fhir/extension "http://"}}
-
-          }
-
-}
-
-;; us-core.v2 {imports all us-core}
-{'ns 'us-core.v2.ValueSet
-
- 'valueset
- {:zen/tags #{'fhir/valueset}
-
-
-  }
-
- }

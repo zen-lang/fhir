@@ -238,6 +238,11 @@
        nil])))
 
 
+;; TODO:
+;; 1 generate confirms extension
+;; 2 pass require
+;; 3 pass import
+;; 4 fix extension schema
 (t/deftest ^:kaocha/pending nested-extension
   (def ztx (zen.core/new-context {}))
 
