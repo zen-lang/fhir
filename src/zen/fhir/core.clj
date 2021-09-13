@@ -250,30 +250,37 @@
 
 
 (defn *normalize-extension [ext res]
-  (if-let [complex (get-in res [:| :extension :slicing :slices])]
-    (-> (assoc res :| (->> complex
+  (cond
+    (get-in res [:| :extension :slicing :slices])
+    (-> (assoc res
+               :fhir/extension (get-in res [:| :url :fixedUri])
+               :| (->> (get-in res [:| :extension :slicing :slices])
                            (reduce (fn [acc [k v]]
                                      (assert (= (name k) (:sliceName v)) (pr-str :slice-name k (:sliceName v)))
                                      (assoc acc k (*normalize-extension ext (dissoc v :sliceName))))
-                                   {}))
-               :fhir/extension (get-in res [:| :url :fixedUri]))
+                                   {})))
         (dissoc :fhir-poly-keys))
-    (if-let [value (get-in res [:| :value] )]
-      (let [types (:types value)]
-        (cond
-          (= 1 (count types))
-          (merge (dissoc res :| :fhir-poly-keys)
-                 {:type (first types)})
-          (< 1 (count types))
-          (merge
-            (dissoc res :| :fhir-poly-keys)
-            (dissoc value :minItems :maxItems :vector :required :fhir-poly-keys))
-          :else (assert false (pr-str :no-types res))))
-      (let [values (dissoc (:| res) :url :extension)]
-        (if (= 1 (count values))
-          (merge (dissoc res :| :fhir-poly-keys)
-                 (dissoc (first (vals values)) :minItems :maxItems :required))
-          (assert false  (pr-str :extension-values (:url ext) values)))))))
+
+    (= 1 (count (get-in res [:| :value :types])))
+    (merge (dissoc res :| :fhir-poly-keys)
+           {:type (first (get-in res [:| :value :types]))})
+
+    (< 1 (count (get-in res [:| :value :types])))
+    (merge
+      (dissoc res :| :fhir-poly-keys)
+      (dissoc (get-in res [:| :value]) :minItems :maxItems :vector :required :fhir-poly-keys))
+
+    (and (get-in res [:| :value])
+         (empty? (get-in res [:| :value :types])))
+    (assert false (pr-str :no-types res))
+
+    (= 1 (count (dissoc (:| res) :url :extension)))
+    (merge (dissoc res :| :fhir-poly-keys)
+           (dissoc (first (vals (dissoc (:| res) :url :extension))) :minItems :maxItems :required))
+
+    :else
+    (assert false  (pr-str :extension-values (:url ext) (dissoc (:| res) :url :extension)))))
+
 
 (defn normalize-extension [res]
   (if (= "Extension" (:type res))
