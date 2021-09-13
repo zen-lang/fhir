@@ -707,41 +707,19 @@
                      #_(->> (get-in @ztx [:fhir/inter "StructureDefinition"])
                           (filter (fn [[k v]] (str/includes? (str v) ":slicing")))
                           (take 20)
-                          (into {})))
+                          (into {})))))
 
-    )
-  )
 
-(t/deftest ^:kaocha/pending nested-extensions
+(t/deftest nested-extensions
   (def ztx (zen.core/new-context {}))
 
-  (def from-network-extension ;; TODO: doulble nested extensions
-    (-> "zen/fhir/plannet_fromnetwork_stripped.edn"
-        io/resource
-        slurp
-        read-string))
-
-  (def new-patients-extension
-    (-> "zen/fhir/plannet_newpatients_stripped.edn"
-        io/resource
-        slurp
-        read-string))
-
-  (def practitioner-role-profile
-    (-> "zen/fhir/plannet_practitionerrole_stripped.edn"
-        io/resource
-        slurp
-        read-string))
-
-  (zen.fhir.core/load-definiton ztx nil {:url (:url practitioner-role-profile)} practitioner-role-profile)
-
-  (zen.fhir.core/load-definiton ztx nil {:url (:url new-patients-extension)} new-patients-extension)
-
-  (zen.fhir.core/load-definiton ztx nil {:url (:url from-network-extension)} from-network-extension)
-
+  (def from-network-extension    (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
+  (def new-patients-extension    (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
+  (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
+  (sut/load-definiton ztx nil {:url (:url practitioner-role-profile)} practitioner-role-profile)
+  (sut/load-definiton ztx nil {:url (:url new-patients-extension)} new-patients-extension)
+  (sut/load-definiton ztx nil {:url (:url from-network-extension)} from-network-extension)
   (sut/load-all ztx "hl7.fhir.r4.core")
-
-  ;; (keys (get-in @ztx [:fhir/src "StructureDefinition"]))
 
   (matcho/match
     (zen.fhir.core/get-definition ztx (:url practitioner-role-profile))
@@ -749,7 +727,6 @@
      {:newpatients
       {:fhir/extension
        "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients"}}})
-
 
   (matcho/match
     (zen.fhir.core/get-definition ztx (:url new-patients-extension))
