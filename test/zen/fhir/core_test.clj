@@ -6,7 +6,8 @@
             [clojure.pprint]
             [matcho.core :as matcho]
             [clojure.java.io :as io]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [zen.core :as zen]))
 
 (defn see-definition-els [ztx url]
   (let [d (sut/get-original ztx url)]
@@ -67,7 +68,6 @@
     ;;                   sut/normalize-element)
     ;;               {:required not, :vector not, :prohibited true?})
     ))
-
 
 ;; 1 use base of base for element
 "Profile.meta" "Base" "DomainResource.meta"
@@ -711,3 +711,40 @@
 
     )
   )
+
+(t/deftest ^:kaocha/pending nested-extensions
+  (def ztx (zen.core/new-context {}))
+
+  (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn"
+                                  io/resource
+                                  slurp
+                                  read-string))
+
+  (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn"
+                                     io/resource
+                                     slurp
+                                     read-string))
+
+  (zen.fhir.core/load-definiton
+   ztx
+   nil
+   {:url (:url practitioner-role-profile)}
+   practitioner-role-profile )
+
+  (zen.fhir.core/load-definiton
+   ztx
+   nil
+   {:url (:url new-patients-extension)}
+   new-patients-extension)
+
+  (sut/load-all ztx "hl7.fhir.r4.core")
+
+  ;; (keys (get-in @ztx [:fhir/src "StructureDefinition"]))
+
+  (matcho/match
+   (zen.fhir.core/get-definition ztx (:url practitioner-role-profile))
+   {:|
+    {:newpatients
+     {:| {:acceptingPatients {}
+          :fromNetwork {}
+          :characteristics {}}}}}))

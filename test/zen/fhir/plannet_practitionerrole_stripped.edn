@@ -1,0 +1,53 @@
+{:derivation "constraint",
+ :fhirVersion "4.0.1",
+ :name "PlannetPractitionerRole",
+ :abstract false,
+ :type "PractitionerRole",
+ :resourceType "StructureDefinition",
+ :status "active",
+ :id "plannet-PractitionerRole",
+ :kind "resource",
+ :url
+ "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-PractitionerRole",
+ :version "1.0.0",
+ :differential
+ {:element
+  [{:id "PractitionerRole", :path "PractitionerRole"}
+   {:id "PractitionerRole.extension",
+    :path "PractitionerRole.extension",
+    :slicing
+    {:discriminator [{:type "value", :path "url"}],
+     :ordered false,
+     :rules "open"}}
+   {:id "PractitionerRole.extension:newpatients",
+    :path "PractitionerRole.extension",
+    :sliceName "newpatients",
+    :short "New Patents",
+    :min 0,
+    :max "*",
+    :type
+    [{:code "Extension",
+      :profile
+      ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients"]}]}
+   {:id "PractitionerRole.extension:qualification",
+    :path "PractitionerRole.extension",
+    :sliceName "qualification",
+    :short "Qualification",
+    :min 0,
+    :max "*",
+    :type
+    [{:code "Extension",
+      :profile
+      ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/qualification"]}]}
+   {:id "PractitionerRole.extension:qualification.extension:code",
+    :path "PractitionerRole.extension.extension",
+    :sliceName "code"}
+   {:id
+    "PractitionerRole.extension:qualification.extension:code.value[x]",
+    :path "PractitionerRole.extension.extension.value[x]",
+    :binding
+    {:strength "extensible",
+     :valueSet
+     "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualSpecialtyAndDegreeLicenseCertificateVS"}}]},
+ :baseDefinition
+ "http://hl7.org/fhir/StructureDefinition/PractitionerRole"}

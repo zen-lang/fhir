@@ -1,0 +1,86 @@
+{:derivation "constraint",
+ :fhirVersion "4.0.1",
+ :name "NewPatients",
+ :abstract false,
+ :type "Extension",
+ :resourceType "StructureDefinition",
+ :title "New Patients",
+ :status "active",
+ :id "newpatients",
+ :kind "complex-type",
+ :url
+ "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients",
+ :context [{:type "element", :expression "Element"}],
+ :version "1.0.0",
+ :differential
+ {:element
+  [{:id "Extension",
+    :path "Extension",
+    :short "New Patients",
+    :definition
+    "New Patients indicates whether new patients are being accepted in general, or from a specific network.   \n              This extension is included in the PractitionerRole, HealthcareService, and Location profiles.  \n              This provides neeed flexibility for specifying whether a provider accepts new patients by location and network."}
+   {:id "Extension.extension", :path "Extension.extension", :min 1}
+   {:id "Extension.extension:acceptingPatients",
+    :path "Extension.extension",
+    :sliceName "acceptingPatients",
+    :short "Accepting Patients",
+    :min 1,
+    :max "1",
+    :mustSupport true}
+   {:id "Extension.extension:acceptingPatients.extension",
+    :path "Extension.extension.extension",
+    :max "0"}
+   {:id "Extension.extension:acceptingPatients.url",
+    :path "Extension.extension.url",
+    :fixedUri "acceptingPatients"}
+   {:id "Extension.extension:acceptingPatients.value[x]",
+    :path "Extension.extension.value[x]",
+    :min 1,
+    :type [{:code "CodeableConcept"}],
+    :binding
+    {:strength "required",
+     :valueSet
+     "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/AcceptingPatientsVS"}}
+   {:id "Extension.extension:fromNetwork",
+    :path "Extension.extension",
+    :sliceName "fromNetwork",
+    :short "From Network",
+    :min 0,
+    :max "1",
+    :mustSupport true}
+   {:id "Extension.extension:fromNetwork.extension",
+    :path "Extension.extension.extension",
+    :max "0"}
+   {:id "Extension.extension:fromNetwork.url",
+    :path "Extension.extension.url",
+    :fixedUri "fromNetwork"}
+   {:id "Extension.extension:fromNetwork.value[x]",
+    :path "Extension.extension.value[x]",
+    :min 1,
+    :type
+    [{:code "Reference",
+      :targetProfile
+      ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Network"]}]}
+   {:id "Extension.extension:characteristics",
+    :path "Extension.extension",
+    :sliceName "characteristics",
+    :short "Characteristics of accepted patients",
+    :min 0,
+    :max "*",
+    :mustSupport true}
+   {:id "Extension.extension:characteristics.extension",
+    :path "Extension.extension.extension",
+    :max "0"}
+   {:id "Extension.extension:characteristics.url",
+    :path "Extension.extension.url",
+    :fixedUri "characteristics"}
+   {:id "Extension.extension:characteristics.value[x]",
+    :path "Extension.extension.value[x]",
+    :min 1,
+    :type [{:code "string"}]}
+   {:id "Extension.url",
+    :path "Extension.url",
+    :fixedUri
+    "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients"}
+   {:id "Extension.value[x]", :path "Extension.value[x]", :max "0"}]},
+ :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"}
