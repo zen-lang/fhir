@@ -276,7 +276,7 @@
                  :keys {:acceptingPatients {:confirms #{'hl7-fhir-r4-core.CodeableConcept/schema}}
                         :fromnetwork {:confirms #{'plannet.plannet-FromNetwork-extension/schema}}}}}
 
-       #_#_'plannet.plannet-FromNetwork-extension ;; TODO: fhir/inter shouldn't have baseDefinition
+       'plannet.plannet-FromNetwork-extension
        {'ns 'plannet.plannet-FromNetwork-extension
 
-        'schema {:confirms #{'hl7-fhir-r4-core/Reference}}}})))
+        'schema {:confirms #{'hl7-fhir-r4-core.Reference/schema}}}})))
