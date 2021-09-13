@@ -386,28 +386,33 @@
   (some #(get-in % [:fhir-poly-keys k]) bases))
 
 
-(defn enrich-element [el base-els]
-  ;; TODO: if vector do min/max items
-  ;;       required/prohibited
-  ;;       tragetProfile type profile
-  (let [v? (some :vector base-els)
-        tp (or (:type el)
-               (->> base-els
-                    (filter (fn [{tp :type}] (and (not (nil? tp))
-                                                  (not (= "Element" tp)))))
-                    (some :type)))]
-    (cond-> el
-      v?       (assoc :vector true)
-      (not v?) (dissoc :minItems :maxItems)
-      tp (assoc :type tp))))
-
-
 (defn make-first-class-ext-keys [acc el]
   (->> (get-in el [:slicing :slices])
        (reduce (fn [acc [ext-k ext-el]]
                  (assert (= ext-k (keyword (:sliceName ext-el))) (pr-str ext-k "!=" (:sliceName ext-el)))
                  (assoc acc ext-k (dissoc ext-el :type :sliceName)))
                acc)))
+
+
+(defn enrich-element [ctx el base-els]
+  ;; TODO: if vector do min/max items
+  ;;       required/prohibited
+  ;;       tragetProfile type profile
+  (letfn [(make-first-class-extensions [acc [k el]]
+            (if (and (= :extension k) (not (:do-not-handle-first-class-ext? ctx)))
+              (make-first-class-ext-keys acc el)
+              (assoc acc k el)))]
+    (let [v? (some :vector base-els)
+          tp (or (:type el)
+                 (->> base-els
+                      (filter (fn [{tp :type}] (and (not (nil? tp))
+                                                    (not (= "Element" tp)))))
+                      (some :type)))]
+      (cond-> el
+        v?            (assoc :vector true)
+        (not v?)      (dissoc :minItems :maxItems)
+        tp            (assoc :type tp)
+        (seq (:| el)) (update :| (partial reduce make-first-class-extensions {}))))))
 
 
 (defn search-base-elements [ztx k el bases]
@@ -438,26 +443,21 @@
 
 
 (defn walk-with-bases [ztx ctx subj bases]
-  (let [subj (enrich-element subj bases)]
-    (if (empty? (:| subj))
-      subj
-      (update subj :|
-              #(reduce (fn [acc [k el]]
-                         (if (and (= :extension k) (not (:do-not-handle-first-class-ext? ctx)))
-                           (make-first-class-ext-keys acc el)
+  (letfn [(walk-with-bases-recursive [acc [k el]]
+            (let [{:keys [el-key element base-elements]
+                   :or   {el-key k, element el, base-elements []}}
+                  (find-base-els ztx k el bases)
 
-                           (let [{:keys [el-key element base-elements]
-                                  :or   {el-key k, element el, base-elements []}}
-                                 (find-base-els ztx k el bases)
-
-                                 new-ctx
-                                 (-> (update ctx :lvl inc) (update :path conj el-key))]
-                             (when (and (not= "specialization" (:derivation ctx))
-                                        (empty? base-elements))
-                               (println :WARN :no-base (conj (:path ctx) k) el))
-                             (assoc acc el-key (walk-with-bases ztx new-ctx element base-elements)))))
-                       {}
-                       %)))))
+                  new-ctx
+                  (-> (update ctx :lvl inc) (update :path conj el-key))]
+              (when (and (not= "specialization" (:derivation ctx))
+                         (empty? base-elements))
+                (println :WARN :no-base (conj (:path ctx) k) el))
+              (assoc acc el-key (walk-with-bases ztx new-ctx element base-elements))))]
+    (let [enr-subj (enrich-element ctx subj bases)]
+      (cond-> enr-subj
+        (seq (:| enr-subj))
+        (update :| (partial reduce walk-with-bases-recursive {}))))))
 
 
 (defn is-extension?
