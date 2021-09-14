@@ -22,7 +22,4 @@ jobs:
       - uses: DeLaGuardo/setup-clojure@3.5
         with:
           cli: 1.10.1.693
-      - run: node --version
-      - run: npm --version
-      - run: npm -ddd --registry=https://packages.simplifier.net install
-      - run: make test
+      - run: make init test
