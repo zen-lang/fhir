@@ -9,6 +9,59 @@
    [cheshire.core :as json]))
 
 
+(def zenbox
+  '{ns zenbox
+
+    Resource
+    {:zen/tags #{zen/tag zen/schema}
+     :type zen/map
+     :keys {:resourceType {:type zen/string}
+            :id {:type zen/string}
+            :meta {:type zen/map :values {:type zen/any}}}}
+
+    Reference
+    {:zen/tags #{zen/schema}
+     :zen/desc "reference datatype"
+     :type zen/map
+     :keys {:id {:type zen/string}
+            :resourceType {:type zen/string}
+            :display {:type zen/string}}}
+
+    nested-schema
+    {:zen/tags #{zen/schema}
+     :type zen/map
+     :keys {:fhir/flags {:type zen/set}
+            :zenbox/refers {:type zen/set
+                            :every {:type zen/symbol
+                                    #_#_:tags #{#{zenbox/base-schema zenbox/profile-schema}}}} ;; TODO
+            :keys {:type zen/map
+                   :values {:confirms #{nested-schema}}}
+            :every {:confirms #{nested-schema}}}}
+
+    structure-schema
+    {:zen/tags #{zen/schema zen/tag}
+     :confirms #{nested-schema}
+     :type     zen/map
+     :keys     {:zenbox/type {:type zen/string}
+                :zenbox/profileUri {:type zen/string}
+                :keys {:type zen/map
+                       :values {:confirms #{nested-schema}}}}}
+
+    base-schema
+    {:zen/tags #{zen/schema zen/tag}
+     :zen/desc "This schema should be used to validate all resources of its type"
+     :confirms #{structure-schema}
+     :type     zen/map
+     :require  #{:zenbox/type}}
+
+    profile-schema
+    {:zen/tags #{zen/schema zen/tag}
+     :zen/desc "This schema should be used only when mentioned in meta.profile"
+     :confirms #{structure-schema}
+     :type     zen/map
+     :require  #{:zenbox/profileUri}}})
+
+
 (defn delete-directory-recursive
   [^java.io.File file]
   (when (.isDirectory file)
@@ -160,59 +213,7 @@
                                   :version "0.0.1-test"}))))))
 
   (t/testing "zen validation"
-    (def ztx (zen.core/new-context
-               {:paths ["test-temp-zrc/"]
-                :memory-store
-                '{zenbox
-                  {ns zenbox
-
-                   Resource
-                   {:zen/tags #{zen/tag zen/schema}
-                    :type zen/map
-                    :keys {:resourceType {:type zen/string}
-                           :id {:type zen/string}
-                           :meta {:type zen/map :values {:type zen/any}}}}
-
-                   Reference
-                   {:zen/tags #{zen/schema}
-                    :zen/desc "reference datatype"
-                    :type zen/map
-                    :keys {:id {:type zen/string}
-                           :resourceType {:type zen/string}
-                           :display {:type zen/string}}}
-
-                   nested-schema
-                   {:zen/tags #{zen/schema}
-                    :type zen/map
-                    :keys {:fhir/flags {:type zen/set}
-                           :zenbox/refers {:type zen/set
-                                           :every {:type zen/symbol
-                                                   #_#_:tags #{#{zenbox/base-schema zenbox/profile-schema}}}} ;; TODO
-                           :keys {:type zen/map
-                                  :values {:confirms #{nested-schema}}}
-                           :every {:confirms #{nested-schema}}}}
-
-                   structure-schema
-                   {:zen/tags #{zen/schema zen/tag}
-                    :type     zen/map
-                    :keys     {:zenbox/type {:type zen/string}
-                               :zenbox/profileUri {:type zen/string}
-                               :keys {:type zen/map
-                                      :values {:confirms #{nested-schema}}}}}
-
-                   base-schema
-                   {:zen/tags #{zen/schema zen/tag}
-                    :zen/desc "This schema should be used to validate all resources of its type"
-                    :confirms #{structure-schema}
-                    :type     zen/map
-                    :require  #{:zenbox/type}}
-
-                   profile-schema
-                   {:zen/tags #{zen/schema zen/tag}
-                    :zen/desc "This schema should be used only when mentioned in meta.profile"
-                    :confirms #{structure-schema}
-                    :type     zen/map
-                    :require  #{:zenbox/profileUri}}}}}))
+    (def ztx (zen.core/new-context {:paths ["test-temp-zrc/"] :memory-store {'zenbox zenbox}}))
 
     (zen.core/read-ns ztx 'us-core-v3.us-core-patient)
 
@@ -273,10 +274,50 @@
         'import #(contains? % 'plannet.plannet-FromNetwork-extension)
 
         'schema {:require #{:acceptingPatients}
-                 :keys {:acceptingPatients {:confirms #{'hl7-fhir-r4-core.CodeableConcept/schema}}
+                 :keys {:acceptingPatients {:confirms #{'hl7-fhir-r4-core.CodeableConcept/schema}
+                                            :fhir/flags #{:MS}}
                         :fromnetwork {:confirms #{'plannet.plannet-FromNetwork-extension/schema}}}}}
 
        'plannet.plannet-FromNetwork-extension
        {'ns 'plannet.plannet-FromNetwork-extension
 
-        'schema {:confirms #{'hl7-fhir-r4-core.Reference/schema}}}})))
+        'schema {:zen/tags          #{'zen/schema 'zenbox/structure-schema}
+                 :zen/desc          "A reference to a healthcare provider insurance network (plannet-Network) for which the entity is/isn’t accepting new patients. This is a component of the NewPatients extension."
+                 :confirms          #{'hl7-fhir-r4-core.Reference/schema 'zenbox/Reference}
+                 :zenbox/type       "Reference"
+                 :zenbox/profileUri "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-FromNetwork-extension"
+                 :fhir/flags        #{:MS}}}}))
+
+  (t/testing "Generated zen schemas are correct"
+    (swap! ztx assoc :memory-store (assoc (:fhir.zen/ns @ztx) 'zenbox zenbox))
+
+    (zen.core/load-ns ztx (get (:fhir.zen/ns @ztx) 'plannet.plannet-PractitionerRole))
+
+    (t/is (empty? (:errors @ztx)))
+
+    (matcho/match
+      (zen.core/validate ztx '#{plannet.plannet-PractitionerRole/schema} {})
+      {:errors empty?})
+
+    (matcho/match
+      (zen.core/validate
+        ztx '#{plannet.plannet-PractitionerRole/schema}
+        {:newpatients
+         [{:acceptingPatients {:coding [{:code "foo"}]
+                               :text "foo"}
+           :fromnetwork {:resourceType "Network"
+                         :id "some-plannet-network"}}]})
+      {:errors empty?})
+
+    (matcho/match
+      (zen.core/validate
+        ztx '#{plannet.plannet-PractitionerRole/schema}
+        {:newpatients
+         {:acceptingPatients {:coding [{:code "foo"}]
+                              :text "foo"}
+          :fromnetwork {:resourceType "Network"
+                        :id "some-plannet-network"}}})
+      {:errors [{:type "type"
+                 :path [:newpatients]
+                 :schema ['plannet.plannet-PractitionerRole/schema :newpatients]}
+                nil]})))

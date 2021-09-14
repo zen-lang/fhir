@@ -57,44 +57,49 @@
     (symbol (name ext-ns) "schema")))
 
 
+(declare els-schema)
+
+
+(defn el-schema [fhir-inter [url el]]
+  (let [sch (merge-with
+              into
+              {}
+              (when-let [type-sym (some->> (:type el)
+                                           (str "http://hl7.org/fhir/StructureDefinition/")
+                                           (url->symbol fhir-inter))]
+                {:confirms #{type-sym}})
+              (when-let [ext-sym (some->> (:fhir/extension el) (url->symbol fhir-inter))]
+                {:confirms #{ext-sym}})
+              (when (seq (:| el))
+                (els-schema fhir-inter [url el]))
+              (when (seq (:fhir/flags el))
+                (select-keys el #{:fhir/flags}))
+              (when (= "Reference" (:type el))
+                {:confirms #{'zenbox/Reference}
+                 :zenbox/refers (into #{}
+                                      (map (partial url->symbol fhir-inter))
+                                      (:profiles el))})
+              (when-let [text (or (:short el) (:definiton el))]
+                {:zen/desc text}))]
+    (if (:vector el)
+      (merge {:type 'zen/vector
+              :every sch}
+             (select-keys el [:minItems :maxItems]))
+      sch)))
+
+
 (defn els-schema [fhir-inter [url inter-res]]
-  (letfn [(el-schema [fhir-inter el]
-            (let [sch (merge-with
-                        into
-                        {}
-                        (when-let [type-sym (some->> (:type el)
-                                                     (str "http://hl7.org/fhir/StructureDefinition/")
-                                                     (url->symbol fhir-inter))]
-                          {:confirms #{type-sym}})
-                        (when-let [ext-sym (some->> (:fhir/extension el) (url->symbol fhir-inter))]
-                          {:confirms #{ext-sym}})
-                        (when (seq (:| el))
-                          (els-schema fhir-inter [url el]))
-                        (when (seq (:fhir/flags el))
-                          (select-keys el #{:fhir/flags}))
-                        (when (= "Reference" (:type el))
-                          {:confirms #{'zenbox/Reference}
-                           :zenbox/refers (into #{}
-                                                (map (partial url->symbol fhir-inter))
-                                                (:profiles el))})
-                        (when-let [text (or (:short el) (:definiton el))]
-                          {:zen/desc text}))]
-              (if (:vector el)
-                (merge {:type 'zen/vector
-                        :every sch}
-                       (select-keys el [:minItems :maxItems]))
-                sch)))]
-    (merge {:type 'zen/map
-            :keys (sp/transform [sp/MAP-VALS]
-                                (partial el-schema fhir-inter)
-                                (:| inter-res))}
-           (when-let [requires (->> (:| inter-res)
-                                    (into #{}
-                                          (comp
-                                            (filter (comp :required val))
-                                            (map key)))
-                                    not-empty)]
-             {:require requires}))))
+  (merge {:type 'zen/map
+          :keys (sp/transform [sp/MAP-VALS]
+                              #(el-schema fhir-inter [url %])
+                              (:| inter-res))}
+         (when-let [requires (->> (:| inter-res)
+                                  (into #{}
+                                        (comp
+                                          (filter (comp :required val))
+                                          (map key)))
+                                  not-empty)]
+           {:require requires})))
 
 
 (defmethod generate-kind-schema :complex-type [fhir-inter [url inter-res]]
@@ -117,6 +122,12 @@
     (els-schema fhir-inter [url inter-res])))
 
 
+(defmethod generate-kind-schema :first-class-extension [fhir-inter [url inter-res]]
+  (merge
+    (confirms-base fhir-inter [url inter-res])
+    (el-schema fhir-inter [url (dissoc inter-res :fhir/extension)]))) ;; Maybe dissoc in core?
+
+
 (defn generate-zen-schema [fhir-inter [url inter-res]]
   (let [sd-inter    (get fhir-inter "StructureDefinition")
         schema-ns   (:zen.fhir/schema-ns inter-res)
@@ -137,12 +148,13 @@
     {schema-ns {'ns     schema-ns
                 'import imports
                 'schema (utils/strip-nils
-                          (merge {:zen/tags (into #{'zen/schema}
-                                                  (when severity-tag [severity-tag]))
-                                  :zen/desc (:text-description inter-res)
-                                  :zenbox/type (:type inter-res)
-                                  :zenbox/profileUri url}
-                                 schema-part))}}))
+                          (utils/safe-merge-with-into
+                            {:zen/tags (into #{'zen/schema}
+                                             (when severity-tag [severity-tag]))
+                             :zen/desc (:text-description inter-res)
+                             :zenbox/type (:type inter-res)
+                             :zenbox/profileUri url}
+                            schema-part))}}))
 
 
 (defn generate-zen-schemas* [fhir-inter]

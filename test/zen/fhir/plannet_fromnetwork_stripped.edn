@@ -35,6 +35,7 @@
    {:id "Extension.valueReference",
     :path "Extension.valueReference",
     :min 1,
+    :mustSupport true,
     :type
     [{:code "Reference",
       :targetProfile

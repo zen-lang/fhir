@@ -266,7 +266,8 @@
     (let [value (first (vals (dissoc (:| res) :url :extension)))]
       (merge (dissoc res :| :fhir-poly-keys :baseDefinition) ;; baseDefinition here is http://.../Extension, thus dissoc
              (dissoc value :minItems :maxItems :required)
-             {:baseDefinition (str "http://hl7.org/fhir/StructureDefinition/" (:type value))})) ;; make correct baseDefinition
+             {:kind "first-class-extension"
+              :baseDefinition (str "http://hl7.org/fhir/StructureDefinition/" (:type value))})) ;; making correct baseDefinition
 
     (and (= "Extension" (:type res)) ;; nested extension
          (contains? res :fhir/extension)
