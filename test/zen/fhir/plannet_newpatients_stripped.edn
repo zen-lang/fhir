@@ -9,7 +9,7 @@
  :id "newpatients",
  :kind "complex-type",
  :url
- "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients",
+ "http://hl7.org/test-plannet/StructureDefinition/newpatients",
  :context [{:type "element", :expression "Element"}],
  :version "1.0.0",
  :differential
@@ -40,7 +40,7 @@
     :binding
     {:strength "required",
      :valueSet
-     "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/AcceptingPatientsVS"}}
+     "http://hl7.org/test-plannet/ValueSet/AcceptingPatientsVS"}}
    {:id "Extension.extension:fromnetwork",
     :path "Extension.extension",
     :sliceName "fromnetwork",
@@ -52,13 +52,13 @@
     :type
     [{:code "Extension",
       :profile
-      ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-FromNetwork-extension"]}],
+      ["http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"]}],
     :isModifier false,
     :isSummary false,
     :mapping [{:identity "rim", :map "n/a"}]},
    {:id "Extension.url",
     :path "Extension.url",
     :fixedUri
-    "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients"}
+    "http://hl7.org/test-plannet/StructureDefinition/newpatients"}
    {:id "Extension.value[x]", :path "Extension.value[x]", :max "0"}]},
  :baseDefinition "http://hl7.org/fhir/StructureDefinition/Extension"}

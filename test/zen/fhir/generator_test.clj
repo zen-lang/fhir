@@ -280,7 +280,7 @@
                  :zen/desc          "A reference to a healthcare provider insurance network (plannet-Network) for which the entity is/isn’t accepting new patients. This is a component of the NewPatients extension."
                  :confirms          #{'hl7-fhir-r4-core.Reference/schema 'zenbox/Reference}
                  :zenbox/type       "Reference"
-                 :zenbox/profileUri "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-FromNetwork-extension"
+                 :zenbox/profileUri "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"
                  :fhir/flags        #{:MS}}}}))
 
   (t/testing "Generated zen schemas are correct"

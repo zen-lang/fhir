@@ -8,7 +8,7 @@
  :id "plannet-PractitionerRole",
  :kind "resource",
  :url
- "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-PractitionerRole",
+ "http://hl7.org/test-plannet/StructureDefinition/plannet-PractitionerRole",
  :version "1.0.0",
  :differential
  {:element
@@ -28,6 +28,6 @@
     :type
     [{:code "Extension",
       :profile
-      ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients"]}]}]},
+      ["http://hl7.org/test-plannet/StructureDefinition/newpatients"]}]}]},
  :baseDefinition
  "http://hl7.org/fhir/StructureDefinition/PractitionerRole"}

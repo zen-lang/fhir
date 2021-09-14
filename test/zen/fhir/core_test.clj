@@ -726,13 +726,13 @@
     {:|
      {:newpatients
       {:fhir/extension
-       "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/newpatients"}}})
+       "http://hl7.org/test-plannet/StructureDefinition/newpatients"}}})
 
   (matcho/match
     (zen.fhir.core/get-definition ztx (:url new-patients-extension))
     {:|
      {:acceptingPatients {}
-      :fromnetwork {:fhir/extension "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-FromNetwork-extension"}}})
+      :fromnetwork {:fhir/extension "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"}}})
 
   (matcho/match
     (zen.fhir.core/get-definition ztx (:url from-network-extension))

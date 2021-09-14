@@ -1,7 +1,7 @@
 {:resourceType "StructureDefinition",
  :id "plannet-FromNetwork-extension",
  :url
- "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-FromNetwork-extension",
+ "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension",
  :name "FromNetwork",
  :title "plannet-FromNetwork",
  :status "draft",
@@ -31,7 +31,7 @@
     :path "Extension.url",
     :type [{:code "uri"}],
     :fixedUri
-    "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-FromNetwork-extension"}
+    "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"}
    {:id "Extension.valueReference",
     :path "Extension.valueReference",
     :min 1,
@@ -39,4 +39,4 @@
     :type
     [{:code "Reference",
       :targetProfile
-      ["http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Network"]}]}]}}
+      ["http://hl7.org/test-plannet/StructureDefinition/plannet-Network"]}]}]}}
