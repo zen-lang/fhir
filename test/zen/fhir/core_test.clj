@@ -523,7 +523,7 @@
   (matcho/match
     (sut/get-definition aztx "uri://simple-ext")
     {:derivation     "constraint"
-     :kind           "complex-type"
+     :kind           "first-class-extension"
      :url            "uri://simple-ext"
      :fhir/extension string?
      :type           "string"})
