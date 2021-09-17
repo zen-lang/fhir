@@ -57,6 +57,15 @@
     (symbol (name ext-ns) "schema")))
 
 
+(defn value-set-url->symbol [fhir-inter value-set-url]
+  (let [versionless-url (->> (str/split value-set-url #"\|")
+                             butlast
+                             (str/join "|"))
+        value-set (get-in fhir-inter ["ValueSet" versionless-url])]
+    (symbol (str (:zen.fhir/package-ns value-set) "." (:id value-set))
+            "value-set")))
+
+
 (declare els-schema)
 
 
@@ -74,6 +83,10 @@
                 (els-schema fhir-inter [url el]))
               (when (seq (:fhir/flags el))
                 (select-keys el #{:fhir/flags}))
+              (when (get-in el [:binding :valueSet])
+                {:zenbox/value-set {:symbol (value-set-url->symbol
+                                            fhir-inter
+                                            (get-in el [:binding :valueSet]))}})
               (when (= "Reference" (:type el))
                 {:confirms #{'zenbox/Reference}
                  :zenbox/refers (into #{}

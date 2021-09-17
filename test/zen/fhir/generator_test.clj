@@ -129,8 +129,8 @@
        'fhir-r4.administrative-gender
        {'ns 'fhir-r4.administrative-gender
         'import #(contains? % 'zenbox)
-        'valueset {:zen/tags #{'zenbox/valueset}
-                   :url "http://hl7.org/fhir/ValueSet/administrative-gender"}}
+        'value-set {:zen/tags #{'zenbox/value-set}
+                    :url "http://hl7.org/fhir/ValueSet/administrative-gender"}}
 
        'fhir-r4.Patient
        {'ns     'fhir-r4.Patient
@@ -152,7 +152,7 @@
                                                :confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}
                                                :zenbox/refers #{'fhir-r4.Organization/schema}}
                         :gender {:confirms #{'fhir-r4.code/schema}
-                                 :zenbox/valueset {:symbol 'fhir-r4.administrative-gender}}
+                                 :zenbox/value-set {:symbol 'fhir-r4.administrative-gender/value-set}}
                         :link {:type 'zen/vector
                                :every {:require #{:other :type}}}}}}
 
@@ -160,7 +160,7 @@
        {'ns     'fhir-r4.Practitioner
         'import #(contains? % 'fhir-r4.administrative-gender)
         'schema {:keys {:gender {:confirms #{'fhir-r4.code/schema}
-                                 :zenbox/valueset {:symbol 'fhir-r4.administrative-gender}}}}}
+                                 :zenbox/value-set {:symbol 'fhir-r4.administrative-gender/value-set}}}}}
 
        'us-core-v3.us-core-patient
        {'ns     'us-core-v3.us-core-patient

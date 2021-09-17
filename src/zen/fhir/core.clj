@@ -307,6 +307,10 @@
   #_(println :WARN :no-process-on-load :for (:resourceType res)))
 
 
+(defmethod process-on-load :ValueSet
+  [res]
+  res)
+
 
 (defmethod process-on-load :StructureDefinition
   [res]
