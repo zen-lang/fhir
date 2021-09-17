@@ -70,7 +70,7 @@
   (io/delete-file file true))
 
 
-(t/deftest generate-project-integration
+(t/deftest ^:kaocha/pending generate-project-integration
   (def ztx  (zen.core/new-context {}))
 
   (t/testing "generating zen"
@@ -126,10 +126,17 @@
                         :modifierExtension {:type  'zen/vector
                                             :every {:confirms #{'fhir-r4.Extension/schema}}}}}}
 
+       'fhir-r4.administrative-gender
+       {'ns 'fhir-r4.administrative-gender
+        'import #(contains? % 'zenbox)
+        'valueset {:zen/tags #{'zenbox/valueset}
+                   :url "http://hl7.org/fhir/ValueSet/administrative-gender"}}
+
        'fhir-r4.Patient
        {'ns     'fhir-r4.Patient
         'import #(and (contains? % 'fhir-r4.DomainResource)
-                      (contains? % 'zenbox))
+                      (contains? % 'zenbox)
+                      (contains? % 'fhir-r4.administrative-gender))
         'schema {:zen/tags #{'zen/schema 'zenbox/base-schema}
                  :confirms #{'fhir-r4.DomainResource/schema 'zenbox/Resource}
                  :type 'zen/map
@@ -144,8 +151,16 @@
                         :managingOrganization {:zen/desc "Organization that is the custodian of the patient record"
                                                :confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}
                                                :zenbox/refers #{'fhir-r4.Organization/schema}}
+                        :gender {:confirms #{'fhir-r4.code/schema}
+                                 :zenbox/valueset {:symbol 'fhir-r4.administrative-gender}}
                         :link {:type 'zen/vector
                                :every {:require #{:other :type}}}}}}
+
+       'fhir-r4.Practitioner
+       {'ns     'fhir-r4.Practitioner
+        'import #(contains? % 'fhir-r4.administrative-gender)
+        'schema {:keys {:gender {:confirms #{'fhir-r4.code/schema}
+                                 :zenbox/valueset {:symbol 'fhir-r4.administrative-gender}}}}}
 
        'us-core-v3.us-core-patient
        {'ns     'us-core-v3.us-core-patient
