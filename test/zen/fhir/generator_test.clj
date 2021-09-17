@@ -254,7 +254,7 @@
        nil])))
 
 
-(t/deftest nested-extension
+(t/deftest ^:kaocha/pending nested-extension
   (def ztx (zen.core/new-context {}))
 
   (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
