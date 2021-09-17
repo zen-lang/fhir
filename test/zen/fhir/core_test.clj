@@ -749,6 +749,23 @@
      :baseDefinition "http://hl7.org/fhir/StructureDefinition/Reference"}))
 
 
+(t/deftest deps
+  (matcho/match
+    (sut/collect-deps
+      '{:fhir/extension
+        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex",
+        :binding
+        {:strength    "required",
+         :description "Code for sex assigned at birth",
+         :valueSet    {:url "http://hl7.org/fhir/us/core/ValueSet/birthsex"}},
+        :url            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex",
+        :baseDefinition "http://hl7.org/fhir/StructureDefinition/code"})
+    {"StructureDefinition"
+     {"http://hl7.org/fhir/StructureDefinition/code" [[:baseDefinition]]}
+     "ValueSet"
+     {"http://hl7.org/fhir/us/core/ValueSet/birthsex" {nil [[:binding]]}}}))
+
+
 (t/deftest value-sets
   (def ztx (zen.core/new-context {}))
   (sut/load-all ztx "hl7.fhir.r4.core")

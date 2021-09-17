@@ -79,7 +79,7 @@
   (io/delete-file file true))
 
 
-(t/deftest ^:kaocha/pending generate-project-integration
+(t/deftest generate-project-integration
   (def ztx  (zen.core/new-context {}))
 
   (t/testing "generating zen"
@@ -191,7 +191,22 @@
                                                 :type 'zen/map
                                                 :keys {:system {:confirms #{'fhir-r4.uri/schema}}
                                                        :value  {:zen/desc "The value that is unique within the system."
-                                                                :confirms #{'fhir-r4.string/schema}}}}}}}}}))
+                                                                :confirms #{'fhir-r4.string/schema}}}}}}}}
+
+       'us-core-v3.birthsex
+       {'ns 'us-core-v3.birthsex
+        'import #{'zenbox}
+
+        'value-set
+        {:uri "http://hl7.org/fhir/us/core/ValueSet/birthsex"}}
+
+       'us-core-v3.us-core-birthsex
+       {'ns 'us-core-v3.us-core-birthsex
+        'import #(and (contains? % 'us-core-v3.birthsex)
+                      (contains? % 'zenbox))
+
+        'schema
+        {:zenbox/value-set {:symbol 'us-core-v3.birthsex/value-set}}}}))
 
   (t/testing "spit"
     (t/testing "zen-schemas"
@@ -263,7 +278,7 @@
        nil])))
 
 
-(t/deftest ^:kaocha/pending nested-extension
+(t/deftest nested-extension
   (def ztx (zen.core/new-context {}))
 
   (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))

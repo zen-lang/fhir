@@ -523,27 +523,32 @@
     acc))
 
 
+(declare collect-nested)
+
+
+(defn collect-element [path-fn acc [k v]]
+  (let [new-path (path-fn k)]
+    (-> acc
+        (collect-nested new-path v)
+        (collect-extension-profiles new-path v)
+        (collect-types new-path v)
+        (collect-references new-path v)
+        (collect-valuesets new-path v))))
+
+
 (defn collect-nested [acc path subj]
-  (letfn [(collect-element [path-fn acc [k v]]
-            (let [new-path (path-fn path k)]
-              (-> acc
-                  (collect-nested new-path v)
-                  (collect-extension-profiles new-path v)
-                  (collect-types new-path v)
-                  (collect-references new-path v)
-                  (collect-valuesets new-path v))))]
-    (as-> acc acc
-      (reduce (partial collect-element (fn [path k] (-> (butlast path) vec (conj k))))
-              acc
-              (:slice subj))
-      (reduce (partial collect-element (fn [path k] (conj path k)))
-              acc
-              (:| subj)))))
+  (as-> acc acc
+    (reduce (partial collect-element (fn [k] (-> (butlast path) vec (conj k))))
+            acc
+            (:slice subj))
+    (reduce (partial collect-element (fn [k] (conj path k)))
+            acc
+            (:| subj))))
 
 
 (defn collect-deps [sd-processed]
-  (-> {"StructureDefinition" {(:baseDefinition sd-processed) [[:baseDefinition]]}}
-      (collect-nested [] sd-processed)))
+  (as-> {"StructureDefinition" {(:baseDefinition sd-processed) [[:baseDefinition]]}} acc
+    (collect-element (constantly []) acc [nil sd-processed])))
 
 
 (defn process-sd [ztx url subj]
