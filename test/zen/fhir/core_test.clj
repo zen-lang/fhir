@@ -747,3 +747,13 @@
     (zen.fhir.core/get-definition ztx (:url from-network-extension))
     {:type "Reference"
      :baseDefinition "http://hl7.org/fhir/StructureDefinition/Reference"}))
+
+
+(t/deftest value-sets
+  (def ztx (zen.core/new-context {}))
+  (sut/load-all ztx "hl7.fhir.r4.core")
+
+  (matcho/match
+    (get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/administrative-gender"])
+    {:url "http://hl7.org/fhir/ValueSet/administrative-gender"
+     :zen.fhir/schema-ns 'hl7-fhir-r4-core.administrative-gender}))
