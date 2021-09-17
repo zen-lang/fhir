@@ -388,15 +388,21 @@
 
     (matcho/match
       (sut/get-definition aztx "url://BaseResource2")
-      {:deps {:value-sets            {"url://valueset" {nil [[:complexattr :attr] [:polyattr]]
-                                                        "ver1" [[:complexattr :attr2]]}}
-              :types                 {"http://hl7.org/fhir/StructureDefinition/ComplexType" [[:complexattr]]
-                                      "http://hl7.org/fhir/StructureDefinition/Reference"   [[:ref]]
-                                      "http://hl7.org/fhir/StructureDefinition/prim"        [[:complexattr :attr] [:complexattr :attr2] [:polyattr :prim]]
-                                      "http://hl7.org/fhir/StructureDefinition/string"      [[:polyattr :string]]}
-              :extensions            {"url://some-ext" [[:some-ext]]}
-              :references            {"url://SomeResource" [[:ref]]}
-              :structure-definitions {"url://DomainResource" [[]]}}}))
+      {:deps {"ValueSet"
+              {"url://valueset" {nil    [[:complexattr :attr :binding] [:polyattr :binding]]
+                                 "ver1" [[:complexattr :attr2 :binding]]}}
+
+              "StructureDefinition"
+              {"http://hl7.org/fhir/StructureDefinition/ComplexType" [[:complexattr :type]]
+               "http://hl7.org/fhir/StructureDefinition/Reference"   [[:ref :type]]
+               "http://hl7.org/fhir/StructureDefinition/prim"        [[:complexattr :attr :type] [:complexattr :attr2 :type] [:polyattr :prim :type]]
+               "http://hl7.org/fhir/StructureDefinition/string"      [[:polyattr :string :type]]
+
+               "url://some-ext" [[:some-ext :fhir/extension]]
+
+               "url://SomeResource" [[:ref :profiles]]
+
+               "url://DomainResource" [[:baseDefinition]]}}}))
 
 
   (load-extension

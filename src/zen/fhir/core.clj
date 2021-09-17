@@ -322,7 +322,11 @@
 
 (defmethod process-on-load :ValueSet
   [res]
-  res)
+  (merge
+    res
+    (when-let [package-ns (:zen.fhir/package-ns res)]
+      {:zen.fhir/package-ns package-ns
+       :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))})))
 
 
 (defmethod process-on-load :StructureDefinition
@@ -493,29 +497,30 @@
 
 (defn collect-extension-profiles [acc path v]
   (if-let [url (:fhir/extension v)]
-    (update-in acc [:extensions url] (comp vec distinct concat) [path])
+    (update-in acc ["StructureDefinition" url] (comp vec distinct concat) [(conj path :fhir/extension)])
     acc))
 
 
 (defn collect-types [acc path v]
   (reduce (fn [acc' el-type]
             (update-in acc'
-                       [:types (str "http://hl7.org/fhir/StructureDefinition/" el-type)]
-                       (comp vec distinct concat) [path]))
+                       ["StructureDefinition" (str "http://hl7.org/fhir/StructureDefinition/" el-type)]
+                       (comp vec distinct concat) [(conj path :type)]))
           acc
           (cons (:type v) (:types v))))
 
 
 (defn collect-references [acc path v]
   (reduce (fn [acc' profile-url]
-            (update-in acc' [:references profile-url] (comp vec distinct concat) [path]))
+            (update-in acc' ["StructureDefinition" profile-url] (comp vec distinct concat) [(conj path :profiles)]))
           acc
           (:profiles v)))
 
 
 (defn collect-valuesets [acc path v]
-  (let [{:keys [url version]} (get-in v [:binding :valueSet])]
-    (update-in acc [:value-sets url version] (comp vec distinct concat) [path])))
+  (if-let [{:keys [url version]} (get-in v [:binding :valueSet])]
+    (update-in acc ["ValueSet" url version] (comp vec distinct concat) [(conj path :binding)])
+    acc))
 
 
 (defn collect-nested [acc path subj]
@@ -537,7 +542,7 @@
 
 
 (defn collect-deps [sd-processed]
-  (-> {:structure-definitions {(:baseDefinition sd-processed) [[]]}}
+  (-> {"StructureDefinition" {(:baseDefinition sd-processed) [[:baseDefinition]]}}
       (collect-nested [] sd-processed)))
 
 

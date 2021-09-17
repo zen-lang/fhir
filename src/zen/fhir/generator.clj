@@ -139,12 +139,12 @@
 
 
 (defn generate-zen-schema [fhir-inter [url inter-res]]
-  (let [sd-inter    (get fhir-inter "StructureDefinition")
-        schema-ns   (:zen.fhir/schema-ns inter-res)
+  (let [schema-ns   (:zen.fhir/schema-ns inter-res)
         imports     (into #{'zenbox}
-                          (keep (comp :zen.fhir/schema-ns sd-inter))
-                          (keys (apply concat (vals (:deps inter-res)))))
-
+                          (keep (fn [inter-path]
+                                  (get-in fhir-inter (conj inter-path :zen.fhir/schema-ns))))
+                          (mapcat (fn [[tp urls&reasons]] (map (fn [url] [tp url]) (keys urls&reasons)))
+                                  (:deps inter-res)))
         instantiated-resource? (and (not (:abstract inter-res))
                                     (= "resource" (:kind inter-res)))
         severity-tag           (case (and instantiated-resource?
@@ -154,7 +154,6 @@
                                  'zenbox/structure-schema)
 
         schema-part            (generate-kind-schema fhir-inter [url inter-res])]
-
     {schema-ns {'ns     schema-ns
                 'import imports
                 'schema (utils/strip-nils
