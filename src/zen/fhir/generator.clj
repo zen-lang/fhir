@@ -157,8 +157,8 @@
       (utils/strip-nils
         {:zen/tags #{'zenbox/value-set}
          :zen/desc (:description inter-res)
-         :zenbox.value-set/url (:url inter-res)
-         :zenbox.value-set/version (:version inter-res)})}}))
+         :uri (:url inter-res)
+         :version (:version inter-res)})}}))
 
 
 (defmethod generate-zen-schema :StructureDefinition [_rt fhir-inter [url inter-res]]

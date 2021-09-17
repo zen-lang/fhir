@@ -27,6 +27,13 @@
             :resourceType {:type zen/string}
             :display {:type zen/string}}}
 
+    value-set
+    {:zen/tags #{zen/schema zen/tag}
+     :zen/desc "Value set"
+     :type zen/map
+     :keys {:uri {:type zen/string}
+            :version {:type zen/string}}}
+
     nested-schema
     {:zen/tags #{zen/schema}
      :type zen/map
@@ -34,6 +41,8 @@
             :zenbox/refers {:type zen/set
                             :every {:type zen/symbol
                                     #_#_:tags #{#{zenbox/base-schema zenbox/profile-schema}}}} ;; TODO
+            :zenbox/value-set {:type zen/map
+                               :keys {:symbol {:type zen/symbol}}}
             :keys {:type zen/map
                    :values {:confirms #{nested-schema}}}
             :every {:confirms #{nested-schema}}}}
@@ -130,7 +139,7 @@
        {'ns 'fhir-r4.administrative-gender
         'import #(contains? % 'zenbox)
         'value-set {:zen/tags #{'zenbox/value-set}
-                    :zenbox.value-set/url "http://hl7.org/fhir/ValueSet/administrative-gender"}}
+                    :uri "http://hl7.org/fhir/ValueSet/administrative-gender"}}
 
        'fhir-r4.Patient
        {'ns     'fhir-r4.Patient
