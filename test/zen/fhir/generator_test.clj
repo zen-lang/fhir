@@ -130,7 +130,7 @@
        {'ns 'fhir-r4.administrative-gender
         'import #(contains? % 'zenbox)
         'value-set {:zen/tags #{'zenbox/value-set}
-                    :url "http://hl7.org/fhir/ValueSet/administrative-gender"}}
+                    :zenbox.value-set/url "http://hl7.org/fhir/ValueSet/administrative-gender"}}
 
        'fhir-r4.Patient
        {'ns     'fhir-r4.Patient

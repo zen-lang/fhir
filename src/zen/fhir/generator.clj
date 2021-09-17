@@ -138,7 +138,30 @@
     (el-schema fhir-inter [url (dissoc inter-res :fhir/extension)]))) ;; Maybe dissoc in core?
 
 
-(defn generate-zen-schema [fhir-inter [url inter-res]]
+(defn generate-zen-schema-dispatch [rt _fhir-inter [_url _inter-res]]
+  (keyword rt))
+
+
+(defmulti generate-zen-schema #'generate-zen-schema-dispatch)
+
+
+(defmethod generate-zen-schema :default [_rt _fhir-inter [_url _inter-res]])
+
+
+(defmethod generate-zen-schema :ValueSet [_rt _fhir-inter [_url inter-res]]
+  (let [schema-ns   (:zen.fhir/schema-ns inter-res)]
+    {schema-ns
+     {'ns     schema-ns
+      'import #{'zenbox}
+      'value-set
+      (utils/strip-nils
+        {:zen/tags #{'zenbox/value-set}
+         :zen/desc (:description inter-res)
+         :zenbox.value-set/url (:url inter-res)
+         :zenbox.value-set/version (:version inter-res)})}}))
+
+
+(defmethod generate-zen-schema :StructureDefinition [_rt fhir-inter [url inter-res]]
   (let [schema-ns   (:zen.fhir/schema-ns inter-res)
         imports     (into #{'zenbox}
                           (keep (fn [inter-path]
@@ -168,9 +191,9 @@
 
 (defn generate-zen-schemas* [fhir-inter]
   (into {}
-        (map (partial generate-zen-schema fhir-inter))
-        (get fhir-inter "StructureDefinition")))
-
+        (for [[rt inters] fhir-inter
+              inter       inters]
+          (generate-zen-schema rt fhir-inter inter))))
 
 
 (defn generate-zen-schemas [ztx]
