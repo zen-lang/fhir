@@ -375,6 +375,7 @@
        :base "DomainResource"
        :els  [{:id  "complexattr" :type [{:code "ComplexType"}]}
               {:id  "complexattr.attr" :type    [{:code "prim"}] :binding {:strength "required", :valueSet "url://valueset"}}
+              {:id  "complexattr.attr2" :type    [{:code "prim"}] :binding {:strength "required", :valueSet "url://valueset|ver1"}}
               {:id  "ref" :type [{:code "Reference" :targetProfile ["url://SomeResource"]}]}
               {:id  "extension", :type [{:code "Extension"}] :slicing {:discriminator [{:type "value", :path "url"}]}}
               {:id  "extension:some-ext" :type   [{:code    "Extension" :profile ["url://some-ext"]}] :sliceName "some-ext"}
@@ -387,10 +388,11 @@
 
     (matcho/match
       (sut/get-definition aztx "url://BaseResource2")
-      {:deps {:value-sets            {"url://valueset" [[:complexattr :attr]]}
+      {:deps {:value-sets            {"url://valueset" {nil [[:complexattr :attr] [:polyattr]]
+                                                        "ver1" [[:complexattr :attr2]]}}
               :types                 {"http://hl7.org/fhir/StructureDefinition/ComplexType" [[:complexattr]]
                                       "http://hl7.org/fhir/StructureDefinition/Reference"   [[:ref]]
-                                      "http://hl7.org/fhir/StructureDefinition/prim"        [[:complexattr :attr] [:polyattr :prim]]
+                                      "http://hl7.org/fhir/StructureDefinition/prim"        [[:complexattr :attr] [:complexattr :attr2] [:polyattr :prim]]
                                       "http://hl7.org/fhir/StructureDefinition/string"      [[:polyattr :string]]}
               :extensions            {"url://some-ext" [[:some-ext]]}
               :references            {"url://SomeResource" [[:ref]]}
@@ -482,12 +484,12 @@
      :|              {:ombCategory
                       {:type     "Coding"
                        :binding  {:strength "required"
-                                  :valueSet "http://hl7.org/fhir/us/core/ValueSet/omb-race-category"}
+                                  :valueSet {:url "http://hl7.org/fhir/us/core/ValueSet/omb-race-category"}}
                        :vector   true
                        :maxItems 5}
                       :detailed {:type    "Coding"
                                  :binding {:strength "required"
-                                           :valueSet "http://hl7.org/fhir/us/core/ValueSet/detailed-race"}
+                                           :valueSet {:url "http://hl7.org/fhir/us/core/ValueSet/detailed-race"}}
                                  :vector  true}
                       :text     {:type     "string"
                                  :required true}}})
@@ -602,24 +604,24 @@
                                       :| {:system {:type       "code"
                                                    :binding    {:strength    "required"
                                                                 :description "Telecommunications form for contact point."
-                                                                :valueSet    "http://hl7.org/fhir/ValueSet/contact-point-system"}
+                                                                :valueSet    {:url "http://hl7.org/fhir/ValueSet/contact-point-system"}}
                                                    :fhir/flags #{:MS}
                                                    :required   true}
                                           :value  {:required true :fhir/flags #{:MS} :type "string"}
                                           :use    {:binding    {:strength "required"
-                                                             :valueSet "http://hl7.org/fhir/ValueSet/contact-point-use"}
+                                                                :valueSet {:url "http://hl7.org/fhir/ValueSet/contact-point-use"}}
                                                 :fhir/flags #{:MS}
                                                 :type       "code"}}}
                       :gender {:type       "code"
                                :fhir/flags #{:MS}
                                :required   true
                                :binding {:strength "required"
-                                         :valueSet "http://hl7.org/fhir/ValueSet/administrative-gender"}}
+                                         :valueSet {:url "http://hl7.org/fhir/ValueSet/administrative-gender"}}}
                       :birthsex {:fhir/extension "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex"
                                  :fhir/flags #{:MS}
                                  :binding    {:strength    "required"
                                               :description "Code for sex assigned at birth"
-                                              :valueSet    "http://hl7.org/fhir/us/core/ValueSet/birthsex"}}}
+                                              :valueSet    {:url "http://hl7.org/fhir/us/core/ValueSet/birthsex"}}}}
      })
 
 
@@ -671,7 +673,8 @@
                                             :|      {:other {:type     "Reference"
                                                              :required true}
                                                      :type  {:binding  {:strength "required"
-                                                                        :valueSet "http://hl7.org/fhir/ValueSet/link-type|4.0.1"}
+                                                                        :valueSet {:url "http://hl7.org/fhir/ValueSet/link-type"
+                                                                                   :version "4.0.1"}}
                                                              :required true}}}
                       :generalPractitioner {:vector   true
                                             :type     "Reference"

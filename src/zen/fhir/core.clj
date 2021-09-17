@@ -195,11 +195,24 @@
     (dissoc :min :max)))
 
 
+(defn parse-canonical-url [url]
+  (when-not (str/blank? url)
+    (let [url-parts (str/split url #"\|")
+          url-parts (cond-> url-parts
+                      (= 1 (count url-parts))
+                      (conj nil))]
+      (utils/strip-nils
+        {:url     (str/join "|" (butlast url-parts))
+         :version (last url-parts)}))))
+
+
 (defn normalize-binding [el]
   (if-let [bn (:binding el)]
     (cond-> (dissoc el :binding)
       (contains? #{"required" "preferred"} (:strength bn))
-      (assoc :binding (dissoc bn :extension)))
+      (assoc :binding (-> bn
+                          (dissoc :extension)
+                          (update :valueSet parse-canonical-url))))
     el))
 
 
@@ -501,8 +514,8 @@
 
 
 (defn collect-valuesets [acc path v]
-  (let [value-set-url (get-in v [:binding :valueSet])]
-    (update-in acc [:value-sets value-set-url] (comp vec distinct concat) [path])))
+  (let [{:keys [url version]} (get-in v [:binding :valueSet])]
+    (update-in acc [:value-sets url version] (comp vec distinct concat) [path])))
 
 
 (defn collect-nested [acc path subj]
