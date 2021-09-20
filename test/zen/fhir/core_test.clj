@@ -773,11 +773,13 @@
   (matcho/match
     (get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/administrative-gender"])
     {:url "http://hl7.org/fhir/ValueSet/administrative-gender"
+     :zen.fhir/package-ns 'hl7-fhir-r4-core
      :zen.fhir/schema-ns 'hl7-fhir-r4-core.administrative-gender})
 
   (matcho/match
    (get-in @ztx [:fhir/inter "CodeSystem" "http://hl7.org/fhir/administrative-gender"])
    {:url "http://hl7.org/fhir/administrative-gender"
+    :zen.fhir/package-ns 'hl7-fhir-r4-core
     :fhir/concepts
     {"administrative-gender/male"
      {:id "administrative-gender/male"
@@ -805,4 +807,5 @@
    {:id         "administrative-gender/other"
     :code       "other"
     :display    "Other"
-    :definition "Other."}))
+    :definition "Other."
+    :zen.fhir/package-ns 'hl7-fhir-r4-core}))

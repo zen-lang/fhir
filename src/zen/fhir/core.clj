@@ -330,6 +330,7 @@
   (let [concept-part (-> {:resourceType "Concept"
                           :system       (:url codesystem)
                           :valueset     (some-> (:valueSet codesystem) vector)}
+                         (merge (select-keys codesystem [:zen.fhir/file :zen.fhir/package :zen.fhir/package-ns]))
                          utils/strip-nils)]
     (map (fn [concept] (-> (merge concept-part concept)
                            (assoc :id (str (:id codesystem) "/" (:code concept)))))
