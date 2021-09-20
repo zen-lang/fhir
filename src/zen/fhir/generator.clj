@@ -230,6 +230,25 @@
   :done)
 
 
+(defn spit-ndjson-gz-bundle! [dir filename resources]
+  (let [f    (clojure.java.io/file (str dir \/ filename ".ndjson.gz"))
+        outs (java.util.zip.GZIPOutputStream. (clojure.java.io/output-stream f) true)]
+    (with-open [w (java.io.BufferedWriter. (java.io.OutputStreamWriter. outs))]
+      (doseq [resource resources]
+        (.write w (cheshire.core/generate-string resource))
+        (.write w "\n")
+        (.flush w)))))
+
+
+(defn spit-terminology-bundle [ztx package-dir {package-ns :package}]
+  (let [fhir-inter (:fhir/inter @ztx)
+        resources (mapcat vals (vals (select-keys fhir-inter ["ValueSet" "Concept" "CodeSystem"])))
+        safe-name (fnil name "")
+        package-resources (filterv #(= package-ns (safe-name (:zen.fhir/package-ns %))) resources)
+        bundle-path (format "%s/%s" package-dir package-ns)]
+    (spit-ndjson-gz-bundle! bundle-path "terminology-bundle" package-resources)) )
+
+
 (defn spit-zen-npm-modules [ztx zrc-node-modules-dir ver & [package-name]]
   (let [packages (-> (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
                           vals
@@ -244,6 +263,7 @@
                                 :author  "Health-Samurai" ;; TODO: parameterize this
                                 :license "MIT"}]]
       (spit-zen-schemas ztx package-dir {:package package})
+      (spit-terminology-bundle ztx package-dir {:package package})
       (spit package-file-path (json/generate-string package-file {:pretty true})))
     :done))
 
