@@ -277,7 +277,8 @@
                                   ["Concept" "administrative-gender/other"]
                                   [{:code       "other"
                                     :display    "Other"
-                                    :definition "Other."}]}))))))
+                                    :definition "Other."
+                                    :system     "http://hl7.org/fhir/administrative-gender"}]}))))))
 
   (t/testing "zen validation"
     (def ztx (zen.core/new-context {:paths ["test-temp-zrc/"] :memory-store {'zenbox zenbox}}))

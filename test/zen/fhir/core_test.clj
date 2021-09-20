@@ -807,6 +807,7 @@
    (get-in @ztx [:fhir/inter "Concept" "administrative-gender/other"])
    {:id         "administrative-gender/other"
     :code       "other"
+    :system     "http://hl7.org/fhir/administrative-gender"
     :display    "Other"
     :definition "Other."
     :zen.fhir/package-ns 'hl7-fhir-r4-core}))
