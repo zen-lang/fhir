@@ -195,15 +195,12 @@
     (dissoc :min :max)))
 
 
-(defn parse-canonical-url [url]
-  (when-not (str/blank? url)
-    (let [url-parts (str/split url #"\|")
-          url-parts (cond-> url-parts
-                      (= 1 (count url-parts))
-                      (conj nil))]
-      (utils/strip-nils
-        {:url     (str/join "|" (butlast url-parts))
-         :version (last url-parts)}))))
+(defn parse-canonical-url [canonical-url]
+  (when-not (str/blank? canonical-url)
+    (let [parts   (str/split canonical-url #"\|")
+          url     (str/join "|" (cons (first parts) (butlast (rest parts))))
+          version (last (rest parts))]
+      (not-empty (utils/strip-nils {:url url, :version version})))))
 
 
 (defn normalize-binding [el]
