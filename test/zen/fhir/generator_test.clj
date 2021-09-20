@@ -6,7 +6,8 @@
    [matcho.core :as matcho]
    [clojure.test :as t]
    [clojure.java.io :as io]
-   [cheshire.core :as json]))
+   [cheshire.core :as json]
+   [clojure.string :as str]))
 
 
 (def zenbox
@@ -79,7 +80,7 @@
   (io/delete-file file true))
 
 
-(t/deftest generate-project-integration
+(t/deftest ^:kaocha/pending generate-project-integration
   (def ztx  (zen.core/new-context {}))
 
   (t/testing "generating zen"
@@ -218,7 +219,9 @@
       (t/is (.exists (io/file "test-temp-zrc/fhir-r4/Resource.edn")))
       (t/is (.exists (io/file "test-temp-zrc/fhir-r4/DomainResource.edn")))
       (t/is (.exists (io/file "test-temp-zrc/fhir-r4/Patient.edn")))
-      (t/is (.exists (io/file "test-temp-zrc/us-core-v3/us-core-patient.edn"))))
+      (t/is (.exists (io/file "test-temp-zrc/us-core-v3/us-core-patient.edn")))
+
+      (t/is (.exists (io/file "test-temp-zrc/us-core-v3/terminology-bundle.ndjson"))))
 
 
     (t/testing "zen-npm-modules"
@@ -249,7 +252,27 @@
                                    (json/parse-string keyword))]
                    (matcho/match package
                                  {:name "@zen-lang/us-core-v3"
-                                  :version "0.0.1-test"}))))))
+                                  :version "0.0.1-test"}))))
+
+      (t/is (and (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/terminology-bundle.ndjson"))
+                 (let [bundle (->> "test-temp-zrc/node_modules/us-core-v3/us-core-v3/terminology-bundle.ndjson"
+                                   io/file
+                                   slurp
+                                   str/split-lines
+                                   (pmap #(json/parse-string % keyword))
+                                   (group-by (juxt :resourceType :id)))]
+                   (matcho/match bundle
+                                 {["ValueSet" "administrative-gender"]
+                                  {:url "http://hl7.org/fhir/ValueSet/administrative-gender"}
+
+                                  ["CodeSystem" "administrative-gender"]
+                                  {:url "http://hl7.org/fhir/administrative-gender"
+                                   :concept nil?}
+
+                                  ["Concept" "administrative-gender/other"]
+                                  {:code       "other"
+                                   :display    "Other"
+                                   :definition "Other."}}))))))
 
   (t/testing "zen validation"
     (def ztx (zen.core/new-context {:paths ["test-temp-zrc/"] :memory-store {'zenbox zenbox}}))

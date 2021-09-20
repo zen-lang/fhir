@@ -766,11 +766,22 @@
      {"http://hl7.org/fhir/us/core/ValueSet/birthsex" {nil [[:binding]]}}}))
 
 
-(t/deftest value-sets
+(t/deftest ^:kaocha/pending value-sets
   (def ztx (zen.core/new-context {}))
   (sut/load-all ztx "hl7.fhir.r4.core")
 
   (matcho/match
     (get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/administrative-gender"])
     {:url "http://hl7.org/fhir/ValueSet/administrative-gender"
-     :zen.fhir/schema-ns 'hl7-fhir-r4-core.administrative-gender}))
+     :zen.fhir/schema-ns 'hl7-fhir-r4-core.administrative-gender})
+
+  (matcho/match
+    (get-in @ztx [:fhir/inter "CodeSystem" "http://hl7.org/fhir/administrative-gender"])
+    {:url "http://hl7.org/fhir/administrative-gender"})
+
+  (matcho/match
+    (get-in @ztx [:fhir/inter "Concept" "http://hl7.org/fhir/administrative-gender/other"])
+    {:id         "administrative-gender/other"
+     :code       "other"
+     :display    "Other"
+     :definition "Other."}))
