@@ -326,6 +326,23 @@
        :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))})))
 
 
+(defn extract-concepts [codesystem]
+  (let [concept-part (-> {:resourceType "Concept"
+                          :system       (:url codesystem)
+                          :valueset     (some-> (:valueSet codesystem) vector)}
+                         utils/strip-nils)]
+    (map (fn [concept] (-> (merge concept-part concept)
+                           (assoc :id (str (:id codesystem) "/" (:code concept)))))
+         (:concept codesystem))))
+
+
+(defmethod process-on-load :CodeSystem
+  [res]
+  (assoc res :fhir/concepts (into {}
+                                  (map (juxt :id identity))
+                                  (extract-concepts res))))
+
+
 (defmethod process-on-load :StructureDefinition
   [res]
   (load-intermidiate res))
@@ -582,10 +599,17 @@
                        (:fhir/src @ztx))))
 
 
+(defn process-concepts [ztx]
+  (let [codesystems (get-in @ztx [:fhir/inter "CodeSystem"])
+        concepts (into {} (mapcat (comp :fhir/concepts val)) codesystems)]
+    (swap! ztx assoc-in [:fhir/inter "Concept"] concepts)))
+
+
 (defn process-resources
   "this is processing of resources with context"
   [ztx]
-  (process-structure-definitions ztx))
+  (process-structure-definitions ztx)
+  (process-concepts ztx))
 
 
 (defn dir? [^java.io.File file]
