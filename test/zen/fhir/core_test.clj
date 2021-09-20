@@ -779,6 +779,7 @@
   (matcho/match
    (get-in @ztx [:fhir/inter "CodeSystem" "http://hl7.org/fhir/administrative-gender"])
    {:url "http://hl7.org/fhir/administrative-gender"
+    :concept nil?
     :zen.fhir/package-ns 'hl7-fhir-r4-core
     :fhir/concepts
     {"administrative-gender/male"

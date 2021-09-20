@@ -339,9 +339,9 @@
 
 (defmethod process-on-load :CodeSystem
   [res]
-  (assoc res :fhir/concepts (into {}
-                                  (map (juxt :id identity))
-                                  (extract-concepts res))))
+  (-> res
+      (assoc :fhir/concepts (into {} (map (juxt :id identity)) (extract-concepts res)))
+      (dissoc :concept)))
 
 
 (defmethod process-on-load :StructureDefinition
