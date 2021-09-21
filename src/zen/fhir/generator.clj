@@ -289,9 +289,8 @@
         resources (->> (select-keys fhir-inter ["ValueSet" "Concept" "CodeSystem"])
                        vals
                        (mapcat vals))
-        package-resources (map :zen.fhir/resource (filter #(= package-ns (name (:zen.fhir/package-ns %))) resources))
-        bundle-path (format "%s/%s" package-dir package-ns)]
-    (spit-ndjson-gz-bundle! bundle-path "terminology-bundle" package-resources)) )
+        package-resources (map :zen.fhir/resource (filter #(= package-ns (name (:zen.fhir/package-ns %))) resources))]
+    (spit-ndjson-gz-bundle! package-dir "terminology-bundle" package-resources)) )
 
 
 (defn spit-zen-npm-modules [ztx zrc-node-modules-dir ver & [package-name]]
