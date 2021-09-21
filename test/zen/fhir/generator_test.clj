@@ -114,7 +114,7 @@
       (finally (t)))))
 
 
-(t/deftest ^:kaocha/pending generate-project-integration
+(t/deftest generate-project-integration
   (matcho/match
     (:fhir.zen/ns @ztx)
     {'fhir-r4
@@ -253,7 +253,7 @@
       {:zenbox/value-set {:symbol 'us-core-v3.birthsex/value-set}}}}))
 
 
-(t/deftest ^:kaocha/pending project-write
+(t/deftest project-write
   (t/testing "zen-schemas"
     (delete-directory-recursive (io/file "test-temp-zrc"))
 
