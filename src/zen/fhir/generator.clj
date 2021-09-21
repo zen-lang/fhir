@@ -4,7 +4,8 @@
             [clojure.string :as str]
             [cheshire.core :as json]
             [clojure.java.io]
-            [clojure.pprint]))
+            [clojure.pprint]
+            [com.rpl.specter :as sp]))
 
 
 (defmulti generate-kind-schema
@@ -191,8 +192,22 @@
                             schema-part))}}))
 
 
+
+(defn generate-root-package-nses [fhir-inter]
+  (let [ns-by-package (->> fhir-inter
+                           (sp/select [sp/MAP-VALS sp/MAP-VALS #(contains? % :zen.fhir/schema-ns)])
+                           (group-by :zen.fhir/package-ns)
+                           (sp/transform [sp/MAP-VALS sp/ALL] :zen.fhir/schema-ns))]
+    (into {}
+          (for [[package-ns package-nses] ns-by-package]
+            {package-ns
+             {'ns package-ns
+              'import (set package-nses)}}))))
+
+
+
 (defn generate-zen-schemas* [fhir-inter]
-  (into {}
+  (into (generate-root-package-nses fhir-inter)
         (for [[rt inters] fhir-inter
               inter       inters]
           (generate-zen-schema rt fhir-inter inter))))
