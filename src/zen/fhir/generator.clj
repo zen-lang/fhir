@@ -293,6 +293,19 @@
     (spit-ndjson-gz-bundle! package-dir "terminology-bundle" package-resources)) )
 
 
+(defn spit-zen-modules [ztx zrc-node-modules-dir & [package-name]]
+  (let [packages (-> (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
+                          vals
+                          (map (comp name :zen.fhir/package-ns))
+                          distinct)
+                     (cond->> (some? package-name) (filter #{(name package-name)})))]
+    (doseq [package packages
+            :let [package-dir (str zrc-node-modules-dir \/ package \/)]]
+      (spit-zen-schemas ztx package-dir {:package package})
+      (spit-terminology-bundle ztx package-dir {:package package}))
+    :done))
+
+
 (defn spit-zen-npm-modules [ztx zrc-node-modules-dir ver & [package-name]]
   (let [packages (-> (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
                           vals
