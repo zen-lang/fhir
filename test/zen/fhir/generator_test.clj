@@ -90,7 +90,7 @@
         acc))))
 
 
-(t/deftest ^:kaocha/pending generate-project-integration
+(t/deftest generate-project-integration
   (def ztx  (zen.core/new-context {}))
 
   (t/testing "generating zen"
