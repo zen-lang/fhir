@@ -192,43 +192,47 @@
                             schema-part))}}))
 
 
-(defn generate-root-package-nses [fhir-inter]
+(defn ns-by-package [fhir-inter]
+  (let [inter-by-package
+        (->> fhir-inter
+             (sp/select [sp/MAP-VALS sp/MAP-VALS #(contains? % :zen.fhir/schema-ns)])
+             (group-by :zen.fhir/package-ns))]
+    (sp/transform [sp/MAP-VALS sp/ALL]
+                  :zen.fhir/schema-ns
+                  inter-by-package)))
+
+
+(defn packages-deps-nses [fhir-inter]
   (let [inter-by-package
         (->> fhir-inter
              (sp/select [sp/MAP-VALS sp/MAP-VALS #(contains? % :zen.fhir/schema-ns)])
              (group-by :zen.fhir/package-ns))
-
-        ns-by-package
-        (sp/transform [sp/MAP-VALS sp/ALL]
-                      :zen.fhir/schema-ns
-                      inter-by-package)
-
         packages
         (sp/transform [sp/MAP-VALS]
                       (fn find-first-package-info-data [package-inter]
                         (->> package-inter
                              (keep #(not-empty (select-keys % [:zen.fhir/package :zen.fhir/package-ns])))
                              first))
-                      inter-by-package)
-
-        packages-deps-nses
-        (into {}
-              (map (fn package-deps [[package-ns inter-package]]
-                     {package-ns
-                      (keep (fn find-package-deps [[dep-kw _dep-ver]]
-                              (->> (vals packages)
-                                   (filter #(= (name dep-kw) (get-in % [:zen.fhir/package :name])))
-                                   first
-                                   :zen.fhir/package-ns))
-                            (get-in inter-package [:zen.fhir/package :dependencies]))}))
-              packages)]
+                      inter-by-package)]
     (into {}
-          (for [[package-ns package-nses] ns-by-package]
-            {package-ns
-             {'ns     package-ns
-              'import (set (concat (get packages-deps-nses package-ns)
-                                   package-nses))}}))))
+          (map (fn package-deps [[package-ns inter-package]]
+                 {package-ns
+                  (keep (fn find-package-deps [[dep-kw _dep-ver]]
+                          (->> (vals packages)
+                               (filter #(= (name dep-kw) (get-in % [:zen.fhir/package :name])))
+                               first
+                               :zen.fhir/package-ns))
+                        (get-in inter-package [:zen.fhir/package :dependencies]))}))
+          packages)))
 
+
+(defn generate-root-package-nses [fhir-inter]
+  (into {}
+        (for [[package-ns package-nses] (ns-by-package fhir-inter)]
+          {package-ns
+           {'ns     package-ns
+            'import (set (concat (get (packages-deps-nses fhir-inter) package-ns)
+                                 package-nses))}})))
 
 
 (defn generate-zen-schemas* [fhir-inter]
@@ -295,14 +299,20 @@
                           vals
                           (map (comp name :zen.fhir/package-ns))
                           distinct)
-                     (cond->> (some? package-name) (filter #{(name package-name)})))]
+                     (cond->> (some? package-name) (filter #{(name package-name)})))
+        packages-deps (packages-deps-nses (:fhir/inter @ztx))]
     (doseq [package packages
             :let [package-dir (str zrc-node-modules-dir \/ package \/)
                   package-file-path (str package-dir "/package.json")
+                  package-deps (into {}
+                                     (map #(-> {(str "@zen-lang/" %) ver}))
+                                     (get packages-deps (symbol package)))
                   package-file {:name    (str "@zen-lang/" package)
                                 :version ver
                                 :author  "Health-Samurai" ;; TODO: parameterize this
-                                :license "MIT"}]]
+                                :license "MIT"
+                                :dependencies package-deps}]]
+
       (spit-zen-schemas ztx package-dir {:package package})
       (spit-terminology-bundle ztx package-dir {:package package})
       (spit package-file-path (json/generate-string package-file {:pretty true})))
