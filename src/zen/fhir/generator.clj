@@ -192,17 +192,42 @@
                             schema-part))}}))
 
 
-
 (defn generate-root-package-nses [fhir-inter]
-  (let [ns-by-package (->> fhir-inter
-                           (sp/select [sp/MAP-VALS sp/MAP-VALS #(contains? % :zen.fhir/schema-ns)])
-                           (group-by :zen.fhir/package-ns)
-                           (sp/transform [sp/MAP-VALS sp/ALL] :zen.fhir/schema-ns))]
+  (let [inter-by-package
+        (->> fhir-inter
+             (sp/select [sp/MAP-VALS sp/MAP-VALS #(contains? % :zen.fhir/schema-ns)])
+             (group-by :zen.fhir/package-ns))
+
+        ns-by-package
+        (sp/transform [sp/MAP-VALS sp/ALL]
+                      :zen.fhir/schema-ns
+                      inter-by-package)
+
+        packages
+        (sp/transform [sp/MAP-VALS]
+                      (fn find-first-package-info-data [package-inter]
+                        (->> package-inter
+                             (keep #(not-empty (select-keys % [:zen.fhir/package :zen.fhir/package-ns])))
+                             first))
+                      inter-by-package)
+
+        packages-deps-nses
+        (into {}
+              (map (fn package-deps [[package-ns inter-package]]
+                     {package-ns
+                      (keep (fn find-package-deps [[dep-kw _dep-ver]]
+                              (->> (vals packages)
+                                   (filter #(= (name dep-kw) (get-in % [:zen.fhir/package :name])))
+                                   first
+                                   :zen.fhir/package-ns))
+                            (get-in inter-package [:zen.fhir/package :dependencies]))}))
+              packages)]
     (into {}
           (for [[package-ns package-nses] ns-by-package]
             {package-ns
-             {'ns package-ns
-              'import (set package-nses)}}))))
+             {'ns     package-ns
+              'import (set (concat (get packages-deps-nses package-ns)
+                                   package-nses))}}))))
 
 
 
