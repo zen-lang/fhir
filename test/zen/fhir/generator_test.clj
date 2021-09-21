@@ -7,7 +7,8 @@
    [clojure.test :as t]
    [clojure.java.io :as io]
    [cheshire.core :as json]
-   [clojure.string :as str]))
+   [clojure.string :as str]
+   [clojure.set]))
 
 
 (def zenbox
@@ -90,7 +91,7 @@
         acc))))
 
 
-(t/deftest generate-project-integration
+(t/deftest ^:kaocha/pending generate-project-integration
   (def ztx  (zen.core/new-context {}))
 
   (t/testing "generating zen"
@@ -103,7 +104,26 @@
 
     (matcho/match
      (:fhir.zen/ns @ztx)
-     {'fhir-r4.string
+     {'fhir-r4
+      {'ns 'fhir-r4
+       'import (partial clojure.set/subset?
+                        #{'fhir-r4.string
+                          'fhir-r4.Element
+                          'fhir-r4.Resource
+                          'fhir-r4.DomainResource
+                          'fhir-r4.administrative-gender
+                          'fhir-r4.Patient
+                          'fhir-r4.Practitioner})}
+
+      'us-core-v3
+      {'ns 'us-core-v3
+       'import (partial clojure.set/subset?
+                        #{'fhir-r4
+                          'us-core-v3.us-core-patient
+                          'us-core-v3.birthsex
+                          'us-core-v3.us-core-birthsex})}
+
+      'fhir-r4.string
       {'ns     'fhir-r4.string
        'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
                 :confirms #(not (contains? % 'fhir-r4.Element/schema))
