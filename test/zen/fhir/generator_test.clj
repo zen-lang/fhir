@@ -304,19 +304,28 @@
                  (matcho/match bundle
                                {["ValueSet" "administrative-gender"]
                                 [{:url "http://hl7.org/fhir/ValueSet/administrative-gender"
-                                  :zen.fhir/package nil?}]
+                                  :zen.fhir/header nil?
+                                  :zen.fhir/package nil?
+                                  :zen.fhir/package-ns nil?
+                                  :zen.fhir/schema-ns nil?}]
 
                                 ["CodeSystem" "administrative-gender"]
                                 [{:url "http://hl7.org/fhir/administrative-gender"
                                   :concept nil?
-                                  :zen.fhir/package nil?}]
+                                  :zen.fhir/header nil?
+                                  :zen.fhir/package nil?
+                                  :zen.fhir/package-ns nil?
+                                  :zen.fhir/schema-ns nil?}]
 
                                 ["Concept" "administrative-gender/other"]
                                 [{:code       "other"
                                   :display    "Other"
                                   :definition "Other."
                                   :system     "http://hl7.org/fhir/administrative-gender"
-                                  :zen.fhir/package nil?}]}))))))
+                                  :zen.fhir/header nil?
+                                  :zen.fhir/package nil?
+                                  :zen.fhir/package-ns nil?
+                                  :zen.fhir/schema-ns nil?}]}))))))
 
 
 (t/deftest zen-validation

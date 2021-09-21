@@ -778,14 +778,22 @@
      :zen.fhir/resource
      {:url "http://hl7.org/fhir/ValueSet/administrative-gender"
       :resourceType "ValueSet"
-      :id "administrative-gender"}})
+      :id "administrative-gender"
+      :zen.fhir/header nil?
+      :zen.fhir/package nil?
+      :zen.fhir/package-ns nil?
+      :zen.fhir/schema-ns nil?}})
 
   (matcho/match
    (get-in @ztx [:fhir/inter "CodeSystem" "http://hl7.org/fhir/administrative-gender"])
    {:zen.fhir/resource
     {:url "http://hl7.org/fhir/administrative-gender"
      :resourceType "CodeSystem"
-     :id "administrative-gender"}
+     :id "administrative-gender"
+     :zen.fhir/header nil?
+     :zen.fhir/package nil?
+     :zen.fhir/package-ns nil?
+     :zen.fhir/schema-ns nil?}
     :url "http://hl7.org/fhir/administrative-gender"
     :concept nil?
     :zen.fhir/package-ns 'hl7-fhir-r4-core
@@ -823,4 +831,8 @@
     {:resourceType "Concept"
      :id           "administrative-gender/other"
      :code         "other"
-     :system       "http://hl7.org/fhir/administrative-gender"}}))
+     :system       "http://hl7.org/fhir/administrative-gender"
+     :zen.fhir/header nil?
+     :zen.fhir/package nil?
+     :zen.fhir/package-ns nil?
+     :zen.fhir/schema-ns nil?}}))
