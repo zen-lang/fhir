@@ -18,7 +18,7 @@
         (doseq [package (cons package-name deps)]
           (spit-zen-modules ztx standalone-dir package))
         (spit (format "%s/%s-aidbox-project.edn" standalone-dir package-name)
-              (pr-str {'ns (str package-name "-aidbox-project")
+              (pr-str {'ns (symbol (str package-name "-aidbox-project"))
                        'import #{(symbol package-name)}}))
         (shell/sh "bash" "-c" (format "pwd && cd %s && tar -czvf %s.tar.gz %s && rm -rf %s" zrc-dir package-name package-name package-name))))
     (prn :done)))
