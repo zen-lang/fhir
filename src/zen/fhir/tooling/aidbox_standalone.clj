@@ -8,7 +8,7 @@
             [clojure.java.shell :as shell]))
 
 
-(defn spit-aidbox-standalone-projects [node-modules-folder zrc-dir]
+(defn -main [node-modules-folder zrc-dir]
   (let [ztx (zen-core/new-context {})]
     (load-all ztx nil {:node-modules-folder node-modules-folder})
     (generate-zen-schemas ztx)
