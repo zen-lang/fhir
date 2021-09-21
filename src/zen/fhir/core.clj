@@ -324,7 +324,7 @@
    (when-let [package-ns (:zen.fhir/package-ns res)]
      {:zen.fhir/package-ns package-ns
       :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))
-      :zen.fhir/resource res})))
+      :zen.fhir/resource (dissoc res :zen.fhir/file :zen.fhir/package :zen.fhir/package-ns)})))
 
 
 (defn extract-concepts [codesystem]
@@ -345,7 +345,7 @@
   (merge
    (dissoc res :concept)
    {:fhir/concepts (into {} (map (juxt :id identity)) (extract-concepts res))}
-   {:zen.fhir/resource (dissoc res :concept)}))
+   {:zen.fhir/resource (dissoc res :concept :zen.fhir/file :zen.fhir/package :zen.fhir/package-ns)}))
 
 
 (defmethod process-on-load :StructureDefinition
@@ -366,8 +366,8 @@
   (let [res (-> (cheshire.core/parse-string (slurp f) keyword)
                 (assoc :zen.fhir/header header :zen.fhir/package package :zen.fhir/file (.getPath f))
                 (merge
-                  {:zen.fhir/package-ns (some-> package :name (str/replace #"\." "-") symbol)}
-                  (select-keys params #{:zen.fhir/package-ns})))]
+                 {:zen.fhir/package-ns (some-> package :name (str/replace #"\." "-") symbol)}
+                 (select-keys params #{:zen.fhir/package-ns})))]
     (load-definiton ztx package header res)))
 
 

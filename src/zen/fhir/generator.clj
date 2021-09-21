@@ -242,8 +242,10 @@
 
 (defn spit-terminology-bundle [ztx package-dir {package-ns :package}]
   (let [fhir-inter (:fhir/inter @ztx)
-        resources (mapcat vals (vals (select-keys fhir-inter ["ValueSet" "Concept" "CodeSystem"])))
-        package-resources (filterv #(= package-ns (name (:zen.fhir/package-ns %))) resources)
+        resources (->> (select-keys fhir-inter ["ValueSet" "Concept" "CodeSystem"])
+                       vals
+                       (mapcat vals))
+        package-resources (map :zen.fhir/resource (filter #(= package-ns (name (:zen.fhir/package-ns %))) resources))
         bundle-path (format "%s/%s" package-dir package-ns)]
     (spit-ndjson-gz-bundle! bundle-path "terminology-bundle" package-resources)) )
 
