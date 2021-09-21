@@ -3,18 +3,25 @@
   (:require [zen.core :as zen-core]
             [zen.fhir.core :refer [load-all]]
             [zen.fhir.generator :refer [spit-zen-npm-modules
-                                        generate-zen-schemas]]
-            [clojure.java.io :as io]))
+                                        generate-zen-schemas
+                                        packages-deps-nses]]
+            [clojure.java.io :as io]
+            [clojure.java.shell :as shell]))
 
 
-(defn spit-aidbox-project [node-modules-folder zrc-dir package-ver & [project-name]]
+(defn spit-aidbox-standalone-projects [node-modules-folder zrc-dir package-ver]
   (let [ztx (zen-core/new-context {})]
     (load-all ztx nil {:node-modules-folder node-modules-folder})
     (generate-zen-schemas ztx)
-    (spit-zen-npm-modules ztx (str zrc-dir "/node_modules") package-ver)
-    (spit (format "%s/%s-aidbox-project.edn" zrc-dir project-name)
-          (pr-str {'ns (str project-name "-aidbox-project")
-                   'import #{(symbol project-name)}}))
+    (let [packages-deps (packages-deps-nses (:fhir/inter @ztx))]
+      (doseq [[package-name deps] packages-deps
+              :let [standalone-dir (str zrc-dir "/" package-name)]]
+        (doseq [package (cons package-name deps)]
+          (spit-zen-npm-modules ztx (str standalone-dir "/node_modules") package-ver package))
+        (spit (format "%s/%s-aidbox-project.edn" standalone-dir package-name)
+              (pr-str {'ns (str package-name "-aidbox-project")
+                       'import #{(symbol package-name)}}))
+        (shell/sh "bash" "-c" (format "pwd && cd %s && tar -czvf %s.tar.gz %s && rm -rf %s" zrc-dir package-name package-name package-name))))
     (prn :done)))
 
 
