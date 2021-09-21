@@ -297,8 +297,8 @@
                                 "version" "0.0.1-test"
                                 "dependencies" {"@zen-lang/fhir-r4" "0.0.1-test"}}))))
 
-    (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/terminology-bundle.ndjson.gz"))
-               (let [bundle (->> "test-temp-zrc/node_modules/fhir-r4/terminology-bundle.ndjson.gz"
+    (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz"))
+               (let [bundle (->> "test-temp-zrc/node_modules/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz"
                                  (read-ndjson-bundle)
                                  (group-by (juxt :resourceType :id)))]
                  (matcho/match bundle

@@ -8,13 +8,13 @@
             [clojure.java.shell :as shell]))
 
 
-(defn spit-aidbox-standalone-projects [node-modules-folder zrc-dir]
+(defn -main [node-modules-folder zrc-dir]
   (let [ztx (zen-core/new-context {})]
     (load-all ztx nil {:node-modules-folder node-modules-folder})
     (generate-zen-schemas ztx)
     (let [packages-deps (packages-deps-nses (:fhir/inter @ztx))]
       (doseq [[package-name deps] packages-deps
-              :let [standalone-dir (str zrc-dir "/" package-name)]]
+              :let [standalone-dir (str zrc-dir "/" package-name "/")]]
         (doseq [package (cons package-name deps)]
           (spit-zen-modules ztx standalone-dir package))
         (spit (format "%s/%s-aidbox-project.edn" standalone-dir package-name)

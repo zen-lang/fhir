@@ -290,19 +290,18 @@
                        vals
                        (mapcat vals))
         package-resources (map :zen.fhir/resource (filter #(= package-ns (name (:zen.fhir/package-ns %))) resources))]
-    (spit-ndjson-gz-bundle! package-dir "terminology-bundle" package-resources)) )
+    (spit-ndjson-gz-bundle! package-dir (str package-ns "-terminology-bundle") package-resources)) )
 
 
-(defn spit-zen-modules [ztx zrc-node-modules-dir & [package-name]]
+(defn spit-zen-modules [ztx zrc-dir & [package-name]]
   (let [packages (-> (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
                           vals
                           (map (comp name :zen.fhir/package-ns))
                           distinct)
                      (cond->> (some? package-name) (filter #{(name package-name)})))]
-    (doseq [package packages
-            :let [package-dir (str zrc-node-modules-dir \/ package \/)]]
-      (spit-zen-schemas ztx package-dir {:package package})
-      (spit-terminology-bundle ztx package-dir {:package package}))
+    (doseq [package packages]
+      (spit-zen-schemas ztx zrc-dir {:package package})
+      (spit-terminology-bundle ztx zrc-dir {:package package}))
     :done))
 
 
