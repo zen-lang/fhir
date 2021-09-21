@@ -253,7 +253,7 @@
       {:zenbox/value-set {:symbol 'us-core-v3.birthsex/value-set}}}}))
 
 
-(t/deftest project-write
+(t/deftest ^:kaocha/pending project-write
   (t/testing "zen-schemas"
     (delete-directory-recursive (io/file "test-temp-zrc"))
 
@@ -291,10 +291,11 @@
                (let [package (-> "test-temp-zrc/node_modules/us-core-v3/package.json"
                                  io/file
                                  slurp
-                                 (json/parse-string keyword))]
+                                 (json/parse-string))]
                  (matcho/match package
-                               {:name "@zen-lang/us-core-v3"
-                                :version "0.0.1-test"}))))
+                               {"name" "@zen-lang/us-core-v3"
+                                "version" "0.0.1-test"
+                                "dependencies" {"@zen-lang/fhir-r4" "0.0.1-test"}}))))
 
     (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/terminology-bundle.ndjson.gz"))
                (let [bundle (->> "test-temp-zrc/node_modules/fhir-r4/fhir-r4/terminology-bundle.ndjson.gz"
