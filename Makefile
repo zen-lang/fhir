@@ -19,3 +19,5 @@ build:
 zen-profiles:
 	clojure -M -m zen.fhir.tooling $(node_modules) $(zrc) $(ver) $(package)
 
+build-stanadlone-projects:
+	clojure -M -m zen.fhir.tooling.aidbox-standalone $(node_modules) $(zrc)
