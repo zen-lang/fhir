@@ -320,28 +320,32 @@
 (defmethod process-on-load :ValueSet
   [res]
   (merge
-    res
-    (when-let [package-ns (:zen.fhir/package-ns res)]
-      {:zen.fhir/package-ns package-ns
-       :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))})))
+   res
+   (when-let [package-ns (:zen.fhir/package-ns res)]
+     {:zen.fhir/package-ns package-ns
+      :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))
+      :zen.fhir/resource res})))
 
 
 (defn extract-concepts [codesystem]
-  (let [concept-part (-> {:resourceType "Concept"
+  (let [zen-fhir-keys (select-keys codesystem [:zen.fhir/file :zen.fhir/package :zen.fhir/package-ns])
+        concept-part (-> {:resourceType "Concept"
                           :system       (:url codesystem)
                           :valueset     (some-> (:valueSet codesystem) vector)}
-                         (merge (select-keys codesystem [:zen.fhir/file :zen.fhir/package :zen.fhir/package-ns]))
                          utils/strip-nils)]
-    (map (fn [concept] (-> (merge concept-part concept)
-                           (assoc :id (str (:id codesystem) "/" (:code concept)))))
+    (map (fn [concept]
+           (let [res (-> (merge concept-part concept)
+                         (assoc :id (str (:id codesystem) "/" (:code concept))))]
+             (assoc (merge res zen-fhir-keys) :zen.fhir/resource res)))
          (:concept codesystem))))
 
 
 (defmethod process-on-load :CodeSystem
   [res]
-  (-> res
-      (assoc :fhir/concepts (into {} (map (juxt :id identity)) (extract-concepts res)))
-      (dissoc :concept)))
+  (merge
+   (dissoc res :concept)
+   {:fhir/concepts (into {} (map (juxt :id identity)) (extract-concepts res))}
+   {:zen.fhir/resource (dissoc res :concept)}))
 
 
 (defmethod process-on-load :StructureDefinition
