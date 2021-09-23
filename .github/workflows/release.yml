@@ -36,6 +36,6 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: target/zen-fhir-${{ env.RELEASE_VERSION }}-standalone.jar, zrc/standalone_projects/*.tar.gz
+          files: target/zen-fhir-${{ env.RELEASE_VERSION }}-standalone.jar, zrc/standalone_projects/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
