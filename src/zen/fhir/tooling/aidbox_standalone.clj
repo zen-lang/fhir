@@ -20,5 +20,9 @@
         (spit (format "%s/%s-aidbox-project.edn" standalone-dir package-name)
               (pr-str {'ns (symbol (str package-name "-aidbox-project"))
                        'import #{(symbol package-name)}}))
-        (shell/sh "bash" "-c" (format "pwd && cd %s && zip -r %s.zip %s/* && rm -rf %s" zrc-dir package-name package-name package-name))))
+        (shell/sh "bash" "-c" (str "cd " zrc-dir "/" package-name
+                                   " && zip -r " package-name ".zip ."
+                                   " && mv " package-name ".zip ../"
+                                   " && cd .."
+                                   " && rm -rf " package-name))))
     (prn :done)))
