@@ -771,7 +771,7 @@
     (get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/administrative-gender"])
     {:url "http://hl7.org/fhir/ValueSet/administrative-gender"
      :zen.fhir/package-ns 'hl7-fhir-r4-core
-     :zen.fhir/schema-ns 'hl7-fhir-r4-core.administrative-gender
+     :zen.fhir/schema-ns 'hl7-fhir-r4-core.value-set.administrative-gender
      :zen.fhir/resource
      {:url "http://hl7.org/fhir/ValueSet/administrative-gender"
       :resourceType "ValueSet"

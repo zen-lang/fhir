@@ -323,7 +323,7 @@
    res
    (when-let [package-ns (:zen.fhir/package-ns res)]
      {:zen.fhir/package-ns package-ns
-      :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))
+      :zen.fhir/schema-ns (symbol (str (name package-ns) \. "value-set" \. (:id res) ))
       :zen.fhir/resource (dissoc res :zen.fhir/file :zen.fhir/package :zen.fhir/package-ns :zen.fhir/header)})))
 
 

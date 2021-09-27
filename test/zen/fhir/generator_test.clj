@@ -124,7 +124,7 @@
                          'fhir-r4.Element
                          'fhir-r4.Resource
                          'fhir-r4.DomainResource
-                         'fhir-r4.administrative-gender
+                         'fhir-r4.value-set.administrative-gender
                          'fhir-r4.Patient
                          'fhir-r4.Practitioner})}
 
@@ -133,7 +133,7 @@
       'import (partial clojure.set/subset?
                        #{'fhir-r4
                          'us-core-v3.us-core-patient
-                         'us-core-v3.birthsex
+                         'us-core-v3.value-set.birthsex
                          'us-core-v3.us-core-birthsex})}
 
      'fhir-r4.string
@@ -179,8 +179,8 @@
                       :modifierExtension {:type  'zen/vector
                                           :every {:confirms #{'fhir-r4.Extension/schema}}}}}}
 
-     'fhir-r4.administrative-gender
-     {'ns 'fhir-r4.administrative-gender
+     'fhir-r4.value-set.administrative-gender
+     {'ns 'fhir-r4.value-set.administrative-gender
       'import #(contains? % 'zenbox)
       'value-set {:zen/tags #{'zenbox/value-set}
                   :uri "http://hl7.org/fhir/ValueSet/administrative-gender"}}
@@ -189,7 +189,7 @@
      {'ns     'fhir-r4.Patient
       'import #(and (contains? % 'fhir-r4.DomainResource)
                     (contains? % 'zenbox)
-                    (contains? % 'fhir-r4.administrative-gender))
+                    (contains? % 'fhir-r4.value-set.administrative-gender))
       'schema {:zen/tags #{'zen/schema 'zenbox/base-schema}
                :confirms #{'fhir-r4.DomainResource/schema 'zenbox/Resource}
                :type 'zen/map
@@ -205,15 +205,15 @@
                                              :confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}
                                              :zenbox/refers #{'fhir-r4.Organization/schema}}
                       :gender {:confirms #{'fhir-r4.code/schema}
-                               :zenbox/value-set {:symbol 'fhir-r4.administrative-gender/value-set}}
+                               :zenbox/value-set {:symbol 'fhir-r4.value-set.administrative-gender/value-set}}
                       :link {:type 'zen/vector
                              :every {:require #{:other :type}}}}}}
 
      'fhir-r4.Practitioner
      {'ns     'fhir-r4.Practitioner
-      'import #(contains? % 'fhir-r4.administrative-gender)
+      'import #(contains? % 'fhir-r4.value-set.administrative-gender)
       'schema {:keys {:gender {:confirms #{'fhir-r4.code/schema}
-                               :zenbox/value-set {:symbol 'fhir-r4.administrative-gender/value-set}}}}}
+                               :zenbox/value-set {:symbol 'fhir-r4.value-set.administrative-gender/value-set}}}}}
 
      'us-core-v3.us-core-patient
      {'ns     'us-core-v3.us-core-patient
@@ -237,8 +237,8 @@
                                                      :value  {:zen/desc "The value that is unique within the system."
                                                               :confirms #{'fhir-r4.string/schema}}}}}}}}
 
-     'us-core-v3.birthsex
-     {'ns 'us-core-v3.birthsex
+     'us-core-v3.value-set.birthsex
+     {'ns 'us-core-v3.value-set.birthsex
       'import #{'zenbox}
 
       'value-set
@@ -246,11 +246,11 @@
 
      'us-core-v3.us-core-birthsex
      {'ns 'us-core-v3.us-core-birthsex
-      'import #(and (contains? % 'us-core-v3.birthsex)
+      'import #(and (contains? % 'us-core-v3.value-set.birthsex)
                     (contains? % 'zenbox))
 
       'schema
-      {:zenbox/value-set {:symbol 'us-core-v3.birthsex/value-set}}}}))
+      {:zenbox/value-set {:symbol 'us-core-v3.value-set.birthsex/value-set}}}}))
 
 
 (t/deftest project-write

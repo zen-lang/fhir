@@ -61,8 +61,8 @@
 
 
 (defn value-set->symbol [fhir-inter {:keys [url]}]
-  (let [value-set (or (get-in fhir-inter ["ValueSet" url]))]
-    (symbol (str (:zen.fhir/package-ns value-set) "." (:id value-set))
+  (let [value-set (get-in fhir-inter ["ValueSet" url])]
+    (symbol (str (:zen.fhir/package-ns value-set) ".value-set." (:id value-set)) ;; TODO: use :zen.fhir/schema-ns
             "value-set")))
 
 
