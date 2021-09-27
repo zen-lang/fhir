@@ -61,7 +61,7 @@
 
 
 (defn value-set->symbol [fhir-inter {:keys [url]}]
-  (let [value-set (get-in fhir-inter ["ValueSet" url])]
+  (when-let [value-set (get-in fhir-inter ["ValueSet" url])]
     (symbol (str (:zen.fhir/package-ns value-set) ".value-set." (:id value-set)) ;; TODO: use :zen.fhir/schema-ns
             "value-set")))
 
@@ -83,10 +83,9 @@
                 (els-schema fhir-inter [url el]))
               (when (seq (:fhir/flags el))
                 (select-keys el #{:fhir/flags}))
-              (when (get-in el [:binding :valueSet])
-                {:zenbox/value-set {:symbol (value-set->symbol
-                                            fhir-inter
-                                            (get-in el [:binding :valueSet]))}})
+              (when-let [value-set-sym (some->> (get-in el [:binding :valueSet])
+                                                (value-set->symbol fhir-inter))]
+                {:zenbox/value-set {:symbol value-set-sym}})
               (when (= "Reference" (:type el))
                 {:confirms #{'zenbox/Reference}
                  :zenbox/refers (into #{}

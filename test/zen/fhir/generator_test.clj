@@ -250,7 +250,12 @@
                     (contains? % 'zenbox))
 
       'schema
-      {:zenbox/value-set {:symbol 'us-core-v3.value-set.birthsex/value-set}}}}))
+      {:zenbox/value-set {:symbol 'us-core-v3.value-set.birthsex/value-set}}}
+
+
+     'fhir-r4.MolecularSequence
+     {'schema
+      {:keys {:structureVariant {:every {:keys {:variantType {:zenbox/value-set nil?}}}}}}}}))
 
 
 (t/deftest project-write
