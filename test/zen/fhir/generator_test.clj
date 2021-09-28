@@ -55,9 +55,7 @@
      :confirms #{nested-schema}
      :type     zen/map
      :keys     {:zenbox/type {:type zen/string}
-                :zenbox/profileUri {:type zen/string}
-                :keys {:type zen/map
-                       :values {:confirms #{nested-schema}}}}}
+                :zenbox/profileUri {:type zen/string}}}
 
     base-schema
     {:zen/tags #{zen/schema zen/tag}
