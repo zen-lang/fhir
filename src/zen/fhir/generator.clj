@@ -102,10 +102,11 @@
 
 
 (defn els-schema [fhir-inter [url inter-res]]
-  (merge {:type 'zen/map
-          :keys (sp/transform [sp/MAP-VALS]
-                              #(el-schema fhir-inter [url %])
-                              (:| inter-res))}
+  (merge (when-let [els (not-empty (:| inter-res))]
+           {:type 'zen/map
+            :keys (sp/transform [sp/MAP-VALS]
+                                #(el-schema fhir-inter [url %])
+                                els)})
          (when-let [requires (->> (:| inter-res)
                                   (into #{}
                                         (comp

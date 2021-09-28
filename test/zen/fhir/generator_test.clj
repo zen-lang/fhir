@@ -257,7 +257,19 @@
 
      'fhir-r4.MolecularSequence
      {'schema
-      {:keys {:structureVariant {:every {:keys {:variantType {:zenbox/value-set nil?}}}}}}}}))
+      {:keys {:structureVariant {:every {:keys {:variantType {:zenbox/value-set nil?}}}}}}}
+
+     'hl7-fhir-us-davinci-pdex-plan-net.org-description
+     {'ns 'hl7-fhir-us-davinci-pdex-plan-net.org-description
+      'import #{'zenbox 'fhir-r4.string 'hl7-fhir-us-davinci-pdex-plan-net.org-description}  ;; TODO: it requires itself
+
+      'schema
+      {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+       :zen/desc "An extension to provide a human-readable description of an organization."
+       :confirms #{'fhir-r4.string/schema}
+       :zenbox/type "string"
+       :zenbox/profileUri "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/org-description"
+       :fhir/flags #{:MS}}}}))
 
 
 (t/deftest project-write

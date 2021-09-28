@@ -260,8 +260,13 @@
         (dissoc :fhir-poly-keys))
 
     (= 1 (count (get-in res [:| :value :types]))) ;; value[x] with a single type
-    (merge (dissoc res :| :fhir-poly-keys)
-           {:type (first (get-in res [:| :value :types]))})
+    (let [value (get-in res [:| :value])
+          tp    (first (:types value))]
+      (merge (dissoc res :| :fhir-poly-keys :baseDefinition)
+             (dissoc value :| :types :minItems :maxItems :required)
+             (dissoc (first (vals (:| value))))
+             {:kind "first-class-extension"
+              :baseDefinition (str "http://hl7.org/fhir/StructureDefinition/" tp)}))
 
     (< 1 (count (get-in res [:| :value :types]))) ;; value[x] with multile types
     (merge
