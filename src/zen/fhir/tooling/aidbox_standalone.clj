@@ -17,9 +17,6 @@
               :let [standalone-dir (str zrc-dir "/" package-name "/")]]
         (doseq [package (cons package-name deps)]
           (spit-zen-modules ztx standalone-dir package))
-        (spit (format "%s/%s-aidbox-project.edn" standalone-dir package-name)
-              (pr-str {'ns (symbol (str package-name "-aidbox-project"))
-                       'import #{(symbol package-name)}}))
         (shell/sh "bash" "-c" (str "cd " zrc-dir "/" package-name
                                    " && zip -r " package-name ".zip ."
                                    " && mv " package-name ".zip ../"
