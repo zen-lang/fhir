@@ -78,7 +78,8 @@
                                            (url->symbol fhir-inter))]
                 {:confirms #{type-sym}})
               (when-let [ext-sym (some->> (:fhir/extension el) (url->symbol fhir-inter))]
-                {:confirms #{ext-sym}})
+                {:confirms #{ext-sym}
+                 :fhir/extensionUri (:fhir/extension el)})
               (when (seq (:| el))
                 (els-schema fhir-inter [url el]))
               (when (seq (:fhir/flags el))

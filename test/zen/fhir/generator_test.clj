@@ -40,6 +40,7 @@
     {:zen/tags #{zen/schema}
      :type zen/map
      :keys {:fhir/flags {:type zen/set}
+            :fhir/extensionUri {:type zen/string}
             :zenbox/refers {:type zen/set
                             :every {:type zen/symbol
                                     #_#_:tags #{#{zenbox/base-schema zenbox/profile-schema}}}} ;; TODO
@@ -114,7 +115,7 @@
       (finally (t)))))
 
 
-(t/deftest ^:kaocha/pending generate-project-integration
+(t/deftest generate-project-integration
   (matcho/match
     (:fhir.zen/ns @ztx)
     {'fhir-r4
