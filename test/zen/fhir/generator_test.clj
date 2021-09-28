@@ -114,7 +114,7 @@
       (finally (t)))))
 
 
-(t/deftest generate-project-integration
+(t/deftest ^:kaocha/pending generate-project-integration
   (matcho/match
     (:fhir.zen/ns @ztx)
     {'fhir-r4
@@ -226,9 +226,12 @@
                :zenbox/type "Patient"
                :zenbox/profileUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
                :require #{:name :gender :identifier}
-               :keys {:race      {:confirms #{'us-core-v3.us-core-race/schema}}
-                      :ethnicity {:confirms #{'us-core-v3.us-core-ethnicity/schema}}
-                      :birthsex  {:confirms #{'us-core-v3.us-core-birthsex/schema}}
+               :keys {:race      {:confirms #{'us-core-v3.us-core-race/schema}
+                                  :fhir/extensionUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
+                      :ethnicity {:confirms #{'us-core-v3.us-core-ethnicity/schema}
+                                  :fhir/extensionUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity"}
+                      :birthsex  {:confirms #{'us-core-v3.us-core-birthsex/schema}
+                                  :fhir/extensionUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex"}
                       :identifier {:type     'zen/vector
                                    :minItems 1
                                    :every    {:confirms #{'fhir-r4.Identifier/schema}
