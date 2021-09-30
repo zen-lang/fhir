@@ -192,7 +192,7 @@
         schema-part            (generate-kind-schema fhir-inter [url inter-res])
         this-schema-sym        (symbol (name schema-ns) "schema")]
     {schema-ns {'ns     schema-ns
-                'import imports
+                'import (disj imports schema-ns)
                 'schema (-> (utils/safe-merge-with-into
                               {:zen/tags (into #{'zen/schema}
                                                (when severity-tag [severity-tag]))

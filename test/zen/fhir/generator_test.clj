@@ -264,7 +264,7 @@
 
      'hl7-fhir-us-davinci-pdex-plan-net.org-description
      {'ns 'hl7-fhir-us-davinci-pdex-plan-net.org-description
-      'import #{'zenbox 'fhir-r4.string 'hl7-fhir-us-davinci-pdex-plan-net.org-description}  ;; TODO: it requires itself
+      'import #{'zenbox 'fhir-r4.string}
 
       'schema
       {:zen/tags #{'zen/schema 'zenbox/structure-schema}
