@@ -199,6 +199,7 @@
                       :active {:confirms #{'fhir-r4.boolean/schema}}
                       :deceased {:type 'zen/map
                                  :fhir/polymorphic true
+                                 :exclusive-keys #{#{:boolean :dateTime}}
                                  :keys {:boolean {:confirms #{'fhir-r4.boolean/schema}}
                                         :dateTime {:confirms #{'fhir-r4.dateTime/schema}}}}
                       :managingOrganization {:zen/desc "Organization that is the custodian of the patient record"

@@ -81,7 +81,11 @@
                 {:confirms #{ext-sym}
                  :fhir/extensionUri (:fhir/extension el)})
               (when (:polymorphic el)
-                {:fhir/polymorphic true})
+                (utils/strip-nils
+                  {:fhir/polymorphic true
+                   :exclusive-keys (some->> (into #{} (map keyword) (:types el))
+                                            not-empty
+                                            hash-set)}))
               (when (seq (:| el))
                 (els-schema fhir-inter [url el]))
               (when (seq (:fhir/flags el))
