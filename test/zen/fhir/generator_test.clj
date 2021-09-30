@@ -198,6 +198,7 @@
                              :every {:confirms #{'fhir-r4.HumanName/schema}}}
                       :active {:confirms #{'fhir-r4.boolean/schema}}
                       :deceased {:type 'zen/map
+                                 :fhir/polymorphic true
                                  :keys {:boolean {:confirms #{'fhir-r4.boolean/schema}}
                                         :dateTime {:confirms #{'fhir-r4.dateTime/schema}}}}
                       :managingOrganization {:zen/desc "Organization that is the custodian of the patient record"
@@ -269,7 +270,28 @@
        :confirms #{'fhir-r4.string/schema}
        :zenbox/type "string"
        :zenbox/profileUri "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/org-description"
-       :fhir/flags #{:MS}}}}))
+       :fhir/flags #{:MS}}}
+
+     'hl7-fhir-us-davinci-pdex-plan-net.practitioner-qualification
+     {'schema
+      {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+       :keys {:status {:confirms #{'fhir-r4.code/schema}}
+              :whereValid {:type 'zen/vector
+                           :every {:type 'zen/map
+                                   :fhir/polymorphic true
+                                   :keys {:CodeableConcept {:confirms #{'fhir-r4.CodeableConcept/schema}}
+                                          :Reference {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}}}}}}}}
+
+
+     'hl7-fhir-us-davinci-pdex-plan-net.plannet-Practitioner
+     {'schema
+      {:zen/tags #{'zen/schema 'zenbox/profile-schema}
+       :keys {:qualification {:type 'zen/vector
+                              :every {:type 'zen/map
+                                      :keys {:practitioner-qualification
+                                             {:confirms #{'hl7-fhir-us-davinci-pdex-plan-net.practitioner-qualification/schema}
+                                              :fhir/extensionUri
+                                              "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/practitioner-qualification"}}}}}}}}))
 
 
 (t/deftest project-write
