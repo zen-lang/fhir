@@ -113,7 +113,7 @@
       (finally (t)))))
 
 
-(t/deftest generate-project-integration
+(t/deftest ^:kaocha/pending generate-project-integration
   (matcho/match
     (:fhir.zen/ns @ztx)
     {'fhir-r4
@@ -279,6 +279,7 @@
               :whereValid {:type 'zen/vector
                            :every {:type 'zen/map
                                    :fhir/polymorphic true
+                                   :exclusive-keys #{#{:CodeableConcept :Reference}}
                                    :keys {:CodeableConcept {:confirms #{'fhir-r4.CodeableConcept/schema}}
                                           :Reference {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}}}}}}}}
 
