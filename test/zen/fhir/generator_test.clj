@@ -41,6 +41,7 @@
      :type zen/map
      :keys {:fhir/flags {:type zen/set}
             :fhir/extensionUri {:type zen/string}
+            :fhir/polymorphic {:type zen/boolean}
             :zenbox/refers {:type zen/set
                             :every {:type zen/symbol
                                     #_#_:tags #{#{zenbox/base-schema zenbox/profile-schema}}}} ;; TODO
