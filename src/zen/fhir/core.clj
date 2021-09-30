@@ -270,8 +270,8 @@
 
     (< 1 (count (get-in res [:| :value :types]))) ;; value[x] with multile types
     (merge
-      (dissoc res :| :fhir-poly-keys)
-      (dissoc (get-in res [:| :value]) :minItems :maxItems :vector :required :fhir-poly-keys))
+      (dissoc res :| :fhir-poly-keys :baseDefinition :minItems :maxItems)
+      (dissoc (get-in res [:| :value]) :fhir-poly-keys))
 
     (and (get-in res [:| :value]) ;; has value[x], but no types in it
          (empty? (get-in res [:| :value :types])))

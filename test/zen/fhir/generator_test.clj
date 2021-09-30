@@ -274,6 +274,16 @@
        :zenbox/profileUri "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/org-description"
        :fhir/flags #{:MS}}}
 
+     'fhir-r4.condition-dueTo
+     {'schema
+      {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+       :type 'zen/map
+       :confirms nil?
+       :zenbox/profileUri "http://hl7.org/fhir/StructureDefinition/condition-dueTo"
+       :fhir/polymorphic true
+       :keys {:CodeableConcept {:confirms #{'fhir-r4.CodeableConcept/schema}}
+              :Reference {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}}}}}
+
      'hl7-fhir-us-davinci-pdex-plan-net.practitioner-qualification
      {'schema
       {:zen/tags #{'zen/schema 'zenbox/structure-schema}

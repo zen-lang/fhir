@@ -125,7 +125,7 @@
 (defmethod generate-kind-schema :complex-type [fhir-inter [url inter-res]]
   (merge
     (confirms-base fhir-inter [url inter-res])
-    (els-schema fhir-inter [url inter-res])))
+    (el-schema fhir-inter [url (dissoc inter-res :fhir/extension)])))
 
 
 (defmethod generate-kind-schema :resource [fhir-inter [url inter-res]]
@@ -172,7 +172,11 @@
 
 
 (defmethod generate-zen-schema :StructureDefinition [_rt fhir-inter [url inter-res]]
-  (let [schema-ns   (:zen.fhir/schema-ns inter-res)
+  (let [inter-res   (cond-> inter-res ;; NOTE: should be done in zen.fhir.core when inter-res are generated
+                      (and (= "Extension" (:type inter-res))
+                           (contains? inter-res :fhir/extension))
+                      (dissoc :type))
+        schema-ns   (:zen.fhir/schema-ns inter-res)
         imports     (into #{'zenbox}
                           (keep (fn [inter-path]
                                   (get-in fhir-inter (conj inter-path :zen.fhir/schema-ns))))
@@ -185,18 +189,19 @@
                                  "constraint"     'zenbox/profile-schema
                                  "specialization" 'zenbox/base-schema
                                  'zenbox/structure-schema)
-
-        schema-part            (generate-kind-schema fhir-inter [url inter-res])]
+        schema-part            (generate-kind-schema fhir-inter [url inter-res])
+        this-schema-sym        (symbol (name schema-ns) "schema")]
     {schema-ns {'ns     schema-ns
                 'import imports
-                'schema (utils/strip-nils
-                          (utils/safe-merge-with-into
-                            {:zen/tags (into #{'zen/schema}
-                                             (when severity-tag [severity-tag]))
-                             :zen/desc (:text-description inter-res)
-                             :zenbox/type (:type inter-res)
-                             :zenbox/profileUri url}
-                            schema-part))}}))
+                'schema (-> (utils/safe-merge-with-into
+                              {:zen/tags (into #{'zen/schema}
+                                               (when severity-tag [severity-tag]))
+                               :zen/desc (:text-description inter-res)
+                               :zenbox/type (:type inter-res)
+                               :zenbox/profileUri url}
+                              schema-part)
+                            (update :confirms (comp not-empty disj) this-schema-sym)
+                            utils/strip-nils)}}))
 
 
 (defn ns-by-package [fhir-inter]

@@ -520,6 +520,7 @@
      :kind           "complex-type"
      :url            "uri://due-to"
      :type           "Extension"
+     :baseDefinition nil?
      :fhir/extension string?
      :polymorphic    true
      :types          #{"CodeableConcept" "Reference"}
