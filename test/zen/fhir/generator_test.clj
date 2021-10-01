@@ -99,7 +99,7 @@
     (try
       (reset! ztx @(zen.core/new-context {}))
 
-      (zen.fhir.core/load-all ztx "hl7.fhir.us.core"
+      (zen.fhir.core/load-all ztx nil
                               {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
                                         "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}}})
 
@@ -409,6 +409,30 @@
      {:path [:identifier], :type "require"}
      {:path [:gender], :type "require"}
      nil]))
+
+
+(t/deftest zen-schemas-validation
+  (swap! ztx assoc :memory-store
+         (assoc (:fhir.zen/ns @ztx)
+                'zenbox zenbox))
+
+  (run! (fn [zen-ns]
+          (zen.core/load-ns ztx (get-in @ztx [:memory-store zen-ns])))
+        '#{fhir-r4
+           us-core-v3
+           hl7-fhir-us-carin-bb
+           hl7-fhir-us-Davinci-drug-formulary
+           hl7-fhir-us-davinci-hrex
+           hl7-fhir-us-davinci-pdex
+           hl7-fhir-us-davinci-pdex-plan-net
+           hl7-fhir-us-mcode})
+
+  (t/is (->> (:errors @ztx)
+             (remove ;; FIXME
+               #{{:message "Invalid token: :",
+                  :file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/familymemberhistory-genetic.edn",
+                  :ns 'fhir-r4.familymemberhistory-genetic}})
+             empty?)))
 
 
 (t/deftest nested-extension
