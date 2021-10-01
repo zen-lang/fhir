@@ -92,7 +92,8 @@
                 (select-keys el #{:fhir/flags}))
               (when-let [value-set-sym (some->> (get-in el [:binding :valueSet])
                                                 (value-set->symbol fhir-inter))]
-                {:zenbox/value-set {:symbol value-set-sym}})
+                {:zenbox/value-set {:symbol value-set-sym
+                                    :strength (keyword (get-in el [:binding :strength]))}})
               (when (= "Reference" (:type el))
                 {:confirms #{'zenbox/Reference}
                  :zenbox/refers (into #{}
