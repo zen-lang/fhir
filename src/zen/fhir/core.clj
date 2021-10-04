@@ -359,8 +359,8 @@
                        :_source "zen-terminology-bundle"
                        :resourceType "Concept")
                 (cond-> (:designation c) (assoc :designation (build-designation (:designation c)))
-                        (not (empty? parents)) (assoc :hierarchy parents)
-                        (:property c)    (assoc :property (build-property cid (:property c)))))
+                        (seq parents) (assoc :hierarchy parents)
+                        (:property c) (assoc :property (build-property cid (:property c)))))
         acc (conj acc con)]
     (if-let [cs (:concept c)]
       (reduce (fn [acc c']
