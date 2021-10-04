@@ -354,7 +354,7 @@
 (defn reduce-concept [acc cid sys parents c]
   (let [con (-> c
                 (select-keys [:code :display :definition])
-                (assoc :id (str cid "/" (:code c))
+                (assoc :id (str cid "-" (:code c))
                        :system sys
                        :resourceType "Concept")
                 (cond-> (:designation c) (assoc :designation (build-designation (:designation c)))

@@ -395,7 +395,7 @@
                                   :zen.fhir/package-ns nil?
                                   :zen.fhir/schema-ns nil?}]
 
-                                ["Concept" "administrative-gender/other"]
+                                ["Concept" "administrative-gender-other"]
                                 [{:code       "other"
                                   :display    "Other"
                                   :definition "Other."

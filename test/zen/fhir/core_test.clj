@@ -796,30 +796,30 @@
     :concept nil?
     :zen.fhir/package-ns 'hl7-fhir-r4-core
     :fhir/concepts
-    {"administrative-gender/male"
-     {:id "administrative-gender/male"
+    {"administrative-gender-male"
+     {:id "administrative-gender-male"
       :code "male"
       :display "Male"
       :definition "Male."}
-     "administrative-gender/female"
-     {:id "administrative-gender/female"
+     "administrative-gender-female"
+     {:id "administrative-gender-female"
       :code "female"
       :display "Female"
       :definition "Female."}
-     "administrative-gender/other"
-     {:id "administrative-gender/other"
+     "administrative-gender-other"
+     {:id "administrative-gender-other"
       :code "other"
       :display "Other"
       :definition "Other."}
-     "administrative-gender/unknown"
-     {:id "administrative-gender/unknown"
+     "administrative-gender-unknown"
+     {:id "administrative-gender-unknown"
       :code "unknown"
       :display "Unknown"
       :definition "Unknown."}}})
 
   (matcho/match
-   (get-in @ztx [:fhir/inter "Concept" "administrative-gender/other"])
-   {:id         "administrative-gender/other"
+   (get-in @ztx [:fhir/inter "Concept" "administrative-gender-other"])
+   {:id         "administrative-gender-other"
     :code       "other"
     :system     "http://hl7.org/fhir/administrative-gender"
     :display    "Other"
@@ -827,7 +827,7 @@
     :zen.fhir/package-ns 'hl7-fhir-r4-core
     :zen.fhir/resource
     {:resourceType "Concept"
-     :id           "administrative-gender/other"
+     :id           "administrative-gender-other"
      :code         "other"
      :system       "http://hl7.org/fhir/administrative-gender"
      :zen.fhir/header nil?
