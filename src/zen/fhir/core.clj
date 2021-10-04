@@ -356,6 +356,7 @@
                 (select-keys [:code :display :definition])
                 (assoc :id (str cid "-" (:code c))
                        :system sys
+                       :_source "zen-terminology-bundle"
                        :resourceType "Concept")
                 (cond-> (:designation c) (assoc :designation (build-designation (:designation c)))
                         (not (empty? parents)) (assoc :hierarchy parents)
