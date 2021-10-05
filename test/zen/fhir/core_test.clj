@@ -847,14 +847,14 @@
        :zen.fhir/package-ns 'hl7-fhir-us-mcode
        :zen.fhir/schema-ns 'hl7-fhir-us-mcode.value-set.mcode-cancer-staging-system-vs
        :fhir/concepts
-       {"http://terminology.hl7.org/CodeSystem/umls/C4683555"
-        {:id      "http://terminology.hl7.org/CodeSystem/umls/C4683555"
+       {"http:--terminology.hl7.org-CodeSystem-umls-C4683555"
+        {:id      "http:--terminology.hl7.org-CodeSystem-umls-C4683555"
          :code    "C4683555"
          :system  "http://terminology.hl7.org/CodeSystem/umls"
          :display "Ann Arbor Stage"}
 
-        "http://snomed.info/sct/444256004"
-        {:id "http://snomed.info/sct/444256004"
+        "http:--snomed.info-sct-444256004"
+        {:id "http:--snomed.info-sct-444256004"
          :system "http://snomed.info/sct"
          :code "444256004"
          :display string?}}}))
@@ -868,9 +868,17 @@
 
     (t/testing "include.concept"
       (matcho/match
-        (get-in @ztx [:fhir/inter "Concept" "http://snomed.info/sct/444256004"])
-        {:id       "http://snomed.info/sct/444256004"
+        (get-in @ztx [:fhir/inter "Concept" "http:--terminology.hl7.org-CodeSystem-umls-C4683555"])
+        {:id       "http:--terminology.hl7.org-CodeSystem-umls-C4683555"
          :code     "C4683555"
          :display  "Ann Arbor Stage"
+         :system   "http://terminology.hl7.org/CodeSystem/umls"
+         :valueset #(contains? % "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs")})
+
+      (matcho/match
+        (get-in @ztx [:fhir/inter "Concept" "http:--snomed.info-sct-444256004"])
+        {:id       "http:--snomed.info-sct-444256004"
+         :code     "444256004"
+         :display  string?
          :system   "http://snomed.info/sct"
-         :valueset #{"http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"}}))))
+         :valueset #(contains? % "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs")}))))

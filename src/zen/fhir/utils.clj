@@ -144,12 +144,17 @@
   (dissoc-when empty? (update m k disj v) k))
 
 
-(def safe-merge-with-into
-  (partial merge-with
-           (fn [x y]
-             (if (and (coll? x) (coll? y))
-               (into x y)
-               y))))
+(defn safe-merge-with [p f & maps]
+  (apply merge-with
+         (fn [x y]
+           (if (and (p x) (p y))
+             (f x y)
+             y))
+         maps))
+
+
+(defn safe-merge-with-into [& maps]
+  (apply safe-merge-with coll? into maps))
 
 
 (defn nameable? [obj]

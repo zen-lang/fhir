@@ -323,16 +323,6 @@
   #_(println :WARN :no-process-on-load :for (:resourceType res)))
 
 
-(defmethod process-on-load :ValueSet
-  [res]
-  (merge
-   res
-   (when-let [package-ns (:zen.fhir/package-ns res)]
-     {:zen.fhir/package-ns package-ns
-      :zen.fhir/schema-ns (symbol (str (name package-ns) \. "value-set" \. (:id res) ))
-      :zen.fhir/resource (dissoc res :zen.fhir/file :zen.fhir/package :zen.fhir/package-ns :zen.fhir/header)})))
-
-
 (defn build-designation [ds]
   (reduce (fn [acc d]
             (assoc-in acc [(or (get-in d [:use :code]) "display")
@@ -380,6 +370,29 @@
               (-> concept
                   (merge inter-part)
                   (assoc :zen.fhir/resource concept))))))
+
+
+(defmethod process-on-load :ValueSet
+  [res]
+  (merge
+    res
+    (when-let [package-ns (:zen.fhir/package-ns res)]
+      {:zen.fhir/package-ns package-ns
+       :zen.fhir/schema-ns (symbol (str (name package-ns) \. "value-set" \. (:id res) ))
+       :zen.fhir/resource (dissoc res :zen.fhir/file :zen.fhir/package :zen.fhir/package-ns :zen.fhir/header)
+       :fhir/concepts (let [inter-part (select-keys res [:zen.fhir/file :zen.fhir/package :zen.fhir/package-ns :zen.fhir/header])]
+                        (->> (select-keys (:compose res) [:include :exclude])
+                             vals
+                             (apply concat)
+                             (filter :concept)
+                             (map (fn [{:keys [system concept]}]
+                                    (into {}
+                                          (map (juxt :id identity))
+                                          (extract-concepts inter-part
+                                                            (fn [{:keys [code]}] (str/replace (str system \/ code) \/ \-))
+                                                            system
+                                                            concept))))
+                             (apply utils/safe-merge-with map? merge)))})))
 
 
 (defmethod process-on-load :CodeSystem
@@ -652,8 +665,9 @@
 
 
 (defn process-concepts [ztx]
-  (let [codesystems (get-in @ztx [:fhir/inter "CodeSystem"])
-        concepts (into {} (mapcat (comp :fhir/concepts val)) codesystems)]
+  (let [code-systems (vals (get-in @ztx [:fhir/inter "CodeSystem"]))
+        value-sets (vals (get-in @ztx [:fhir/inter "ValueSet"]))
+        concepts (into {} (mapcat :fhir/concepts) (concat value-sets code-systems))]
     (swap! ztx assoc-in [:fhir/inter "Concept"] concepts)))
 
 
