@@ -764,7 +764,7 @@
      {"http://hl7.org/fhir/us/core/ValueSet/birthsex" {nil [[:binding]]}}}))
 
 
-(t/deftest value-sets
+(t/deftest ^:kaocha/pending value-sets
   (def ztx (zen.core/new-context {}))
   (sut/load-all ztx "hl7.fhir.r4.core")
 
@@ -838,7 +838,18 @@
      :zen.fhir/package-ns nil?
      :zen.fhir/schema-ns nil?}})
 
-  (matcho/match
-    (get-in @ztx [:fhir/inter "Concept" "link-type-seealso"])
-    {:id       "link-type-seealso"
-     :valueset #{"http://hl7.org/fhir/ValueSet/link-type"}}))
+  (t/testing "compose"
+    (t/testing "include.system"
+      (matcho/match
+        (get-in @ztx [:fhir/inter "Concept" "link-type-seealso"])
+        {:id       "link-type-seealso"
+         :valueset #{"http://hl7.org/fhir/ValueSet/link-type"}}))
+
+    (t/testing "include.concept"
+      (matcho/match
+        (get-in @ztx [:fhir/inter "Concept" "http://snomed.info/sct/444256004"])
+        {:id       "http://snomed.info/sct/444256004"
+         :code     "C4683555"
+         :display  "Ann Arbor Stage"
+         :system   "http://snomed.info/sct"
+         :valueset #{"http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"}}))))
