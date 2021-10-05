@@ -357,7 +357,7 @@
                 (select-keys [:code :display :definition])
                 (assoc :id (str cid "-" (:code c))
                        :system sys
-                       :_source "zen-terminology-bundle"
+                       :_source "zen.fhir"
                        :resourceType "Concept")
                 (cond-> (:designation c) (assoc :designation (build-designation (:designation c)))
                         (seq parents) (assoc :hierarchy parents)
@@ -406,7 +406,8 @@
   (let [res (-> (cheshire.core/parse-string (slurp f) keyword)
                 (assoc :zen.fhir/header header :zen.fhir/package package :zen.fhir/file (.getPath f))
                 (merge
-                 {:zen.fhir/package-ns (some-> package :name (str/replace #"\." "-") symbol)}
+                  {:zen.fhir/package-ns (some-> package :name (str/replace #"\." "-") symbol)
+                   :_source "zen.fhir"}
                  (select-keys params #{:zen.fhir/package-ns})))]
     (load-definiton ztx package header res)))
 

@@ -382,6 +382,7 @@
                  (matcho/match bundle
                                {["ValueSet" "administrative-gender"]
                                 [{:url "http://hl7.org/fhir/ValueSet/administrative-gender"
+                                  :_source "zen.fhir"
                                   :zen.fhir/header nil?
                                   :zen.fhir/package nil?
                                   :zen.fhir/package-ns nil?
@@ -390,6 +391,7 @@
                                 ["CodeSystem" "administrative-gender"]
                                 [{:url "http://hl7.org/fhir/administrative-gender"
                                   :concept nil?
+                                  :_source "zen.fhir"
                                   :zen.fhir/header nil?
                                   :zen.fhir/package nil?
                                   :zen.fhir/package-ns nil?
@@ -400,7 +402,7 @@
                                   :display    "Other"
                                   :definition "Other."
                                   :system     "http://hl7.org/fhir/administrative-gender"
-                                  :_source "zen-terminology-bundle"
+                                  :_source "zen.fhir"
                                   :zen.fhir/header nil?
                                   :zen.fhir/package nil?
                                   :zen.fhir/package-ns nil?

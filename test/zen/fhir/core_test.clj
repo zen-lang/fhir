@@ -827,14 +827,14 @@
        :display    "Other"
        :definition "Other."
        :valueset   #{"http://hl7.org/fhir/ValueSet/administrative-gender"}
-       :_source "zen-terminology-bundle"
+       :_source "zen.fhir"
        :zen.fhir/package-ns 'hl7-fhir-r4-core
        :zen.fhir/resource
        {:resourceType "Concept"
         :id           "administrative-gender-other"
         :code         "other"
         :system       "http://hl7.org/fhir/administrative-gender"
-        :_source      "zen-terminology-bundle"
+        :_source      "zen.fhir"
         :zen.fhir/header nil?
         :zen.fhir/package nil?
         :zen.fhir/package-ns nil?
