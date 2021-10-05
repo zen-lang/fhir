@@ -764,7 +764,7 @@
      {"http://hl7.org/fhir/us/core/ValueSet/birthsex" {nil [[:binding]]}}}))
 
 
-(t/deftest value-sets
+(t/deftest ^:kaocha/pending value-sets
   (def ztx (zen.core/new-context {}))
   (sut/load-all ztx "hl7.fhir.r4.core")
 
@@ -824,6 +824,7 @@
     :system     "http://hl7.org/fhir/administrative-gender"
     :display    "Other"
     :definition "Other."
+    :valueset   #{"http://hl7.org/fhir/ValueSet/administrative-gender"}
     :_source "zen-terminology-bundle"
     :zen.fhir/package-ns 'hl7-fhir-r4-core
     :zen.fhir/resource
@@ -835,4 +836,9 @@
      :zen.fhir/header nil?
      :zen.fhir/package nil?
      :zen.fhir/package-ns nil?
-     :zen.fhir/schema-ns nil?}}))
+     :zen.fhir/schema-ns nil?}})
+
+  (matcho/match
+    (get-in @ztx [:fhir/inter "Concept" "link-type-seealso"])
+    {:id       "link-type-seealso"
+     :valueset #{"http://hl7.org/fhir/ValueSet/link-type"}}))

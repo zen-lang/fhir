@@ -1,5 +1,6 @@
 (ns zen.fhir.core
   (:require [zen.core :as zen]
+            [zen.fhir.value-set-expand]
             [cheshire.core]
             [clojure.java.io :as io]
             [fipp.edn]
@@ -653,7 +654,8 @@
   "this is processing of resources with context"
   [ztx]
   (process-structure-definitions ztx)
-  (process-concepts ztx))
+  (process-concepts ztx)
+  (zen.fhir.value-set-expand/denormalize-value-sets ztx))
 
 
 (defn dir? [^java.io.File file]
