@@ -840,6 +840,25 @@
         :zen.fhir/package-ns nil?
         :zen.fhir/schema-ns nil?}}))
 
+  (t/testing "value set contained concepts extract"
+    (matcho/match
+      (get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"])
+      {:url "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"
+       :zen.fhir/package-ns 'hl7-fhir-us-mcode
+       :zen.fhir/schema-ns 'hl7-fhir-us-mcode.value-set.mcode-cancer-staging-system-vs
+       :fhir/concepts
+       {"http://terminology.hl7.org/CodeSystem/umls/C4683555"
+        {:id      "http://terminology.hl7.org/CodeSystem/umls/C4683555"
+         :code    "C4683555"
+         :system  "http://terminology.hl7.org/CodeSystem/umls"
+         :display "Ann Arbor Stage"}
+
+        "http://snomed.info/sct/444256004"
+        {:id "http://snomed.info/sct/444256004"
+         :system "http://snomed.info/sct"
+         :code "444256004"
+         :display string?}}}))
+
   (t/testing "compose"
     (t/testing "include.system"
       (matcho/match
