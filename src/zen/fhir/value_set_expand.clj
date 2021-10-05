@@ -15,7 +15,12 @@
       (= system (:system concept)))))
 
 
-(defn vs-compose-concept-fn [ztx value-set system version concepts])
+(defn vs-compose-concept-fn [ztx value-set system version concepts]
+  (when (seq concepts)
+    (fn [concept]
+      (and (= system (:system concept))
+           (contains? (into #{} (map :code) concepts) ;; TODO: do this set generation in ValueSet processing
+                      (:code concept))))))
 
 
 (defn vs-compose-filter-fn [ztx value-set system version filters])
