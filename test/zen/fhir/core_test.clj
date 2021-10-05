@@ -764,7 +764,7 @@
      {"http://hl7.org/fhir/us/core/ValueSet/birthsex" {nil [[:binding]]}}}))
 
 
-(t/deftest ^:kaocha/pending value-sets
+(t/deftest value-sets
   (def ztx (zen.core/new-context {}))
   (sut/load-all ztx "hl7.fhir.r4.core")
 
