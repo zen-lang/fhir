@@ -25,22 +25,22 @@
 
 
 (defn check-if-concept-is-in-this-compose-el-fn [ztx value-set compose-el]
-  (assert (not (and (:valueSet compose-el)
-                    (:system compose-el)))
-          (str "Can't process compose.*.(valueSet and system). ValueSet url is " (:url value-set)))
-  (or (vs-compose-concept-fn ztx value-set
-                             (:system compose-el)
-                             (:version compose-el)
-                             (:concept compose-el))
-      (vs-compose-filter-fn ztx value-set
-                            (:system compose-el)
-                            (:version compose-el)
-                            (:filter compose-el))
-      (vs-compose-system-fn ztx value-set
-                            (:system compose-el)
-                            (:version compose-el))
-      (vs-compose-value-set-fn ztx value-set
-                               (:valueSet compose-el))))
+  (let [code-system-pred (or (vs-compose-concept-fn ztx value-set
+                                                    (:system compose-el)
+                                                    (:version compose-el)
+                                                    (:concept compose-el))
+                             (vs-compose-filter-fn ztx value-set
+                                                   (:system compose-el)
+                                                   (:version compose-el)
+                                                   (:filter compose-el))
+                             (vs-compose-system-fn ztx value-set
+                                                   (:system compose-el)
+                                                   (:version compose-el)))
+        value-set-pred (vs-compose-value-set-fn ztx value-set (:valueSet compose-el))]
+    (some->> [code-system-pred value-set-pred]
+             (remove nil?)
+             not-empty
+             (apply every-pred))))
 
 
 (defn compose [ztx vs]
