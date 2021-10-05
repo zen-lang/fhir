@@ -826,7 +826,7 @@
        :system     "http://hl7.org/fhir/administrative-gender"
        :display    "Other"
        :definition "Other."
-       :valueset   #{"http://hl7.org/fhir/ValueSet/administrative-gender"}
+       :valueset   #(contains? % "http://hl7.org/fhir/ValueSet/administrative-gender")
        :_source "zen.fhir"
        :zen.fhir/package-ns 'hl7-fhir-r4-core
        :zen.fhir/resource
@@ -881,4 +881,14 @@
          :code     "444256004"
          :display  string?
          :system   "http://snomed.info/sct"
-         :valueset #{"http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"}}))))
+         :valueset #{"http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"}}))
+
+    (t/testing "include.valueSet"
+      #_(get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/use-context"])
+      #_(get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/practitioner-specialty"])
+      #_(get-in @ztx [:fhir/inter "CodeSystem" "http://hl7.org/fhir/practitioner-specialty"])
+
+      (matcho/match
+        (get-in @ztx [:fhir/inter "Concept" "http:--hl7.org-fhir-practitioner-specialty-dietary"])
+        {:valueset #{"http://hl7.org/fhir/ValueSet/practitioner-specialty"
+                     "http://hl7.org/fhir/ValueSet/use-context"}}))))

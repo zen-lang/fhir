@@ -26,7 +26,17 @@
 (defn vs-compose-filter-fn [ztx value-set system version filters])
 
 
-(defn vs-compose-value-set-fn [ztx value-set value-set-urls])
+(declare compose)
+
+
+(defn vs-compose-value-set-fn [ztx value-set value-set-urls]
+  (when (seq value-set-urls)
+    (or (some->> value-set-urls
+                 (keep #(when-let [vs (get-in @ztx [:fhir/inter "ValueSet" %])]
+                          (compose ztx vs)))
+                 not-empty
+                 (apply every-pred))
+        (constantly false))))
 
 
 (defn check-if-concept-is-in-this-compose-el-fn [ztx value-set compose-el]
