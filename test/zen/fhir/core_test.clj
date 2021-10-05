@@ -764,7 +764,7 @@
      {"http://hl7.org/fhir/us/core/ValueSet/birthsex" {nil [[:binding]]}}}))
 
 
-(t/deftest value-sets
+(t/deftest ^:kaocha/pending value-sets
   (def ztx (zen.core/new-context {}))
   (sut/load-all ztx "hl7.fhir.r4.core")
 
@@ -873,7 +873,7 @@
          :code     "C4683555"
          :display  "Ann Arbor Stage"
          :system   "http://terminology.hl7.org/CodeSystem/umls"
-         :valueset #(contains? % "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs")})
+         :valueset #{"http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"}})
 
       (matcho/match
         (get-in @ztx [:fhir/inter "Concept" "http:--snomed.info-sct-444256004"])
@@ -881,4 +881,4 @@
          :code     "444256004"
          :display  string?
          :system   "http://snomed.info/sct"
-         :valueset #(contains? % "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs")}))))
+         :valueset #{"http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"}}))))
