@@ -798,30 +798,30 @@
        :concept nil?
        :zen.fhir/package-ns 'hl7-fhir-r4-core
        :fhir/concepts
-       {"administrative-gender-male"
-        {:id "administrative-gender-male"
+       {"http:--hl7.org-fhir-administrative-gender-male"
+        {:id "http:--hl7.org-fhir-administrative-gender-male"
          :code "male"
          :display "Male"
          :definition "Male."}
-        "administrative-gender-female"
-        {:id "administrative-gender-female"
+        "http:--hl7.org-fhir-administrative-gender-female"
+        {:id "http:--hl7.org-fhir-administrative-gender-female"
          :code "female"
          :display "Female"
          :definition "Female."}
-        "administrative-gender-other"
-        {:id "administrative-gender-other"
+        "http:--hl7.org-fhir-administrative-gender-other"
+        {:id "http:--hl7.org-fhir-administrative-gender-other"
          :code "other"
          :display "Other"
          :definition "Other."}
-        "administrative-gender-unknown"
-        {:id "administrative-gender-unknown"
+        "http:--hl7.org-fhir-administrative-gender-unknown"
+        {:id "http:--hl7.org-fhir-administrative-gender-unknown"
          :code "unknown"
          :display "Unknown"
          :definition "Unknown."}}})
 
     (matcho/match
-      (get-in @ztx [:fhir/inter "Concept" "administrative-gender-other"])
-      {:id         "administrative-gender-other"
+      (get-in @ztx [:fhir/inter "Concept" "http:--hl7.org-fhir-administrative-gender-other"])
+      {:id         "http:--hl7.org-fhir-administrative-gender-other"
        :code       "other"
        :system     "http://hl7.org/fhir/administrative-gender"
        :display    "Other"
@@ -831,14 +831,14 @@
        :zen.fhir/package-ns 'hl7-fhir-r4-core
        :zen.fhir/resource
        {:resourceType "Concept"
-        :id           "administrative-gender-other"
+        :id           "http:--hl7.org-fhir-administrative-gender-other"
         :code         "other"
         :system       "http://hl7.org/fhir/administrative-gender"
         :_source      "zen.fhir"
-        :zen.fhir/header nil?
-        :zen.fhir/package nil?
+        :zen.fhir/header     nil?
+        :zen.fhir/package    nil?
         :zen.fhir/package-ns nil?
-        :zen.fhir/schema-ns nil?}}))
+        :zen.fhir/schema-ns  nil?}}))
 
   (t/testing "value set contained concepts extract"
     (matcho/match
@@ -862,8 +862,8 @@
   (t/testing "compose"
     (t/testing "include.system"
       (matcho/match
-        (get-in @ztx [:fhir/inter "Concept" "link-type-seealso"])
-        {:id       "link-type-seealso"
+        (get-in @ztx [:fhir/inter "Concept" "http:--hl7.org-fhir-link-type-seealso"])
+        {:id       "http:--hl7.org-fhir-link-type-seealso"
          :valueset #{"http://hl7.org/fhir/ValueSet/link-type"}}))
 
     (t/testing "include.concept"

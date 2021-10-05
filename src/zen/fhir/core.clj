@@ -340,51 +340,57 @@
                       (:value d)))
           {} ds))
 
+
 (defn get-value [m]
   (let [k (->> (keys m)
                (filter #(str/starts-with? (name %) "value"))
                (first))]
     (get m k)))
 
-(defn build-property [code-system-id ps]
+
+(defn build-property [ps]
   (reduce (fn [acc p]
-            (assoc-in acc [code-system-id (:code p)] (get-value p)))
+            (assoc-in acc (:code p) (get-value p)))
           {} ps))
 
 
-(defn reduce-concept [acc cid sys parents c]
+(defn reduce-concept [acc id-fn sys parents c]
   (let [con (-> c
                 (select-keys [:code :display :definition])
-                (assoc :id (str cid "-" (:code c))
+                (assoc :id (id-fn c)
                        :system sys
                        :_source "zen.fhir"
                        :resourceType "Concept")
                 (cond-> (:designation c) (assoc :designation (build-designation (:designation c)))
                         (seq parents) (assoc :hierarchy parents)
-                        (:property c) (assoc :property (build-property cid (:property c)))))
+                        (:property c) (assoc :property (build-property (:property c)))))
         acc (conj acc con)]
     (if-let [cs (:concept c)]
       (reduce (fn [acc c']
-                (reduce-concept acc cid sys (conj parents (:code con)) c'))
+                (reduce-concept acc id-fn sys (conj parents (:code con)) c'))
               acc cs)
       acc)))
 
-(defn codesystem->concepts [{:as codesystem, cid :id, sys :url, cs :concept}]
-  (let [zen-fhir-keys (select-keys codesystem [:zen.fhir/file :zen.fhir/package :zen.fhir/package-ns :zen.fhir/header])]
-    (->> cs
-         (reduce (fn [acc c] (reduce-concept acc cid sys [] c))
-                 [])
-         (map (fn [concept]
-                (-> concept
-                    (merge zen-fhir-keys)
-                    (assoc :zen.fhir/resource concept)))))))
+
+(defn extract-concepts [inter-part id-fn sys concept-parts]
+  (->> concept-parts
+       (reduce (fn [acc c] (reduce-concept acc id-fn sys [] c))
+               [])
+       (map (fn [concept]
+              (-> concept
+                  (merge inter-part)
+                  (assoc :zen.fhir/resource concept))))))
 
 
 (defmethod process-on-load :CodeSystem
   [res]
   (merge
    (dissoc res :concept)
-   {:fhir/concepts (into {} (map (juxt :id identity)) (codesystem->concepts res))}
+   {:fhir/concepts (into {} (map (juxt :id identity))
+                         (extract-concepts (select-keys res [:zen.fhir/file :zen.fhir/package :zen.fhir/package-ns :zen.fhir/header])
+                                           (fn [{:keys [code]}] (str/replace (str (:url res) \/ code) \/ \-))
+                                           (:url res)
+                                           (:concept res)))}
    {:zen.fhir/resource (dissoc res :concept :zen.fhir/file :zen.fhir/package :zen.fhir/package-ns :zen.fhir/header)}))
 
 
