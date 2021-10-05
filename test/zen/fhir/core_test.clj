@@ -891,4 +891,8 @@
       (matcho/match
         (get-in @ztx [:fhir/inter "Concept" "http:--hl7.org-fhir-practitioner-specialty-dietary"])
         {:valueset #{"http://hl7.org/fhir/ValueSet/practitioner-specialty"
-                     "http://hl7.org/fhir/ValueSet/use-context"}}))))
+                     "http://hl7.org/fhir/ValueSet/use-context"}}))
+
+
+    (t/testing "include.filter" ;; TODO
+      )))

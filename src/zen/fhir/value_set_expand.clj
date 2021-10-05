@@ -23,7 +23,10 @@
                       (:code concept))))))
 
 
-(defn vs-compose-filter-fn [ztx value-set system version filters])
+(defn vs-compose-filter-fn [ztx value-set system version filters]
+  (when (seq filters)
+    (fn [concept] ;; TODO
+      false)))
 
 
 (declare compose)
