@@ -115,7 +115,8 @@
         (delete-directory-recursive (io/file "test-temp-zrc"))
         (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test"))
 
-      (catch Exception _)
+      (catch Exception e
+        (throw e))
       (finally (t)))))
 
 
