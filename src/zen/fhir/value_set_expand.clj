@@ -61,9 +61,9 @@
         (constantly false))))
 
 
-(defn denormalize-into-concepts [ztx concepts]
+(defn denormalize-into-concepts [ztx valuesets concepts-map]
   (reduce
-    (fn [concepts-acc [vs-url vs]]
+    (fn [concepts-acc vs]
       (let [concept-in-vs? (compose ztx vs)]
         (reduce
           (fn [acc [concept-id concept]]
@@ -74,9 +74,11 @@
               acc))
           concepts-acc
           concepts-acc)))
-    concepts
-    (get-in @ztx [:fhir/inter "ValueSet"])))
+    concepts-map
+    valuesets))
 
 
 (defn denormalize-value-sets [ztx]
-  (swap! ztx update-in [:fhir/inter "Concept"] (partial denormalize-into-concepts ztx)))
+  (swap! ztx update-in [:fhir/inter "Concept"]
+         (partial denormalize-into-concepts
+                  ztx (vals (get-in @ztx [:fhir/inter "ValueSet"])))))
