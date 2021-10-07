@@ -46,8 +46,8 @@
     "is-not-a" (and (not (contains? (set (:hierarchy concept)) (:value filter)))
                     (not= (:code concept) (:value filter)))
 
-    "regex" nil))
-
+    "regex" (re-matches (re-pattern (:value filter))
+                        (get (:property concept) (:property filter) ""))))
 
 (defn vs-compose-filter-fn [ztx value-set system version filters]
   (when (seq filters)
