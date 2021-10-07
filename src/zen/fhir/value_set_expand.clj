@@ -44,10 +44,11 @@
     "descendent-of" (contains? (set (:hierarchy concept)) (:value filter))
 
     "is-not-a" (and (not (contains? (set (:hierarchy concept)) (:value filter)))
-                    (not= (:code concept) (:value filter)))
+                    (not= (:code concept) (:value filter))) ;; TODO: not sure this is correct impl by spec
 
-    "regex" (re-matches (re-pattern (:value filter))
-                        (get (:property concept) (:property filter) ""))))
+    "regex" (when-let [prop (get (:property concept) (:property filter))]
+              (re-matches (re-pattern (:value filter))
+                          (str prop)))))
 
 (defn vs-compose-filter-fn [ztx value-set system version filters]
   (when (seq filters)
