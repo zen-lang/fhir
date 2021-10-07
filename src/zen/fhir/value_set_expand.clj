@@ -23,40 +23,69 @@
                       (:code concept))))))
 
 
-(defn filter-pred [concept filter] ;; TODO: do filter processing in ValueSet processing
-  (case (:op filter)
-    "=" (= (get (:property concept) (:property filter))
-           (:value filter))
+(defmulti filter-op
+  (fn [_ztx _value-set _system _version filter]
+    (:op filter)))
 
-    "in" (get (into #{} (map str/trim) (str/split (or (:value filter) "") #","))
-              (get (:property concept) (:property filter)))
 
-    "not-in" (not (get (into #{} (map str/trim) (str/split (or (:value filter) "") #","))
-                       (get (:property concept) (:property filter))))
+(defmethod filter-op :default [_ztx _value-set _system _version _filter]
+  (constantly false))
 
-    "exists" (if (= "false" (some-> (:value filter) str/lower-case str/trim))
-               (nil? (get (:property concept) (:property filter)))
-               (some? (get (:property concept) (:property filter))))
 
-    "is-a" (or (= (:code concept) (:value filter))
-               (contains? (set (:hierarchy concept)) (:value filter)))
+(defmethod filter-op "=" [_ztx _value-set _system _version filter]
+  (fn [concept]
+    (= (get (:property concept) (:property filter))
+       (:value filter))))
 
-    "descendent-of" (contains? (set (:hierarchy concept)) (:value filter))
 
-    "is-not-a" (and (not (contains? (set (:hierarchy concept)) (:value filter)))
-                    (not= (:code concept) (:value filter))) ;; TODO: not sure this is correct impl by spec
+(defmethod filter-op "in" [_ztx _value-set _system _version filter]
+  (fn [concept]
+    (get (into #{} (map str/trim) (str/split (or (:value filter) "") #","))
+         (get (:property concept) (:property filter)))))
 
-    "regex" (when-let [prop (get (:property concept) (:property filter))]
-              (re-matches (re-pattern (:value filter))
-                          (str prop)))))
+
+(defmethod filter-op "not-in" [_ztx _value-set _system _version filter]
+  (fn [concept]
+    (not (get (into #{} (map str/trim) (str/split (or (:value filter) "") #","))
+              (get (:property concept) (:property filter))))))
+
+
+(defmethod filter-op "exists" [_ztx _value-set _system _version filter]
+  (if (= "false" (some-> (:value filter) str/lower-case str/trim))
+    (fn [concept] (nil? (get (:property concept) (:property filter))))
+    (fn [concept] (some? (get (:property concept) (:property filter))))))
+
+
+(defmethod filter-op "is-a" [_ztx _value-set _system _version filter]
+  (fn [concept]
+    (or (= (:code concept) (:value filter))
+        (contains? (set (:hierarchy concept)) (:value filter)))))
+
+
+(defmethod filter-op "descendent-of" [_ztx _value-set _system _version filter]
+  (fn [concept]
+    (contains? (set (:hierarchy concept)) (:value filter))))
+
+
+(defmethod filter-op "is-not-a" [_ztx _value-set _system _version filter]
+  (fn [concept] ;; TODO: not sure this is correct impl by spec
+    (and (not (contains? (set (:hierarchy concept)) (:value filter)))
+         (not= (:code concept) (:value filter)))))
+
+
+(defmethod filter-op "regex" [_ztx _value-set _system _version filter]
+  (fn [concept]
+    (when-let [prop (get (:property concept) (:property filter))]
+      (re-matches (re-pattern (:value filter))
+                  (str prop)))))
+
 
 (defn vs-compose-filter-fn [ztx value-set system version filters]
   (when (seq filters)
-    (fn [concept]
-      (and (= system (:system concept))
-           (->> filters
-                (map (partial filter-pred concept))
-                (every? identity))))))
+    (apply every-pred
+           (comp #{system} :system)
+           (map (partial filter-op ztx value-set system version)
+                filters))))
 
 
 (declare compose)
