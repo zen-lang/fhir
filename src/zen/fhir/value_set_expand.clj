@@ -145,13 +145,9 @@
         (reduce
           (fn [acc [concept-id concept]]
             (if (concept-in-vs? concept)
-              (-> acc
-                  (update-in [concept-id :valueset]
-                             (fnil conj #{})
-                             (:url vs))
-                  (update-in [concept-id :zen.fhir/resource :valueset]
-                             (fnil conj [])
-                             (:url vs)))
+              (update-in acc [concept-id :valueset]
+                         (fnil conj #{})
+                         (:url vs))
               acc))
           concepts-acc
           concepts-acc)))
@@ -159,7 +155,7 @@
     valuesets))
 
 
-(defn denormalize-value-sets [ztx]
+(defn denormalize-value-sets-into-concepts [ztx]
   (swap! ztx update-in [:fhir/inter "Concept"]
          (partial denormalize-into-concepts
                   ztx (vals (get-in @ztx [:fhir/inter "ValueSet"])))))

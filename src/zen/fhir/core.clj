@@ -664,19 +664,33 @@
                        (:fhir/src @ztx))))
 
 
-(defn process-concepts [ztx]
+(defn collect-concepts [ztx]
   (let [code-systems (vals (get-in @ztx [:fhir/inter "CodeSystem"]))
         value-sets (vals (get-in @ztx [:fhir/inter "ValueSet"]))
         concepts (into {} (mapcat :fhir/concepts) (concat value-sets code-systems))]
     (swap! ztx assoc-in [:fhir/inter "Concept"] concepts)))
 
 
+(defn process-concept [_ztx concept]
+  (-> concept
+      (assoc-in [:zen.fhir/resource :valueset]
+                (vec (:valueset concept)))))
+
+
+(defn process-concepts [ztx]
+  (collect-concepts ztx)
+  (zen.fhir.value-set-expand/denormalize-value-sets-into-concepts ztx)
+  (swap! ztx update-in [:fhir/inter "Concept"]
+         #(sp/transform [sp/MAP-VALS]
+                        (partial process-concept ztx)
+                        %)))
+
+
 (defn process-resources
   "this is processing of resources with context"
   [ztx]
   (process-structure-definitions ztx)
-  (process-concepts ztx)
-  (zen.fhir.value-set-expand/denormalize-value-sets ztx))
+  (process-concepts ztx))
 
 
 (defn dir? [^java.io.File file]

@@ -835,6 +835,8 @@
         :code         "other"
         :system       "http://hl7.org/fhir/administrative-gender"
         :_source      "zen.fhir"
+        :valueset     #(and (vector? %)
+                            (contains? (set %) "http://hl7.org/fhir/ValueSet/administrative-gender"))
         :zen.fhir/header     nil?
         :zen.fhir/package    nil?
         :zen.fhir/package-ns nil?
