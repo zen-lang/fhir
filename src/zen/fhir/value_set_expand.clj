@@ -25,17 +25,18 @@
 
 (defn filter-pred [concept filter] ;; TODO: do filter processing in ValueSet processing
   (case (:op filter)
-    "=" (= (get concept (:property filter)) (:value filter))
+    "=" (= (get (:property concept) (:property filter))
+           (:value filter))
 
     "in" (get (into #{} (map str/trim) (str/split (or (:value filter) "") #","))
-              (get concept (:property filter)))
+              (get (:property concept) (:property filter)))
 
     "not-in" (not (get (into #{} (map str/trim) (str/split (or (:value filter) "") #","))
-                       (get concept (:property filter))))
+                       (get (:property concept) (:property filter))))
 
     "exists" (if (= "false" (some-> (:value filter) str/lower-case str/trim))
-               (nil? (get concept (:property filter)))
-               (some? (get concept (:property filter))))
+               (nil? (get (:property concept) (:property filter)))
+               (some? (get (:property concept) (:property filter))))
 
     "is-a" (or (= (:code concept) (:value filter))
                (contains? (set (:hierarchy concept)) (:value filter)))
