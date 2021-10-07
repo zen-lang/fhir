@@ -888,7 +888,8 @@
          :code     "C4683555"
          :display  "Ann Arbor Stage"
          :system   "http://terminology.hl7.org/CodeSystem/umls"
-         :valueset #{"http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"}})
+         :valueset #{"http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"}
+         :zen.fhir/resource {:valueset ["http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"]}})
 
       (matcho/match
         (get-in @ztx [:fhir/inter "Concept" "http:--snomed.info-sct-444256004"])

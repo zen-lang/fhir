@@ -403,6 +403,7 @@
                                   :display    "Other"
                                   :definition "Other."
                                   :system     "http://hl7.org/fhir/administrative-gender"
+                                  :valueset   ["http://hl7.org/fhir/ValueSet/administrative-gender"]
                                   :_source "zen.fhir"
                                   :zen.fhir/header nil?
                                   :zen.fhir/package nil?
