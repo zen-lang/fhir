@@ -838,7 +838,22 @@
         :zen.fhir/header     nil?
         :zen.fhir/package    nil?
         :zen.fhir/package-ns nil?
-        :zen.fhir/schema-ns  nil?}}))
+        :zen.fhir/schema-ns  nil?}})
+
+    (t/testing "hierarchy & property extract"
+      (matcho/match
+        (get-in @ztx [:fhir/inter "Concept" "http:--terminology.hl7.org-CodeSystem-v3-ActMood-EXPEC"])
+        {:code      "EXPEC"
+         :system    "http://terminology.hl7.org/CodeSystem/v3-ActMood"
+         :hierarchy ["_ActMoodPredicate" nil]
+         :property  nil?})
+
+      (matcho/match
+        (get-in @ztx [:fhir/inter "Concept" "http:--terminology.hl7.org-CodeSystem-v3-ActMood-GOL.CRT"])
+        {:code      "GOL.CRT"
+         :system    "http://terminology.hl7.org/CodeSystem/v3-ActMood"
+         :hierarchy ["_ActMoodPredicate" "CRT" nil]
+         :property  {"status" "retired"}})))
 
   (t/testing "value set contained concepts extract"
     (matcho/match

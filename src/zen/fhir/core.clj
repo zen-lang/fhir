@@ -340,7 +340,7 @@
 
 (defn build-property [ps]
   (reduce (fn [acc p]
-            (assoc-in acc (:code p) (get-value p)))
+            (assoc acc (:code p) (get-value p)))
           {} ps))
 
 
