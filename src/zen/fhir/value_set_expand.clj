@@ -145,9 +145,13 @@
         (reduce
           (fn [acc [concept-id concept]]
             (if (concept-in-vs? concept)
-              (update-in acc [concept-id :valueset]
-                         (fnil conj #{})
-                         (:url vs))
+              (-> acc
+                  (update-in [concept-id :valueset]
+                             (fnil conj #{})
+                             (:url vs))
+                  (update-in [concept-id :zen.fhir/resource :valueset]
+                             (fnil conj [])
+                             (:url vs)))
               acc))
           concepts-acc
           concepts-acc)))
