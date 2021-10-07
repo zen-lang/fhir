@@ -23,10 +23,38 @@
                       (:code concept))))))
 
 
+(defn filter-pred [concept filter] ;; TODO: do filter processing in ValueSet processing
+  (case (:op filter)
+    "=" (= (get concept (:property filter)) (:value filter))
+
+    "in" (get (into #{} (map str/trim) (str/split (or (:value filter) "") #","))
+              (get concept (:property filter)))
+
+    "not-in" (not (get (into #{} (map str/trim) (str/split (or (:value filter) "") #","))
+                       (get concept (:property filter))))
+
+    "exists" (if (= "false" (some-> (:value filter) str/lower-case str/trim))
+               (nil? (get concept (:property filter)))
+               (some? (get concept (:property filter))))
+
+    "is-a" (or (= (:code concept) (:value filter))
+               (contains? (set (:hierarchy concept)) (:value filter)))
+
+    "descendent-of" (contains? (set (:hierarchy concept)) (:value filter))
+
+    "is-not-a" (and (not (contains? (set (:hierarchy concept)) (:value filter)))
+                    (not= (:code concept) (:value filter)))
+
+    "regex" nil))
+
+
 (defn vs-compose-filter-fn [ztx value-set system version filters]
   (when (seq filters)
-    (fn [concept] ;; TODO
-      false)))
+    (fn [concept]
+      (and (= system (:system concept))
+           (->> filters
+                (map (partial filter-pred concept))
+                (every? identity))))))
 
 
 (declare compose)

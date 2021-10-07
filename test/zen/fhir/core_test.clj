@@ -896,7 +896,7 @@
          :code     "444256004"
          :display  string?
          :system   "http://snomed.info/sct"
-         :valueset #{"http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"}}))
+         :valueset #(contains? % "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs")}))
 
     (t/testing "include.valueSet"
       #_(get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/use-context"])
@@ -910,4 +910,13 @@
 
 
     (t/testing "include.filter" ;; TODO
-      )))
+      (t/testing "descendent-of"
+        #_(get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/inactive"])
+        #_(get-in @ztx [:fhir/inter "CodeSystem" "http://terminology.hl7.org/CodeSystem/v3-ActMood"])
+        (t/is (clojure.set/subset? ;; TODO, NOTE: should be clojure.core/=, not clojure.core/subset?, but codes
+                #{"CRT" "EXPEC" "GOL" "RSK" "OPT"}
+                (->> (get-in @ztx [:fhir/inter "Concept"])
+                     vals
+                     (filter #(contains? (:valueset %) "http://hl7.org/fhir/ValueSet/inactive"))
+                     (map :code)
+                     set)))))))
