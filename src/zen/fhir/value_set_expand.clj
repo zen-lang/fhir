@@ -1,6 +1,5 @@
 (ns zen.fhir.value-set-expand
   (:require [zen.core :as zen]
-            [zen.fhir.value-set-expand]
             [cheshire.core]
             [clojure.java.io :as io]
             [fipp.edn]
