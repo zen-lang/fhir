@@ -42,9 +42,10 @@
      :keys {:fhir/flags {:type zen/set}
             :fhir/extensionUri {:type zen/string}
             :fhir/polymorphic {:type zen/boolean}
-            :zenbox/refers {:type zen/set
-                            :every {:type zen/symbol
-                                    #_#_:tags #{#{zenbox/base-schema zenbox/profile-schema}}}} ;; TODO
+            :zenbox/reference {:type zen/map
+                               :keys {:refers {:type zen/set
+                                               :every {:type zen/symbol
+                                                       #_#_:tags #{#{zenbox/base-schema zenbox/profile-schema}}}}}} ;; TODO
             :zenbox/value-set {:type zen/map
                                :keys {:symbol {:type zen/symbol}
                                       :strength {:type zen/keyword
@@ -120,7 +121,7 @@
       (finally (t)))))
 
 
-(t/deftest generate-project-integration
+(t/deftest ^:kaocha/pending generate-project-integration
   (matcho/match
     (:fhir.zen/ns @ztx)
     {'fhir-r4
@@ -211,12 +212,17 @@
                                         :dateTime {:confirms #{'fhir-r4.dateTime/schema}}}}
                       :managingOrganization {:zen/desc "Organization that is the custodian of the patient record"
                                              :confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}
-                                             :zenbox/refers #{'fhir-r4.Organization/schema}}
+                                             :zenbox/reference {:refers #{'fhir-r4.Organization/schema}}}
                       :gender {:confirms #{'fhir-r4.code/schema}
                                :zenbox/value-set {:symbol 'fhir-r4.value-set.administrative-gender/value-set
                                                   :strength :required}}
                       :link {:type 'zen/vector
                              :every {:require #{:other :type}}}}}}
+
+     'fhir-r4.ServiceRequest
+     {'ns     'fhir-r4.ServiceRequest
+      'schema {:keys {:supportingInfo {:every {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}
+                                               :zenbox/reference {:refers #{}}}}}}}
 
      'fhir-r4.Practitioner
      {'ns     'fhir-r4.Practitioner
