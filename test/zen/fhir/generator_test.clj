@@ -121,8 +121,8 @@
       (finally (t)))))
 
 
-(t/deftest ^:kaocha/pending generate-project-integration
-  (matcho/match
+(t/deftest generate-project-integration
+   (matcho/match
     (:fhir.zen/ns @ztx)
     {'fhir-r4
      {'ns 'fhir-r4

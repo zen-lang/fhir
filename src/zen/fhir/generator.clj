@@ -96,9 +96,11 @@
                                     :strength (keyword (get-in el [:binding :strength]))}})
               (when (= "Reference" (:type el))
                 {:confirms #{'zenbox/Reference}
-                 :zenbox/refers (into #{}
-                                      (map (partial url->symbol fhir-inter))
-                                      (:profiles el))})
+                 :zenbox/reference
+                 {:refers (into #{}
+                                (comp (remove #(= % "http://hl7.org/fhir/StructureDefinition/Resource"))
+                                      (map (partial url->symbol fhir-inter)))
+                                (:profiles el))}})
               (when-let [text (or (:short el) (:definiton el))]
                 {:zen/desc text}))]
     (if (:vector el)
