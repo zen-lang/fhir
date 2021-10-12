@@ -316,6 +316,12 @@
 
   (t/testing "compose"
     (t/testing "include.system"
+      (match-inter ztx "ValueSet" "http://hl7.org/fhir/ValueSet/link-type"
+                   {:compose {:include [{:system "http://hl7.org/fhir/link-type"}]}})
+
+      (match-inter ztx "CodeSystem" "http://hl7.org/fhir/link-type"
+                   {:fhir/concepts {"http:--hl7.org-fhir-link-type-seealso" {:code "seealso"}}})
+
       (match-inter ztx "Concept" "http:--hl7.org-fhir-link-type-seealso"
         {:id       "http:--hl7.org-fhir-link-type-seealso"
          :valueset #{"http://hl7.org/fhir/ValueSet/link-type"}}))
@@ -337,9 +343,21 @@
          :valueset #(contains? % "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs")}))
 
     (t/testing "include.valueSet"
-      #_(get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/use-context"])
-      #_(get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/practitioner-specialty"])
-      #_(get-in @ztx [:fhir/inter "CodeSystem" "http://hl7.org/fhir/practitioner-specialty"])
+      (match-inter ztx "ValueSet" "http://hl7.org/fhir/ValueSet/use-context"
+                   {:compose
+                    {:include #(->> %
+                                    (mapcat :valueSet)
+                                    (filter #{"http://hl7.org/fhir/ValueSet/practitioner-specialty"})
+                                    seq
+                                    boolean)}})
+
+      (match-inter ztx "ValueSet" "http://hl7.org/fhir/ValueSet/practitioner-specialty"
+                   {:compose {:include [{:system "http://hl7.org/fhir/practitioner-specialty"}]}})
+
+      (match-inter ztx "CodeSystem" "http://hl7.org/fhir/practitioner-specialty"
+                   {:fhir/concepts
+                    {"http:--hl7.org-fhir-practitioner-specialty-dietary"
+                     {:code "dietary"}}})
 
       (match-inter ztx "Concept" "http:--hl7.org-fhir-practitioner-specialty-dietary"
         {:valueset #{"http://hl7.org/fhir/ValueSet/practitioner-specialty"
@@ -347,8 +365,20 @@
 
     (t/testing "include.filter"
       (t/testing "descendent-of"
-        #_(get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/inactive"])
-        #_(get-in @ztx [:fhir/inter "CodeSystem" "http://terminology.hl7.org/CodeSystem/v3-ActMood"])
+        (match-inter ztx "ValueSet" "http://hl7.org/fhir/ValueSet/inactive"
+                     {:compose {:include [{:system "http://terminology.hl7.org/CodeSystem/v3-ActMood",
+                                           :filter
+                                           [{:property "concept",
+                                             :op "descendent-of",
+                                             :value "_ActMoodPredicate"}]}]}})
+
+        (match-inter ztx "CodeSystem" "http://terminology.hl7.org/CodeSystem/v3-ActMood"
+                     {:fhir/concepts
+                      #(clojure.set/subset? #{"RSK" "RQO.CRT" "CRT"
+                                              "EXPEC" "PRMS.CRT" "OPT"
+                                              "EVN.CRT" "INT.CRT" "GOL.CRT"
+                                              "RSK.CRT" "GOL"}
+                                            (set (map (comp :code val) %)))})
 
         (doseq [code ["RSK" "GOL" "CRT" "OPT" "EXPEC" "EVN.CRT" "PRMS.CRT" "RQO.CRT" "RSK.CRT" "GOL.CRT" "INT.CRT"]]
           (match-inter ztx "Concept" (str "http:--terminology.hl7.org-CodeSystem-v3-ActMood-" code)
