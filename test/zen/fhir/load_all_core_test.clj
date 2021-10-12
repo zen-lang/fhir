@@ -6,8 +6,8 @@
             [matcho.core :as matcho]))
 
 
-(defmacro match-definition [ztx url pattern]
-  `(let [res# (sut/get-definition ~ztx ~url)]
+(defmacro match-inter [ztx rt url pattern]
+  `(let [res# (get-in @~ztx [:fhir/inter ~rt ~url])]
      (matcho/match res# ~pattern)
      res#))
 
@@ -34,8 +34,7 @@
 
 
 (t/deftest fhir-aidbox-poly-keys-mapping
-  (match-definition
-    ztx "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+  (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
     {:derivation     "constraint"
      :type           "Patient"
      :kind           "resource"
@@ -105,8 +104,7 @@
                                               :valueSet    {:url "http://hl7.org/fhir/us/core/ValueSet/birthsex"}}}}
      })
 
-  (match-definition
-    ztx "http://hl7.org/fhir/StructureDefinition/Observation"
+  (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Observation"
     {:baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"
      :kind           "resource",
      :type           "Observation"
@@ -122,8 +120,7 @@
                                                            :|           {:boolean  {:type "boolean"}
                                                                          :Quantity {:type "Quantity"}}}}}}})
 
-  (match-definition
-    ztx "http://hl7.org/fhir/us/core/StructureDefinition/pediatric-bmi-for-age"
+  (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/us/core/StructureDefinition/pediatric-bmi-for-age"
     {:baseDefinition "http://hl7.org/fhir/StructureDefinition/vitalsigns"
      :kind           "resource",
      :type           "Observation"
@@ -135,8 +132,7 @@
                        :| {:Quantity
                            {:| {:value {:required true}}}}}}})
 
-  (match-definition
-    ztx "http://hl7.org/fhir/StructureDefinition/Patient"
+  (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Patient"
     {:kind           "resource"
      :derivation     "specialization",
      :baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"
@@ -161,8 +157,7 @@
                                                         "http://hl7.org/fhir/StructureDefinition/Practitioner"
                                                         "http://hl7.org/fhir/StructureDefinition/PractitionerRole"}}}})
 
-  (match-definition
-    ztx "http://hl7.org/fhir/StructureDefinition/Questionnaire"
+  (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Questionnaire"
     {:| {:description {}
          :subjectType {}
          :item
@@ -200,29 +195,25 @@
 
 
 (t/deftest nested-extensions
-  (matcho/match
-    (zen.fhir.core/get-definition ztx "http://hl7.org/test-plannet/StructureDefinition/plannet-PractitionerRole")
+  (match-inter ztx "StructureDefinition" "http://hl7.org/test-plannet/StructureDefinition/plannet-PractitionerRole"
     {:|
      {:newpatients
       {:fhir/extension
        "http://hl7.org/test-plannet/StructureDefinition/newpatients"}}})
 
-  (matcho/match
-    (zen.fhir.core/get-definition ztx "http://hl7.org/test-plannet/StructureDefinition/newpatients")
+  (match-inter ztx "StructureDefinition" "http://hl7.org/test-plannet/StructureDefinition/newpatients"
     {:|
      {:acceptingPatients {}
       :fromnetwork {:fhir/extension "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"}}})
 
-  (matcho/match
-    (zen.fhir.core/get-definition ztx "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension")
+  (match-inter ztx "StructureDefinition" "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"
     {:type "Reference"
      :baseDefinition "http://hl7.org/fhir/StructureDefinition/Reference"}))
 
 
 (t/deftest value-sets
   (t/testing "value set processing"
-    (matcho/match
-      (get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/administrative-gender"])
+    (match-inter ztx "ValueSet" "http://hl7.org/fhir/ValueSet/administrative-gender"
       {:url "http://hl7.org/fhir/ValueSet/administrative-gender"
        :zen.fhir/package-ns 'hl7-fhir-r4-core
        :zen.fhir/schema-ns 'hl7-fhir-r4-core.value-set.administrative-gender
@@ -236,8 +227,7 @@
         :zen.fhir/schema-ns nil?}}))
 
   (t/testing "code system contained concepts extract"
-    (matcho/match
-      (get-in @ztx [:fhir/inter "CodeSystem" "http://hl7.org/fhir/administrative-gender"])
+    (match-inter ztx "CodeSystem" "http://hl7.org/fhir/administrative-gender"
       {:zen.fhir/resource
        {:url "http://hl7.org/fhir/administrative-gender"
         :resourceType "CodeSystem"
@@ -271,8 +261,7 @@
          :display "Unknown"
          :definition "Unknown."}}})
 
-    (matcho/match
-      (get-in @ztx [:fhir/inter "Concept" "http:--hl7.org-fhir-administrative-gender-other"])
+    (match-inter ztx "Concept" "http:--hl7.org-fhir-administrative-gender-other"
       {:id         "http:--hl7.org-fhir-administrative-gender-other"
        :code       "other"
        :system     "http://hl7.org/fhir/administrative-gender"
@@ -295,23 +284,20 @@
         :zen.fhir/schema-ns  nil?}})
 
     (t/testing "hierarchy & property extract"
-      (matcho/match
-        (get-in @ztx [:fhir/inter "Concept" "http:--terminology.hl7.org-CodeSystem-v3-ActMood-EXPEC"])
+      (match-inter ztx "Concept" "http:--terminology.hl7.org-CodeSystem-v3-ActMood-EXPEC"
         {:code      "EXPEC"
          :system    "http://terminology.hl7.org/CodeSystem/v3-ActMood"
          :hierarchy ["_ActMoodPredicate" nil]
          :property  nil?})
 
-      (matcho/match
-        (get-in @ztx [:fhir/inter "Concept" "http:--terminology.hl7.org-CodeSystem-v3-ActMood-GOL.CRT"])
+      (match-inter ztx "Concept" "http:--terminology.hl7.org-CodeSystem-v3-ActMood-GOL.CRT"
         {:code      "GOL.CRT"
          :system    "http://terminology.hl7.org/CodeSystem/v3-ActMood"
          :hierarchy ["_ActMoodPredicate" "CRT" nil]
          :property  {"status" "retired"}})))
 
   (t/testing "value set contained concepts extract"
-    (matcho/match
-      (get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"])
+    (match-inter ztx "ValueSet" "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"
       {:url "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"
        :zen.fhir/package-ns 'hl7-fhir-us-mcode
        :zen.fhir/schema-ns 'hl7-fhir-us-mcode.value-set.mcode-cancer-staging-system-vs
@@ -330,14 +316,12 @@
 
   (t/testing "compose"
     (t/testing "include.system"
-      (matcho/match
-        (get-in @ztx [:fhir/inter "Concept" "http:--hl7.org-fhir-link-type-seealso"])
+      (match-inter ztx "Concept" "http:--hl7.org-fhir-link-type-seealso"
         {:id       "http:--hl7.org-fhir-link-type-seealso"
          :valueset #{"http://hl7.org/fhir/ValueSet/link-type"}}))
 
     (t/testing "include.concept"
-      (matcho/match
-        (get-in @ztx [:fhir/inter "Concept" "http:--terminology.hl7.org-CodeSystem-umls-C4683555"])
+      (match-inter ztx "Concept" "http:--terminology.hl7.org-CodeSystem-umls-C4683555"
         {:id       "http:--terminology.hl7.org-CodeSystem-umls-C4683555"
          :code     "C4683555"
          :display  "Ann Arbor Stage"
@@ -345,8 +329,7 @@
          :valueset #{"http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"}
          :zen.fhir/resource {:valueset ["http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"]}})
 
-      (matcho/match
-        (get-in @ztx [:fhir/inter "Concept" "http:--snomed.info-sct-444256004"])
+      (match-inter ztx "Concept" "http:--snomed.info-sct-444256004"
         {:id       "http:--snomed.info-sct-444256004"
          :code     "444256004"
          :display  string?
@@ -358,19 +341,15 @@
       #_(get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/practitioner-specialty"])
       #_(get-in @ztx [:fhir/inter "CodeSystem" "http://hl7.org/fhir/practitioner-specialty"])
 
-      (matcho/match
-        (get-in @ztx [:fhir/inter "Concept" "http:--hl7.org-fhir-practitioner-specialty-dietary"])
+      (match-inter ztx "Concept" "http:--hl7.org-fhir-practitioner-specialty-dietary"
         {:valueset #{"http://hl7.org/fhir/ValueSet/practitioner-specialty"
                      "http://hl7.org/fhir/ValueSet/use-context"}}))
 
-    (t/testing "include.filter" ;; TODO
+    (t/testing "include.filter"
       (t/testing "descendent-of"
         #_(get-in @ztx [:fhir/inter "ValueSet" "http://hl7.org/fhir/ValueSet/inactive"])
         #_(get-in @ztx [:fhir/inter "CodeSystem" "http://terminology.hl7.org/CodeSystem/v3-ActMood"])
-        (t/is (clojure.set/subset? ;; TODO, NOTE: should be clojure.core/=, not clojure.core/subset?, but codes
-                #{"CRT" "EXPEC" "GOL" "RSK" "OPT"}
-                (->> (get-in @ztx [:fhir/inter "Concept"])
-                     vals
-                     (filter #(contains? (:valueset %) "http://hl7.org/fhir/ValueSet/inactive"))
-                     (map :code)
-                     set)))))))
+
+        (doseq [code ["RSK" "GOL" "CRT" "OPT" "EXPEC" "EVN.CRT" "PRMS.CRT" "RQO.CRT" "RSK.CRT" "GOL.CRT" "INT.CRT"]]
+          (match-inter ztx "Concept" (str "http:--terminology.hl7.org-CodeSystem-v3-ActMood-" code)
+                       {:valueset #(contains? % "http://hl7.org/fhir/ValueSet/inactive")}))))))
