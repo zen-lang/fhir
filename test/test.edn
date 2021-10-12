@@ -12,5 +12,5 @@
            :kaocha.plugin/print-invocations
            :kaocha.plugin/profiling]
 
- :kaocha.plugin.randomize/randomize? true
+ :kaocha.plugin.randomize/randomize? false
  :kaocha.plugin.profiling/profiling? true}
