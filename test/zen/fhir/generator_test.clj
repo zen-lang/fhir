@@ -105,6 +105,14 @@
     (try
       (reset! ztx @(zen.core/new-context {}))
 
+      (do ;; 'nested-extension test fixtures
+        (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
+        (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
+        (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
+        (zen.fhir.core/load-definiton ztx nil {:url (:url practitioner-role-profile)} (assoc practitioner-role-profile :zen.fhir/package-ns "plannet"))
+        (zen.fhir.core/load-definiton ztx nil {:url (:url new-patients-extension)} (assoc new-patients-extension :zen.fhir/package-ns "plannet"))
+        (zen.fhir.core/load-definiton ztx nil {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet")))
+
       (zen.fhir.core/load-all ztx nil
                               {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
                                         "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}}})
@@ -350,7 +358,6 @@
     (t/is (.exists (io/file "test-temp-zrc/fhir-r4/Patient.edn")))
     (t/is (.exists (io/file "test-temp-zrc/us-core-v3/us-core-patient.edn"))))
 
-
   (t/testing "zen-npm-modules"
     (delete-directory-recursive (io/file "test-temp-zrc"))
 
@@ -471,21 +478,11 @@
 
 
 (t/deftest nested-extension
-  (def zctx (zen.core/new-context {}))
-
-  (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
-  (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
-  (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
-  (zen.fhir.core/load-definiton zctx nil {:url (:url practitioner-role-profile)} (assoc practitioner-role-profile :zen.fhir/package-ns "plannet"))
-  (zen.fhir.core/load-definiton zctx nil {:url (:url new-patients-extension)} (assoc new-patients-extension :zen.fhir/package-ns "plannet"))
-  (zen.fhir.core/load-definiton zctx nil {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet"))
-  (zen.fhir.core/load-all zctx "hl7.fhir.r4.core")
-
   (t/testing "Nested extensions correct namespaces & symbol links are created"
-    (t/is (= :done (sut/generate-zen-schemas zctx)))
+    (t/is (= :done (sut/generate-zen-schemas ztx)))
 
     (matcho/match
-     (-> (:fhir.zen/ns @zctx)
+     (-> (:fhir.zen/ns @ztx)
          (select-keys '[plannet.plannet-PractitionerRole
                         plannet.newpatients
                         plannet.plannet-FromNetwork-extension]))
@@ -500,7 +497,7 @@
        'import #(contains? % 'plannet.plannet-FromNetwork-extension)
 
        'schema {:require #{:acceptingPatients}
-                :keys {:acceptingPatients {:confirms #{'hl7-fhir-r4-core.CodeableConcept/schema}
+                :keys {:acceptingPatients {:confirms #{'fhir-r4.CodeableConcept/schema}
                                            :fhir/flags #{:MS}}
                        :fromnetwork {:confirms #{'plannet.plannet-FromNetwork-extension/schema}}}}}
 
@@ -509,25 +506,25 @@
 
        'schema {:zen/tags          #{'zen/schema 'zenbox/structure-schema}
                 :zen/desc          "A reference to a healthcare provider insurance network (plannet-Network) for which the entity is/isn’t accepting new patients. This is a component of the NewPatients extension."
-                :confirms          #{'hl7-fhir-r4-core.Reference/schema 'zenbox/Reference}
+                :confirms          #{'fhir-r4.Reference/schema 'zenbox/Reference}
                 :zenbox/type       "Reference"
                 :zenbox/profileUri "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"
                 :fhir/flags        #{:MS}}}}))
 
   (t/testing "Generated zen schemas are correct"
-    (swap! zctx assoc :memory-store (assoc (:fhir.zen/ns @zctx) 'zenbox zenbox))
+    (swap! ztx assoc :memory-store (assoc (:fhir.zen/ns @ztx) 'zenbox zenbox))
 
-    (zen.core/load-ns zctx (get (:fhir.zen/ns @zctx) 'plannet.plannet-PractitionerRole))
+    (zen.core/load-ns ztx (get (:fhir.zen/ns @ztx) 'plannet.plannet-PractitionerRole))
 
-    (t/is (empty? (:errors @zctx)))
+    (t/is (empty? (:errors @ztx)))
 
     (matcho/match
-     (zen.core/validate zctx '#{plannet.plannet-PractitionerRole/schema} {})
+     (zen.core/validate ztx '#{plannet.plannet-PractitionerRole/schema} {})
      {:errors empty?})
 
     (matcho/match
      (zen.core/validate
-      zctx '#{plannet.plannet-PractitionerRole/schema}
+      ztx '#{plannet.plannet-PractitionerRole/schema}
       {:newpatients
        [{:acceptingPatients {:coding [{:code "foo"}]
                              :text "foo"}
@@ -537,7 +534,7 @@
 
     (matcho/match
      (zen.core/validate
-      zctx '#{plannet.plannet-PractitionerRole/schema}
+      ztx '#{plannet.plannet-PractitionerRole/schema}
       {:newpatients
        {:acceptingPatients {:coding [{:code "foo"}]
                             :text "foo"}
