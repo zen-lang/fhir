@@ -347,81 +347,81 @@
 
 
 (t/deftest project-write
-  (t/testing "zen-schemas"
-    (delete-directory-recursive (io/file "test-temp-zrc"))
+  (def og-ztx @ztx)
 
-    (t/is (= :done (sut/spit-zen-schemas ztx "test-temp-zrc/")))
-
-    (t/is (.exists (io/file "test-temp-zrc/fhir-r4/Element.edn")))
-    (t/is (.exists (io/file "test-temp-zrc/fhir-r4/Resource.edn")))
-    (t/is (.exists (io/file "test-temp-zrc/fhir-r4/DomainResource.edn")))
-    (t/is (.exists (io/file "test-temp-zrc/fhir-r4/Patient.edn")))
-    (t/is (.exists (io/file "test-temp-zrc/us-core-v3/us-core-patient.edn"))))
+  (swap! ztx update :fhir.zen/ns select-keys ['fhir-r4 'fhir-r4.Element 'us-core-v3 'us-core-v3.us-core-patient])
 
   (t/testing "zen-npm-modules"
-    (delete-directory-recursive (io/file "test-temp-zrc"))
+    (t/testing "spit single module"
+      (delete-directory-recursive (io/file "test-temp-zrc"))
 
-    (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test" "fhir-r4")))
+      (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test" "fhir-r4")))
 
-    (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
-    (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/package.json"))
-               (let [package (-> "test-temp-zrc/node_modules/fhir-r4/package.json"
-                                 io/file
-                                 slurp
-                                 (json/parse-string keyword))]
-                 (matcho/match package
-                               {:name "@zen-lang/fhir-r4"
-                                :version "0.0.1-test"}))))
+      (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
+      (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/package.json"))
+                 (let [package (-> "test-temp-zrc/node_modules/fhir-r4/package.json"
+                                   io/file
+                                   slurp
+                                   (json/parse-string keyword))]
+                   (matcho/match package
+                                 {:name "@zen-lang/fhir-r4"
+                                  :version "0.0.1-test"}))))
 
-    (t/is (not (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn"))))
+      (t/is (not (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn")))))
 
-    (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test")))
+    (t/testing "spit all modules"
+      (delete-directory-recursive (io/file "test-temp-zrc"))
 
-    (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
-    (t/is (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn")))
-    (t/is (and (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/package.json"))
-               (let [package (-> "test-temp-zrc/node_modules/us-core-v3/package.json"
-                                 io/file
-                                 slurp
-                                 (json/parse-string))]
-                 (matcho/match package
-                               {"name" "@zen-lang/us-core-v3"
-                                "version" "0.0.1-test"
-                                "dependencies" {"@zen-lang/fhir-r4" "0.0.1-test"}}))))
+      (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test")))
 
-    (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz"))
-               (let [bundle (->> "test-temp-zrc/node_modules/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz"
-                                 (read-ndjson-bundle)
-                                 (group-by (juxt :resourceType :id)))]
-                 (matcho/match bundle
-                               {["ValueSet" "administrative-gender"]
-                                [{:url "http://hl7.org/fhir/ValueSet/administrative-gender"
-                                  :_source "zen.fhir"
-                                  :zen.fhir/header nil?
-                                  :zen.fhir/package nil?
-                                  :zen.fhir/package-ns nil?
-                                  :zen.fhir/schema-ns nil?}]
+      (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
+      (t/is (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn")))
+      (t/is (and (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/package.json"))
+                 (let [package (-> "test-temp-zrc/node_modules/us-core-v3/package.json"
+                                   io/file
+                                   slurp
+                                   (json/parse-string))]
+                   (matcho/match package
+                                 {"name" "@zen-lang/us-core-v3"
+                                  "version" "0.0.1-test"
+                                  "dependencies" {"@zen-lang/fhir-r4" "0.0.1-test"}}))))
 
-                                ["CodeSystem" "administrative-gender"]
-                                [{:url "http://hl7.org/fhir/administrative-gender"
-                                  :concept nil?
-                                  :_source "zen.fhir"
-                                  :zen.fhir/header nil?
-                                  :zen.fhir/package nil?
-                                  :zen.fhir/package-ns nil?
-                                  :zen.fhir/schema-ns nil?}]
+      (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz"))
+                 (let [bundle (->> "test-temp-zrc/node_modules/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz"
+                                   (read-ndjson-bundle)
+                                   (group-by (juxt :resourceType :id)))]
+                   (matcho/match bundle
+                                 {["ValueSet" "administrative-gender"]
+                                  [{:url "http://hl7.org/fhir/ValueSet/administrative-gender"
+                                    :_source "zen.fhir"
+                                    :zen.fhir/header nil?
+                                    :zen.fhir/package nil?
+                                    :zen.fhir/package-ns nil?
+                                    :zen.fhir/schema-ns nil?}]
 
-                                ["Concept" "http:--hl7.org-fhir-administrative-gender-other"]
-                                [{:code       "other"
-                                  :display    "Other"
-                                  :definition "Other."
-                                  :system     "http://hl7.org/fhir/administrative-gender"
-                                  :valueset   ["http://hl7.org/fhir/ValueSet/administrative-gender"]
-                                  :_source "zen.fhir"
-                                  :zen.fhir/header nil?
-                                  :zen.fhir/package nil?
-                                  :zen.fhir/package-ns nil?
-                                  :zen.fhir/schema-ns nil?}]}))))))
+                                  ["CodeSystem" "administrative-gender"]
+                                  [{:url "http://hl7.org/fhir/administrative-gender"
+                                    :concept nil?
+                                    :_source "zen.fhir"
+
+                                    :zen.fhir/header nil?
+                                    :zen.fhir/package nil?
+                                    :zen.fhir/package-ns nil?
+                                    :zen.fhir/schema-ns nil?}]
+
+                                  ["Concept" "http:--hl7.org-fhir-administrative-gender-other"]
+                                  [{:code       "other"
+                                    :display    "Other"
+                                    :definition "Other."
+                                    :system     "http://hl7.org/fhir/administrative-gender"
+                                    :valueset   ["http://hl7.org/fhir/ValueSet/administrative-gender"]
+                                    :_source "zen.fhir"
+                                    :zen.fhir/header nil?
+                                    :zen.fhir/package nil?
+                                    :zen.fhir/package-ns nil?
+                                    :zen.fhir/schema-ns nil?}]}))))))
+
+  (reset! ztx og-ztx))
 
 
 (t/deftest zen-validation
