@@ -119,11 +119,6 @@
 
       (sut/generate-zen-schemas ztx)
 
-      (when-not (and (.exists (clojure.java.io/file "test-temp-zrc/node_modules/fhir-r4"))
-                     (.exists (clojure.java.io/file "test-temp-zrc/node_modules/us-core-v3")))
-        (delete-directory-recursive (io/file "test-temp-zrc"))
-        (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test"))
-
       (catch Exception e
         (throw e))
       (finally (t)))))
@@ -349,7 +344,150 @@
 (t/deftest project-write
   (def og-ztx @ztx)
 
-  (swap! ztx update :fhir.zen/ns select-keys ['fhir-r4 'fhir-r4.Element 'us-core-v3 'us-core-v3.us-core-patient])
+  (def tested-nses '#{fhir-r4.Element us-core-v3.us-core-patient})
+
+  (def ns-deps '#{fhir-r4.Address
+                  fhir-r4.BackboneElement
+                  fhir-r4.CodeableConcept
+                  fhir-r4.ContactPoint
+                  fhir-r4.HumanName
+                  fhir-r4.Identifier
+                  fhir-r4.Patient
+                  fhir-r4.Period
+                  fhir-r4.code
+                  fhir-r4.date
+                  fhir-r4.string
+                  fhir-r4.uri
+                  fhir-r4.value-set.administrative-gender
+                  fhir-r4.value-set.contact-point-system
+                  fhir-r4.value-set.contact-point-use
+                  us-core-v3.us-core-birthsex
+                  us-core-v3.us-core-ethnicity
+                  us-core-v3.us-core-race
+                  us-core-v3.value-set.birthsex
+
+                  fhir-r4.Attachment
+                  fhir-r4.Coding
+                  fhir-r4.DomainResource
+                  fhir-r4.Extension
+                  fhir-r4.Organization
+                  fhir-r4.Practitioner
+                  fhir-r4.PractitionerRole
+                  fhir-r4.Reference
+                  fhir-r4.RelatedPerson
+                  fhir-r4.boolean
+                  fhir-r4.dateTime
+                  fhir-r4.integer
+                  fhir-r4.positiveInt
+                  fhir-r4.value-set.address-type
+                  fhir-r4.value-set.address-use
+                  fhir-r4.value-set.identifier-use
+                  fhir-r4.value-set.languages
+                  fhir-r4.value-set.link-type
+                  fhir-r4.value-set.name-use
+                  us-core-v3.value-set.detailed-ethnicity
+                  us-core-v3.value-set.detailed-race
+                  us-core-v3.value-set.omb-ethnicity-category
+                  us-core-v3.value-set.omb-race-category
+
+                  fhir-r4.Age
+                  fhir-r4.Annotation
+                  fhir-r4.ContactDetail
+                  fhir-r4.Contributor
+                  fhir-r4.Count
+                  fhir-r4.DataRequirement
+                  fhir-r4.Distance
+                  fhir-r4.Dosage
+                  fhir-r4.Duration
+                  fhir-r4.Endpoint
+                  fhir-r4.Expression
+                  fhir-r4.HealthcareService
+                  fhir-r4.Location
+                  fhir-r4.Meta
+                  fhir-r4.Money
+                  fhir-r4.Narrative
+                  fhir-r4.ParameterDefinition
+                  fhir-r4.Quantity
+                  fhir-r4.Range
+                  fhir-r4.Ratio
+                  fhir-r4.RelatedArtifact
+                  fhir-r4.Resource
+                  fhir-r4.SampledData
+                  fhir-r4.Signature
+                  fhir-r4.Timing
+                  fhir-r4.TriggerDefinition
+                  fhir-r4.UsageContext
+                  fhir-r4.base64Binary
+                  fhir-r4.canonical
+                  fhir-r4.decimal
+                  fhir-r4.id
+                  fhir-r4.instant
+                  fhir-r4.markdown
+                  fhir-r4.oid
+                  fhir-r4.time
+                  fhir-r4.unsignedInt
+                  fhir-r4.url
+                  fhir-r4.uuid
+                  fhir-r4.value-set.c80-practice-codes
+                  fhir-r4.value-set.days-of-week
+                  fhir-r4.value-set.mimetypes
+                  fhir-r4.value-set.relatedperson-relationshiptype
+
+                  fhir-r4.Device
+                  fhir-r4.Group
+                  fhir-r4.InsurancePlan
+                  fhir-r4.PlanDefinition
+                  fhir-r4.ResearchStudy
+                  fhir-r4.Schedule
+                  fhir-r4.SimpleQuantity
+                  fhir-r4.value-set.all-types
+                  fhir-r4.value-set.contributor-type
+                  fhir-r4.value-set.currencies
+                  fhir-r4.value-set.endpoint-status
+                  fhir-r4.value-set.event-timing
+                  fhir-r4.value-set.location-mode
+                  fhir-r4.value-set.location-status
+                  fhir-r4.value-set.narrative-status
+                  fhir-r4.value-set.operation-parameter-use
+                  fhir-r4.value-set.quantity-comparator
+                  fhir-r4.value-set.related-artifact-type
+                  fhir-r4.value-set.signature-type
+                  fhir-r4.value-set.sort-direction
+                  fhir-r4.value-set.timing-abbreviation
+                  fhir-r4.value-set.trigger-type
+                  fhir-r4.value-set.units-of-time
+                  fhir-r4.value-set.v2-0116
+                  fhir-r4.xhtml
+
+                  fhir-r4.DeviceDefinition
+                  fhir-r4.Medication
+                  fhir-r4.Substance
+                  fhir-r4.value-set.action-cardinality-behavior
+                  fhir-r4.value-set.action-condition-kind
+                  fhir-r4.value-set.action-grouping-behavior
+                  fhir-r4.value-set.action-participant-type
+                  fhir-r4.value-set.action-precheck-behavior
+                  fhir-r4.value-set.action-relationship-type
+                  fhir-r4.value-set.action-required-behavior
+                  fhir-r4.value-set.action-selection-behavior
+                  fhir-r4.value-set.device-nametype
+                  fhir-r4.value-set.device-status
+                  fhir-r4.value-set.goal-priority
+                  fhir-r4.value-set.group-type
+                  fhir-r4.value-set.insuranceplan-applicability
+                  fhir-r4.value-set.publication-status
+                  fhir-r4.value-set.request-priority
+                  fhir-r4.value-set.research-study-objective-type
+                  fhir-r4.value-set.research-study-status
+                  fhir-r4.value-set.udi-entry-type
+
+                  fhir-r4.ProdCharacteristic
+                  fhir-r4.ProductShelfLife
+                  fhir-r4.value-set.medication-status
+                  fhir-r4.value-set.substance-status})
+
+  (def _ (swap! ztx update :fhir.zen/ns select-keys
+                (into tested-nses ns-deps)))
 
   (t/testing "zen-npm-modules"
     (t/testing "spit single module"
@@ -421,45 +559,33 @@
                                     :zen.fhir/package-ns nil?
                                     :zen.fhir/schema-ns nil?}]}))))))
 
-  (reset! ztx og-ztx))
+  (t/testing "read zen npm modules"
+    (def zctx (zen.core/new-context
+                {:paths ["test-temp-zrc/"]
+                 :memory-store {'zenbox zenbox}}))
 
+    (def _ (zen.core/read-ns zctx 'us-core-v3.us-core-patient))
 
-(t/deftest zen-validation
-  (swap! ztx assoc
-         :paths ["test-temp-zrc/"]
-         :memory-store {'zenbox zenbox})
+    (t/is (empty? (:errors @zctx)))
+    #_(sort (distinct (map :missing-ns (filter (comp #(clojure.string/starts-with? % "No file for ns") :message)(:errors @zctx)))))
 
-  (zen.core/read-ns ztx 'us-core-v3.us-core-patient)
+    (t/is (every? #(contains? (:ns @zctx) %)
+                  ['us-core-v3.us-core-patient
+                   'fhir-r4.Patient])))
 
-  #_(zen.core/get-symbol ztx 'us-core-v3.us-core-patient/schema)
+  (def _ (reset! ztx og-ztx))
 
-  (t/is (empty? (:errors @ztx)))
-
-  (t/is (every? #(contains? (:ns @ztx) %)
-                ['us-core-v3.us-core-patient
-                 'fhir-r4.Patient]))
-
-  (t/is (empty? (:errors (zen.core/validate ztx '#{fhir-r4.Patient/schema} {}))))
-
-  (def fhir-pat (read-string (slurp (io/resource "zen/fhir/aidbox-fhir-r4-patient-example.edn"))))
-
-  (t/is (empty? (:errors (zen.core/validate ztx '#{fhir-r4.Patient/schema} fhir-pat))))
-
-  (matcho/match
-    (:errors (zen.core/validate ztx '#{us-core-v3.us-core-patient/schema} {}))
-    [{:path [:name], :type "require"}
-     {:path [:identifier], :type "require"}
-     {:path [:gender], :type "require"}
-     nil]))
+  :done)
 
 
 (t/deftest zen-schemas-validation
-  (swap! ztx assoc :memory-store
-         (assoc (:fhir.zen/ns @ztx)
-                'zenbox zenbox))
+  (def zctx (zen.core/new-context
+              {:memory-store
+               (assoc (:fhir.zen/ns @ztx)
+                      'zenbox zenbox)}))
 
   (run! (fn [zen-ns]
-          (zen.core/load-ns ztx (get-in @ztx [:memory-store zen-ns])))
+          (zen.core/load-ns zctx (get-in @zctx [:memory-store zen-ns])))
         '#{fhir-r4
            us-core-v3
            hl7-fhir-us-carin-bb
@@ -469,12 +595,29 @@
            hl7-fhir-us-davinci-pdex-plan-net
            hl7-fhir-us-mcode})
 
-  (t/is (->> (:errors @ztx)
+  (t/is (->> (:errors @zctx)
              (remove ;; FIXME
                #{{:message "Invalid token: :",
                   :file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/familymemberhistory-genetic.edn",
                   :ns 'fhir-r4.familymemberhistory-genetic}})
-             empty?)))
+             empty?))
+
+  (t/is (every? #(contains? (:ns @zctx) %)
+                ['us-core-v3.us-core-patient
+                 'fhir-r4.Patient]))
+
+  (t/is (empty? (:errors (zen.core/validate zctx '#{fhir-r4.Patient/schema} {}))))
+
+  (def fhir-pat (read-string (slurp (io/resource "zen/fhir/aidbox-fhir-r4-patient-example.edn"))))
+
+  (t/is (empty? (:errors (zen.core/validate zctx '#{fhir-r4.Patient/schema} fhir-pat))))
+
+  (matcho/match
+    (:errors (zen.core/validate zctx '#{us-core-v3.us-core-patient/schema} {}))
+    [{:path [:name], :type "require"}
+     {:path [:identifier], :type "require"}
+     {:path [:gender], :type "require"}
+     nil]))
 
 
 (t/deftest nested-extension
