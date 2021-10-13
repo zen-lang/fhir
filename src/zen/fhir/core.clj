@@ -422,7 +422,7 @@
 
 
 (defn load-json-file [ztx package header f & [{:keys [params]}]]
-  (let [res (-> (cheshire.core/parse-string (slurp f) keyword)
+  (let [res (-> (cheshire.core/parse-string (str/replace (slurp f) \ufeff \space) keyword)
                 (assoc :zen.fhir/header header :zen.fhir/package package :zen.fhir/file (.getPath f))
                 (merge
                   {:zen.fhir/package-ns (some-> package :name (str/replace #"\." "-") symbol)
