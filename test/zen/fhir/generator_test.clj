@@ -115,11 +115,11 @@
 
       (zen.fhir.core/load-all ztx nil
                               {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
-                                        "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}
-                                        :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
-                                                                 "http://hl7.org/fhir/us/core/ValueSet/birthsex"
-                                                                 "http://hl7.org/fhir/ValueSet/c80-practice-codes"
-                                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"}}}})
+                                        "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}}
+                               :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
+                                                        "http://hl7.org/fhir/us/core/ValueSet/birthsex"
+                                                        "http://hl7.org/fhir/ValueSet/c80-practice-codes"
+                                                        "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"}}})
 
       (sut/generate-zen-schemas ztx)
 

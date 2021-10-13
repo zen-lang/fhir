@@ -43,7 +43,7 @@
       (sut/load-definiton ztx nil {:url (:url new-patients-extension)} new-patients-extension)
       (sut/load-definiton ztx nil {:url (:url from-network-extension)} from-network-extension))
 
-    (sut/load-all ztx "hl7.fhir.r4.core" {:params {:whitelist deps}})
+    (sut/load-all ztx "hl7.fhir.r4.core" {:whitelist deps})
 
     (t)))
 

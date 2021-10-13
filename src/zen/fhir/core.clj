@@ -698,8 +698,7 @@
        (not (str/starts-with? (.getName file) "."))))
 
 
-(defn load-all [ztx package & [{:keys [params node-modules-folder]
-                                {:keys [whitelist]} :params
+(defn load-all [ztx package & [{:keys [params node-modules-folder whitelist]
                                 :or {node-modules-folder "node_modules"}}]]
   (doseq [pkg-dir (->> [(io/file node-modules-folder)
                         (io/file (str node-modules-folder "/node_modules"))]
