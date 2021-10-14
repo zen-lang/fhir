@@ -49,5 +49,6 @@ jobs:
         uses: google-github-actions/upload-cloud-storage@main
         with:
           credentials: ${{ secrets.GCP_CREDENTIALS }}
+          path: './'
           glob: '*.zip'
           destination: hs-zen-terminologies/
