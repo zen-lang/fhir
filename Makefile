@@ -21,3 +21,6 @@ zen-profiles:
 
 build-stanadlone-projects:
 	clojure -M -m zen.fhir.tooling.aidbox-standalone $(node_modules) $(zrc)
+
+build-terminology-bundles:
+	clojure -M -m zen.fhir.tooling.terminology

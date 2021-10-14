@@ -6,8 +6,8 @@
 
 
 (def token-endpoint "https://icdaccessmanagement.who.int/connect/token")
-(def client-id "")
-(def client-secret "")
+(def client-id (System/getenv "ICD_10_CLIENT_ID"))
+(def client-secret (System/getenv "ICD_10_CLIENT_SECRET"))
 (def scope "icdapi_access")
 (def grant-type "client_credentials")
 (def base-uri "https://id.who.int/")
@@ -92,13 +92,14 @@
 (def code-system
   {:resourceType "CodeSystem"
    :id           "icd-10"
-   :url          "ICD-10"
+   :url          "http://hl7.org/fhir/sid/icd-10"
    :date         "2019"
    :description  "International Classification of Diseases"
    :content      "complete"
    :name         "ICD-10-CM"
    :status       "active"
    :version      "2019"
+   :valueSet     "http://hl7.org/fhir/ValueSet/icd-10"
    :_source      "zen.fhir"})
 
 
@@ -107,10 +108,10 @@
    :id           "icd-10",
    :description  "This value set includes all ICD-10 codes.",
    :version      "0.0.1"
-   :compose      {:include [{:system "ICD-10"}]}
+   :compose      {:include [{:system "http://hl7.org/fhir/sid/icd-10"}]}
    :date         "2019-01-01",
-   :name         "ICD-10",
-   :url          "icd-10"
+   :name         "ICD-10Codes",
+   :url          "http://hl7.org/fhir/ValueSet/icd-10"
    :status       "active"
    :_source      "zen.fhir"})
 
@@ -120,22 +121,22 @@
   (.write w "\n"))
 
 
-(defn write-ndjson-gz-bundle [target]
-  (let [all-icd-codes (get-all-codes [] [] (get-icd-10-latest-release-uri))
+(defn write-ndjson-gz-zip-bundle [target]
+  (let [all-icd-codes (get-all-codes [] [] (get-icd-10-latest-release-uri) )
         concepts      (preprocess-concepts value-set all-icd-codes)]
-    (with-open [w (-> target
-                      clojure.java.io/file
-                      clojure.java.io/output-stream
-                      (java.util.zip.GZIPOutputStream. true)
-                      (java.io.OutputStreamWriter.)
-                      (java.io.BufferedWriter.))]
-      (write-line w code-system)
-      (write-line w value-set)
-      (doseq [c concepts]
-        (write-line w c)))))
+    (with-open [zip (-> target
+                        clojure.java.io/file
+                        clojure.java.io/output-stream
+                        (java.util.zip.ZipOutputStream.))]
+      (let [entry (-> "icd-10-terminology-bundle.ndjson.gz"
+                      (java.util.zip.ZipEntry.))]
+        (.putNextEntry zip entry)
+        (with-open [gzip (-> zip
+                             (java.util.zip.GZIPOutputStream. true)
+                             (java.io.OutputStreamWriter.)
+                             (java.io.BufferedWriter.))]
 
-(comment
-
-  (time (write-ndjson-gz-bundle "/tmp/icd-10-terminology-bundle.ndjson.gz"))
-
-  )
+          (write-line gzip code-system)
+          (write-line gzip value-set)
+          (doseq [c concepts]
+            (write-line gzip c)))))))

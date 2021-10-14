@@ -5,13 +5,8 @@
             [cheshire.core :as json]))
 
 
-;;;; !!!! NOTE TODO FIXME !!!!
-;;;; THIS IS AN INCOMPLETE IMPLEMENTATION
-
-
-;; FIXME: use env
-(def login "")
-(def pass "")
+(def login (System/getenv "LOINC_LOGIN"))
+(def pass (System/getenv "LOINC_PASSWORD"))
 
 
 (defn fix-codesystem
@@ -97,23 +92,23 @@
   (.write w "\n"))
 
 
-(defn write-ndjson-gz-bundle [target]
+(defn write-ndjson-gz-zip-bundle [target]
   (let [codesystem (preprocess-codesystem (get-loinc-codesystem))
         valueset (preprocess-valueset (get-loinc-valueset codesystem))
-        concept  (preprocess-concepts valueset (get-loinc-concepts codesystem))]
-    (with-open [w (-> target
-                      clojure.java.io/file
-                      clojure.java.io/output-stream
-                      (java.util.zip.GZIPOutputStream. true)
-                      (java.io.OutputStreamWriter.)
-                      (java.io.BufferedWriter.))]
-      (write-line w codesystem)
-      (write-line w valueset)
-      (doseq [c concept]
-        (write-line w c)))))
+        concepts  (preprocess-concepts valueset (get-loinc-concepts codesystem))]
+    (with-open [zip (-> target
+                        clojure.java.io/file
+                        clojure.java.io/output-stream
+                        (java.util.zip.ZipOutputStream.))]
+      (let [entry (-> "loinc-terminology-bundle.ndjson.gz"
+                      (java.util.zip.ZipEntry.))]
+        (.putNextEntry zip entry)
+        (with-open [gzip (-> zip
+                             (java.util.zip.GZIPOutputStream. true)
+                             (java.io.OutputStreamWriter.)
+                             (java.io.BufferedWriter.))]
 
-(comment
-
-  (time (write-ndjson-gz-bundle "/tmp/loinc-terminology-bundle.ndjson.gz"))
-
-  )
+          (write-line gzip codesystem)
+          (write-line gzip valueset)
+          (doseq [c concepts]
+            (write-line gzip c)))))))
