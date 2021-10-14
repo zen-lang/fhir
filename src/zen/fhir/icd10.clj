@@ -73,26 +73,20 @@
       :else codes)))
 
 
-(defn preprocess-concept [vs concept]
+(defn preprocess-concept [vs cs concept]
   (-> concept
       (assoc
        :_source "zen.fhir"
        :valueset [(:url vs)]
-       :system (:url vs)
-       :id (str/replace (str (:url vs) "/" (:code concept)) "/" "-")
-       :resourceType "Concept")
-      (update :hierarchy
-              #(mapv (fn [code]
-                       (str/replace (str (:url vs) "/" code) "/" "-"))
-                     %))))
+       :system (:url cs)
+       :id (str/replace (str (:url cs) "/" (:code concept)) "/" "-")
+       :resourceType "Concept")))
 
-(defn preprocess-concepts [vs concepts]
-  (pmap (partial preprocess-concept vs) concepts))
+(defn preprocess-concepts [vs cs concepts]
+  (pmap (partial preprocess-concept vs cs) concepts))
 
 (def code-system
-  {:resourceType "CodeSystem"
-   :id           "icd-10"
-   :url          "http://hl7.org/fhir/sid/icd-10"
+  {:resourceType "CodeSystem" :id           "icd-10" :url          "http://hl7.org/fhir/sid/icd-10"
    :date         "2019"
    :description  "International Classification of Diseases"
    :content      "complete"
@@ -123,7 +117,7 @@
 
 (defn write-ndjson-gz-zip-bundle [target]
   (let [all-icd-codes (get-all-codes [] [] (get-icd-10-latest-release-uri) )
-        concepts      (preprocess-concepts value-set all-icd-codes)]
+        concepts      (preprocess-concepts value-set code-system all-icd-codes)]
     (with-open [zip (-> target
                         clojure.java.io/file
                         clojure.java.io/output-stream
@@ -140,3 +134,12 @@
           (write-line gzip value-set)
           (doseq [c concepts]
             (write-line gzip c)))))))
+
+(comment
+
+  (-> (http/get "http://id.who.int/icd/release/10/2019/A00.9" request-headers)
+      deref
+      :body
+      (json/parse-string keyword))
+
+  )
