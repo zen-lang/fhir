@@ -36,9 +36,9 @@ jobs:
         run: make build-terminology-bundles
         env:
           ICD_10_CLIENT_ID: ${{ secrets.ICD_10_CLIENT_ID }}
-          ICD_10_CLIENT_SECRET: ${{ secret.ICD_10_CLIENT_SECRET }}
-          LOINC_LOGIN: ${{ secret.LOINC_LOGIN }}
-          LOINC_PASSWORD: ${{ secret.LOINC_PASSWORD }}
+          ICD_10_CLIENT_SECRET: ${{ secrets.ICD_10_CLIENT_SECRET }}
+          LOINC_LOGIN: ${{ secrets.LOINC_LOGIN }}
+          LOINC_PASSWORD: ${{ secrets.LOINC_PASSWORD }}
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
