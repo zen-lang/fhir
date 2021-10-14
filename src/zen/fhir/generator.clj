@@ -322,12 +322,19 @@
     :done))
 
 
+(defn collect-packages ;; TODO: Shouldn't be a function, result should be stored in ztx
+  "Finds all zen packages in ztx"
+  [ztx]
+  (->> (vals (:fhir/inter @ztx))
+       (mapcat vals)
+       (keep #(some-> % :zen.fhir/package-ns name))
+       set))
+
+
 (defn spit-zen-npm-modules [ztx zrc-node-modules-dir ver & [package-name]]
-  (let [packages (-> (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
-                          vals
-                          (map (comp name :zen.fhir/package-ns))
-                          distinct)
-                     (cond->> (some? package-name) (filter #{(name package-name)})))
+  (let [packages (cond->> (collect-packages ztx)
+                   (some? package-name)
+                   (filter #{(name package-name)}))
         packages-deps (packages-deps-nses (:fhir/inter @ztx))]
     (doseq [package packages
             :let [package-dir (str zrc-node-modules-dir \/ package \/)
