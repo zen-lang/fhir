@@ -139,6 +139,19 @@
   (some (into {} (map (juxt code identity) coll))
         values))
 
+(defn sanitize-obj [obj]
+  (cond
+    (map? obj) (let [res (reduce (fn [acc [k v]]
+                                   (let [v' (sanitize-obj v)]
+                                     (if-not (nil? v') (assoc acc k v') acc)))
+                                 {} obj)]
+                 (if (empty? res) nil res))
+
+    (sequential? obj) (let [res (->> obj (mapv sanitize-obj) (filterv #(not (nil? %))))]
+                        (if (empty? res) nil res))
+
+    (string? obj)     (if (str/blank? obj) nil obj)
+    :else  obj))
 
 (defn disj-key [m k v]
   (dissoc-when empty? (update m k disj v) k))
