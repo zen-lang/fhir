@@ -13,6 +13,10 @@ repl:
 test:
 	clojure -M:test:kaocha
 
+init-r3:
+	cd r3 && npm --registry=https://packages.simplifier.net install
+	cd r3 && npm --registry=https://packages.simplifier.net install
+
 build:
 	clojure -X:build all
 
