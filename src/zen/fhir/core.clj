@@ -137,7 +137,7 @@
               (utils/poly-get :value))
       code))
 
-(defn normalize-polymorphic [el]
+(defn normalize-polymorphic [el & [stu3?]]
   (if (str/ends-with? (str (or (:path el) (:id el))) "[x]")
     (-> (assoc el :polymorphic true)
         (dissoc :type)
@@ -149,13 +149,30 @@
         (assoc :types (->> (:type el) (map :code) (into #{}))))
     (if-not (:type el)
       el
-      (if (= 1 (count (:type el)))
+      (cond
+        stu3?
+        ;; In STU3 type is an array of entries each of which can contain
+        ;; a `profile` or a `targetProfile` (or both).
+        ;; In R4 each type can contain an array of `profile`s
+        ;; or an array or `targetProfile`-s (or both)
+        (let [profiles (mapv :profile (:type el))
+              target-profiles (mapv :targetProfile (:type el))
+              type' (-> (first (:type el))
+                        (assoc :profile profiles
+                               :targetProfile target-profiles)
+                        (utils/sanitize-obj))
+              el' (assoc el :type [type'])]
+          (normalize-polymorphic el'))
+
+        (= 1 (count (:type el)))
         (let [tp  (first (:type el))
               tpc (get-type-code tp)]
           (-> el
               (reference-profiles)
               (extension-profiles)
               (assoc :type tpc)))
+
+        :else ;; NOTE: allowed by FHIR but not implemented.
         (throw (Exception. (pr-str el)))))))
 
 
@@ -230,14 +247,14 @@
         (cond->
             (not (empty? flags)) (assoc :fhir/flags flags)))))
 
-(defn normalize-element [x]
+(defn normalize-element [x & [stu3?]]
   (-> (dissoc x
               :mapping :constraint :extension :comment :comments :requirements :definition :alias
               :meaningWhenMissing :isModifierReason)
       (normalize-binding)
       (normalize-require)
       (normalize-arity)
-      (normalize-polymorphic)
+      (normalize-polymorphic stu3?)
       (normalize-content-ref)
       (normalize-flags)))
 
@@ -302,16 +319,17 @@
 
 
 (defn load-intermidiate [res]
-  (->> (get-in res [:differential :element])
-       (mapv normalize-element)
-       (group-elements (select-keys res [:kind :abstract :derivation
-                                         :baseDefinition :description :fhirVersion :type :url]))
-       (normalize-description)
-       (normalize-extension)
-       (merge
-         (when-let [package-ns (:zen.fhir/package-ns res)]
-           {:zen.fhir/package-ns package-ns
-            :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))}))))
+  (let [stu3? (str/starts-with? (:fhirVersion res) "3")]
+    (->> (get-in res [:differential :element])
+         (mapv #(normalize-element % stu3?))
+         (group-elements (select-keys res [:kind :abstract :derivation
+                                           :baseDefinition :description :fhirVersion :type :url]))
+         (normalize-description)
+         (normalize-extension)
+         (merge
+          (when-let [package-ns (:zen.fhir/package-ns res)]
+            {:zen.fhir/package-ns package-ns
+             :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))})))))
 
 
 (defmulti process-on-load
