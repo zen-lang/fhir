@@ -698,7 +698,7 @@
        (not (str/starts-with? (.getName file) "."))))
 
 
-(defn load-all [ztx package & [{:keys [params node-modules-folder whitelist]
+(defn load-all [ztx package & [{:keys [params node-modules-folder whitelist blacklist]
                                 :or {node-modules-folder "node_modules"}}]]
   (doseq [pkg-dir (->> [(io/file node-modules-folder)
                         (io/file (str node-modules-folder "/node_modules"))]
@@ -713,9 +713,13 @@
                    index   (read-json (str (.getPath pkg-dir) "/.index.json"))
                    package-params (get params (:name package))]
           header (:files index)
-          :let   [rt-whitelist (get whitelist (:resourceType header))]
-          :when  (or (nil? rt-whitelist)
-                     (contains? rt-whitelist (:url header)))]
+          :let   [rt-whitelist (get whitelist (:resourceType header))
+                  rt-blacklist (get blacklist (:resourceType header))]
+          :when  (and
+                  (or (nil? rt-blacklist)
+                      (not (contains? rt-blacklist (:url header))))
+                  (or (nil? rt-whitelist)
+                      (contains? rt-whitelist (:url header))))]
     (load-json-file ztx package header
                     (io/file (str (.getPath pkg-dir) "/" (:filename header)))
                     {:params package-params}))
