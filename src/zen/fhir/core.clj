@@ -319,7 +319,7 @@
 
 
 (defn load-intermidiate [res]
-  (let [stu3? (str/starts-with? (:fhirVersion res) "3")]
+  (let [stu3? ((fnil str/starts-with? "") (:fhirVersion res) "3")]
     (->> (get-in res [:differential :element])
          (mapv #(normalize-element % stu3?))
          (group-elements (select-keys res [:kind :abstract :derivation
