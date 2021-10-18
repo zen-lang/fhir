@@ -141,7 +141,7 @@
   (if (str/ends-with? (str (or (:path el) (:id el))) "[x]")
     (-> (assoc el :polymorphic true)
         (dissoc :type)
-        (assoc :| (->> (:type el)
+        #_(assoc :| (->> (:type el)
                          (reduce (fn [acc {c :code :as tp}]
                                    (assoc acc (keyword c) (-> (reference-profiles {:type [tp]})
                                                               (assoc :type (get-type-code tp)))))
@@ -272,8 +272,12 @@
                :fhir/extension (get-in res [:| :url :fixedUri])
                :| (->> (get-in res [:| :extension :slicing :slices])
                            (reduce (fn [acc [k v]]
-                                     (assert (= (name k) (:sliceName v)) (pr-str :slice-name k (:sliceName v)))
-                                     (assoc acc k (*normalize-extension ext (dissoc v :sliceName))))
+                                     (assert (= (str/lower-case (name k))
+                                                (str/lower-case (:sliceName v)))
+                                             ;; According to FHIR specification id after ':' is sliceName
+                                             ;; In STU3 some ids are lower case (maybe in R4 too, don't know)
+                                             (pr-str :slice-name k (:sliceName v)))
+                                     (assoc acc (keyword (:sliceName v)) (*normalize-extension ext (dissoc v :sliceName))))
                                    {})))
         (dissoc :fhir-poly-keys))
 
@@ -291,16 +295,16 @@
       (dissoc res :| :fhir-poly-keys :baseDefinition :minItems :maxItems)
       (dissoc (get-in res [:| :value]) :fhir-poly-keys))
 
-    (and (get-in res [:| :value]) ;; has value[x], but no types in it
-         (empty? (get-in res [:| :value :types])))
-    (assert false (pr-str :no-types res))
-
     (= 1 (count (dissoc (:| res) :url :extension))) ;; extension with a single value
     (let [value (first (vals (dissoc (:| res) :url :extension)))]
       (merge (dissoc res :| :fhir-poly-keys :baseDefinition) ;; baseDefinition here is http://.../Extension, thus dissoc
              (dissoc value :minItems :maxItems :required :polymorphic)
              {:kind "first-class-extension"
               :baseDefinition (str "http://hl7.org/fhir/StructureDefinition/" (:type value))})) ;; making correct baseDefinition
+
+    (and (get-in res [:| :value]) ;; has value[x], but no types in it
+         (empty? (get-in res [:| :value :types])))
+    (assert false (pr-str :no-types res))
 
     (and (= "Extension" (:type res)) ;; nested extension
          (contains? res :fhir/extension)
