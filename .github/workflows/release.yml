@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Install jq
+        run: sudo apt-get install jq -y
+
       - name: Set tag env
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
@@ -40,7 +43,7 @@ jobs:
         run: make build-stanadlone-projects node_modules="node_modules/" zrc="zrc/standalone_projects/"
 
       - name: Build standalone for Nictiz
-        run: make build-stanadlone-projects node_modules="r3/node_modules/" zrc="zrc/standalone_projects/"
+        run: make build-stanadlone-projects-nictiz node_modules="r3/node_modules/" zrc="zrc/standalone_projects/"
 
       - name: Build terminologies
         run: make build-terminology-bundles
