@@ -45,7 +45,7 @@ jobs:
         name: Generate npm Zen packages
 
       - name: Genrate npm Zen packages for Nictiz
-        run: make zen-profiles-nictiz node_mmodules="r3/node_modules/" zrc="r3/zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
+        run: make zen-profiles-nictiz node_modules="r3/node_modules/" zrc="r3/zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
 
       - run:
           for folder in $(ls -d zrc/node_modules/*); do npm publish $folder --access=public; done
