@@ -1,4 +1,4 @@
-(ns zen.fhir.tooling.aidbox-standalone-nictix
+(ns zen.fhir.tooling.aidbox-standalone-nictiz
   (:gen-class)
   (:require [zen.core :as zen-core]
             [zen.fhir.nictiz :refer [load-all]]
