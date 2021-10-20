@@ -6,7 +6,8 @@ on:
       - "*"
 
 jobs:
-  build:
+  build-r4:
+    name: Generate FHIR R4 profiles
     runs-on: ubuntu-latest
 
     steps:
@@ -35,23 +36,30 @@ jobs:
       - run: make init
         name: Install npm FHIR packages
 
-      - run: make init-r3
-        name: Install npm Nictiz-R3 packages
-
-      - name: Generate .index.json for Nictiz
-        run: 'cd r3/node_modules/nictiz.fhir.nl.stu3.zib2017 && bash ../../generate.sh'
-
       - run: make zen-profiles node_modules="node_modules/" zrc="zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
         name: Generate npm Zen packages
-
-      - name: Genrate npm Zen packages for Nictiz
-        run: make zen-profiles-nictiz node_modules="r3/node_modules/" zrc="r3/zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
 
       - run:
           for folder in $(ls -d zrc/node_modules/*); do npm publish $folder --access=public; done
         name: Publish npm Zen packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  build-r3:
+    name: Generate FHIR R3 profiles
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install jq
+        run: sudo apt-get install jq -y
+
+      - run: make init-r3
+        name: Install npm Nictiz-R3 packages
+
+      - name: Generate .index.json for Nictiz
+        run: 'cd r3/node_modules/nictiz.fhir.nl.stu3.zib2017 && bash ../../generate.sh'
+
+      - name: Genrate npm Zen packages for Nictiz
+        run: make zen-profiles-nictiz node_modules="r3/node_modules/" zrc="r3/zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
 
       - run:
           for folder in $(ls -d r3/zrc/node_modules/*); do npm publish $folder --access=public; done
