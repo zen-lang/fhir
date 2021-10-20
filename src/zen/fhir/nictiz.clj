@@ -3,8 +3,20 @@
             [clojure.java.io :as io]
             [clojure.string :as str]))
 
+(def blacklist
+  {"StructureDefinition"
+   #{"http://hl7.org/fhir/StructureDefinition/allergyintolerance-substanceExposureRisk"
+     "http://hl7.org/fhir/StructureDefinition/cqif-measureInfo"
+     "http://hl7.org/fhir/StructureDefinition/cqif-questionnaire"
+     "http://hl7.org/fhir/StructureDefinition/diagnosticreport-genetics"
+     "http://hl7.org/fhir/StructureDefinition/elementdefinition-de"
+     "http://hl7.org/fhir/StructureDefinition/familymemberhistory-genetic"
+     "http://hl7.org/fhir/StructureDefinition/observation-genetics"
+     "http://hl7.org/fhir/StructureDefinition/patient-clinicalTrial"
+     "http://hl7.org/fhir/StructureDefinition/procedurerequest-genetics"
+     "http://hl7.org/fhir/StructureDefinition/procedurerequest-geneticsItem"}})
 
-(defn load-all [ztx package & [{:keys [params node-modules-folder whitelist blacklist]
+(defn load-all [ztx package & [{:keys [params node-modules-folder whitelist]
                                 :or {node-modules-folder "node_modules"}}]]
   (doseq [pkg-dir (->> [(io/file node-modules-folder)
                         (io/file (str node-modules-folder "/node_modules"))]
@@ -26,21 +38,10 @@
                       (not (contains? rt-blacklist (:url header))))
                   (or (nil? rt-whitelist)
                       (contains? rt-whitelist (:url header))))]
-    (prn :file (str (.getPath pkg-dir) "/" (:filename header)))
     (c/load-json-file ztx package header
                       (io/file (str (.getPath pkg-dir) "/" (:filename header)))
                       {:params package-params}))
   (c/preprocess-resources ztx)
-#_  (get-in @ztx [:fhir/inter
-                "StructureDefinition"
-                "http://nictiz.nl/fhir/StructureDefinition/zib-NutritionAdvice"
-                :|
-                :orderer
-                :|
-                :extension
-                :slicing
-                :slices])
-
   (swap! ztx assoc-in [:fhir/inter
                        "StructureDefinition"
                        "http://nictiz.nl/fhir/StructureDefinition/zib-NutritionAdvice"
@@ -56,17 +57,5 @@
            :maxItems 1,
            :fhir/extension
            "http://nictiz.nl/fhir/StructureDefinition/practitionerrole-reference"}})
-
- #_ (get-in @ztx [:fhir/inter
-                "StructureDefinition"
-                "http://nictiz.nl/fhir/StructureDefinition/zib-NutritionAdvice"
-#_#_#_#_#_#_                :|
-                :orderer
-                :|
-                :extension
-                :slicing
-                :slices])
-
-#_  (c/preprocess-resources ztx)
   (c/process-resources ztx)
   :done)
