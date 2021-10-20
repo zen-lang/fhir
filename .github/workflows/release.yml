@@ -30,8 +30,18 @@ jobs:
       - run: make init
         name: Install npm FHIR packages
 
+      - run: make init-r3
+        name: Install npm Nictiz-R3 packages
+
+      - name: generate .index.json for nictiz
+        run: 'cd r3/node_modules/nictiz.fhir.nl.stu3.zib2017 && bash ../../generate.sh'
+
       - name: Build standalone projects
         run: make build-stanadlone-projects node_modules="node_modules/" zrc="zrc/standalone_projects/"
+
+      - name: Build standalone for Nictiz
+        run: make build-stanadlone-projects node_modules="r3/node_modules/" zrc="zrc/standalone_projects/"
+
       - name: Build terminologies
         run: make build-terminology-bundles
         env:
