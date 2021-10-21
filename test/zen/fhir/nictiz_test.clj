@@ -35,9 +35,6 @@
 
 
   (t/testing "primitive type extensions"
-    (t/testing "primitive type not overriden"
-      (t/is (not (contains? (get-in @ztx [:fhir.zen/ns 'nictiz-fhir-nl-stu3-zib2017.nl-core-humanname 'schema :keys])
-                            :family))))
     (t/testing "extension with underscore is created"
       (t/is (contains? (get-in @ztx [:fhir.zen/ns 'nictiz-fhir-nl-stu3-zib2017.nl-core-humanname 'schema :keys])
                        :_family))))

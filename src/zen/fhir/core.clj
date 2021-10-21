@@ -8,6 +8,8 @@
             [zen.fhir.utils :as utils]
             [com.rpl.specter :as sp]))
 
+(def fhir-primitive-types #{"base64Binary" "boolean" "canonical" "code" "date" "dateTime" "decimal" "id" "instant" "integer" "markdown" "oid" "positiveInt" "string" "time" "unsignedInt" "uri" "url" "uuid"})
+
 
 (def poly-id-terminator "[x]")
 
@@ -515,6 +517,10 @@
                  (assoc acc ext-k (dissoc ext-el :type :sliceName)))
                acc)))
 
+(defn fhir-primitive? [el base-els]
+  (or (fhir-primitive-types (:type el))
+      (some #(fhir-primitive-types (:type %)) base-els)))
+
 
 (defn enrich-element [ctx el base-els]
   ;; TODO: if vector do min/max items
@@ -529,12 +535,14 @@
                  (->> base-els
                       (filter (fn [{tp :type}] (and (not (nil? tp))
                                                     (not (= "Element" tp)))))
-                      (some :type)))]
+                      (some :type)))
+          primitive? (fhir-primitive? el base-els)]
       (cond-> el
         v?            (assoc :vector true)
         (not v?)      (dissoc :minItems :maxItems)
         tp            (assoc :type tp)
-        (seq (:| el)) (update :| (partial reduce make-first-class-extensions {}))))))
+        (seq (:| el)) (update :| (partial reduce make-first-class-extensions {}))
+        primitive?    (assoc :fhir/primitive true)))))
 
 
 (defn search-base-elements [ztx k el bases]
@@ -563,6 +571,11 @@
       search-result
       (find-poly-base-el ztx el-key element bases))))
 
+(defn primitive-extension-name [primitive-type]
+  (keyword (str "_" (name primitive-type))))
+
+(defn primitive->extension [primitive]
+  (dissoc primitive :fhir/primitive :type))
 
 (defn walk-with-bases [ztx ctx subj bases]
   (letfn [(walk-with-bases-recursive [acc [k el]]
@@ -575,7 +588,12 @@
               (when (and (not= "specialization" (:derivation ctx))
                          (empty? base-elements))
                 (println :WARN :no-base (conj (:path ctx) k) el))
-              (assoc acc el-key (walk-with-bases ztx new-ctx element base-elements))))]
+              (let [walked (walk-with-bases ztx new-ctx element base-elements)]
+                (if (and (:| walked) (:fhir/primitive walked))
+                  (assoc acc
+                         (primitive-extension-name el-key) (primitive->extension walked)
+                         el-key (dissoc walked :|))
+                  (assoc acc el-key walked)))))]
     (let [enr-subj (enrich-element ctx subj bases)]
       (cond-> enr-subj
         (seq (:| enr-subj))
