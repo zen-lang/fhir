@@ -30,15 +30,22 @@
 
   (gen/generate-zen-schemas ztx)
 
-
-  (:fhir/inter @ztx)
-
-
-
-  (get-in @ztx [:fhir/inter :zen.fhir/package-ns])
+  (t/testing "has nl-core-humanname"
+    (t/is (contains? (:fhir.zen/ns @ztx) 'nictiz-fhir-nl-stu3-zib2017.nl-core-humanname)))
 
 
-  (gen/spit-zen-npm-modules ztx "/tmp/clj" "1.0.0")
+  (t/testing "primitive type extensions"
+    (t/testing "primitive type not overriden"
+      (t/is (not (contains? (get-in @ztx [:fhir.zen/ns 'nictiz-fhir-nl-stu3-zib2017.nl-core-humanname 'schema :keys])
+                            :family))))
+    (t/testing "extension with underscore is created"
+      (t/is (contains? (get-in @ztx [:fhir.zen/ns 'nictiz-fhir-nl-stu3-zib2017.nl-core-humanname 'schema :keys])
+                       :_family))))
+
+
+  (comment
+    (gen/spit-zen-npm-modules ztx "/tmp/clj" "1.0.0")
+    )
 
 
   )
