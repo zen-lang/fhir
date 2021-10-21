@@ -1,10 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 
-for file in $(ls *.json)
-do
-        if [[ "null" != $(cat $file | jq .url) ]]; then
-                cat $file \
-                        | jq 'with_entries(select([.key] | inside(["resourceType", "id", "url", "version", "type"])))' \
-                        | jq --arg filename $(echo $file | sed 's/.*\///') '. += {"filename": $filename}'
-        fi;
-done | jq '{"index-version": 1, "files": [inputs]}' > .index.json
+jq -cMs '{
+           "index-version": 1,
+           "files": [
+             .[]
+             | with_entries(select(.key == ("url", "resourceType", "id", "version", "type")))
+               + {"filename": input_filename}
+             | select(.url != null)
+           ]
+         }' *.json > .index.json
