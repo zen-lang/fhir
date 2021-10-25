@@ -55,9 +55,11 @@
              (confirms-base fhir-inter [url inter-res])))))
 
 
-(defn url->symbol [fhir-inter url]
-  (when-let [ext-ns (get-in fhir-inter ["StructureDefinition" url :zen.fhir/schema-ns])]
-    (symbol (name ext-ns) "schema")))
+(defn url->symbol [fhir-inter url & [err-ctx]]
+  (when-not (nil? url)
+    (if-let [ext-ns (get-in fhir-inter ["StructureDefinition" url :zen.fhir/schema-ns])]
+      (symbol (name ext-ns) "schema")
+      (println :ERROR :unresolved-symbol url err-ctx))))
 
 
 (defn value-set->symbol [fhir-inter {:keys [url]}]
@@ -73,11 +75,12 @@
   (let [sch (merge-with
               into
               {}
-              (when-let [type-sym (some->> (:type el)
-                                           (str "http://hl7.org/fhir/StructureDefinition/")
-                                           (url->symbol fhir-inter))]
+              (when-let [type-sym (when-let [tp (:type el)]
+                                    (url->symbol fhir-inter
+                                                 (str "http://hl7.org/fhir/StructureDefinition/" tp)
+                                                 {:type :element-type :e el :url url}))]
                 {:confirms #{type-sym}})
-              (when-let [ext-sym (some->> (:fhir/extension el) (url->symbol fhir-inter))]
+              (when-let [ext-sym (some->> (:fhir/extension el) (url->symbol fhir-inter {:type :extension :el el :url url}))]
                 {:confirms #{ext-sym}
                  :fhir/extensionUri (:fhir/extension el)})
               (when (:polymorphic el)
@@ -97,10 +100,10 @@
               (when (= "Reference" (:type el))
                 {:confirms #{'zenbox/Reference}
                  :zenbox/reference
-                 {:refers (into #{}
-                                (comp (remove #(= % "http://hl7.org/fhir/StructureDefinition/Resource"))
-                                      (map (partial url->symbol fhir-inter)))
-                                (:profiles el))}})
+                 {:refers (->> (:profiles el)
+                               (remove #(= % "http://hl7.org/fhir/StructureDefinition/Resource"))
+                               (keep (fn [x] (url->symbol fhir-inter x {:type :reference :el el :url url})))
+                               (into #{}))}})
               (when-let [text (or (:short el) (:definiton el))]
                 {:zen/desc text}))]
     (if (:vector el)
