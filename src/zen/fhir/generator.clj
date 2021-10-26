@@ -80,7 +80,8 @@
                                                  (str "http://hl7.org/fhir/StructureDefinition/" tp)
                                                  {:type :element-type :e el :url url}))]
                 {:confirms #{type-sym}})
-              (when-let [ext-sym (some->> (:fhir/extension el) (url->symbol fhir-inter {:type :extension :el el :url url}))]
+              (when-let [ext-sym (when-let [ext (:fhir/extension el)]
+                                   (url->symbol fhir-inter ext {:type :extension :el el :url url}))]
                 {:confirms #{ext-sym}
                  :fhir/extensionUri (:fhir/extension el)})
               (when (:polymorphic el)
