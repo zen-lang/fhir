@@ -7,9 +7,11 @@
 
 
 (defmacro match-inter [ztx rt url pattern]
-  `(let [res# (get-in @~ztx [:fhir/inter ~rt ~url])]
-     (matcho/match res# ~pattern)
-     res#))
+  `(let [res# (get-in @~ztx [:fhir/inter ~rt ~url])
+         match# (matcho/match res# ~pattern)]
+     (if (true? match#)
+       true
+       res#)))
 
 
 (defonce ztx (zen.core/new-context {}))
