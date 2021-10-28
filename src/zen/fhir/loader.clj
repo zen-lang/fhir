@@ -273,7 +273,10 @@
                                      (assert (= (name k) (:sliceName v)) (pr-str :slice-name k (:sliceName v)))
                                      (assoc acc k (*normalize-extension ext (dissoc v :sliceName))))
                                    {})))
-        (dissoc :fhir-poly-keys))
+        (dissoc :fhir-poly-keys)
+        (cond->
+          (= "http://hl7.org/fhir/StructureDefinition/Extension" (:baseDefinition res))
+          (dissoc :baseDefinition)))
 
     (= 1 (count (get-in res [:| :value :types]))) ;; value[x] with a single type
     (let [value (get-in res [:| :value])
@@ -310,7 +313,8 @@
 
 
 (defn normalize-extension [res]
-  (if (= "Extension" (:type res))
+  (if (and (= "Extension" (:type res))
+           (not= "http://hl7.org/fhir/StructureDefinition/Extension" (:url res)))
     (assoc (*normalize-extension res res)
            :fhir/extension (:url res))
     res))
