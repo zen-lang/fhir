@@ -129,8 +129,7 @@
 
 
 (t/deftest generate-project-integration
-   (matcho/match
-    (:fhir.zen/ns @ztx)
+  (def schemas-match
     {'fhir-r4
      {'ns 'fhir-r4
       'import (partial clojure.set/subset?
@@ -342,7 +341,11 @@
        :keys {:specialty
               {:every {:zenbox/value-set
                        {:symbol 'hl7-fhir-us-davinci-pdex-plan-net.value-set.SpecialtiesVS/value-set
-                        :strength :required}}}}}}}))
+                        :strength :required}}}}}}})
+
+  (matcho/match
+    (select-keys (:fhir.zen/ns @ztx) (keys schemas-match))
+    schemas-match))
 
 
 (t/deftest project-write
