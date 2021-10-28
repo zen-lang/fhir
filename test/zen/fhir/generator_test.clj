@@ -155,6 +155,19 @@
                :confirms #(not (contains? % 'fhir-r4.Element/schema))
                :type 'zen/string}}
 
+     'fhir-r4.Extension
+     {'ns     'fhir-r4.Extension
+      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+               :confirms #{'fhir-r4.Element/schema}
+               :type     'zen/map
+               :keys     {:url {:confirms #{'fhir-r4.uri/schema}}
+                          :value {:type 'zen/map
+                                  :exclusive-keys (comp not empty?)
+                                  :keys {:uri {:confirms #{'fhir-r4.uri/schema}}
+                                         :url {:confirms #{'fhir-r4.url/schema}}
+                                         :string {:confirms #{'fhir-r4.string/schema}}
+                                         :Reference {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}}}}}}}
+
      'fhir-r4.Element
      {'ns     'fhir-r4.Element
       'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}

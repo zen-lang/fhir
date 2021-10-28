@@ -49,6 +49,21 @@
 
 
 (t/deftest fhir-aidbox-poly-keys-mapping
+  (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Extension"
+    {:derivation     "specialization"
+     :type           "Extension"
+     :kind           "complex-type"
+     :url            "http://hl7.org/fhir/StructureDefinition/Extension"
+     :baseDefinition "http://hl7.org/fhir/StructureDefinition/Element"
+     :|              {:url {:type "uri"}
+                      :value {:polymorphic true
+                              :types set?
+                              :| {:url {:type "url"}
+                                  :uri {:type "uri"}
+                                  :string {:type "string"}
+                                  :Reference {:type "Reference"}}}}})
+
+
   (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
     {:derivation     "constraint"
      :type           "Patient"

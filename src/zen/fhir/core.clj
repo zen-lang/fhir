@@ -314,7 +314,8 @@
 
 
 (defn normalize-extension [res]
-  (if (= "Extension" (:type res))
+  (if (and (= "Extension" (:type res))
+           (not= "http://hl7.org/fhir/StructureDefinition/Extension" (:url res)))
     (assoc (*normalize-extension res res)
            :fhir/extension (:url res))
     res))

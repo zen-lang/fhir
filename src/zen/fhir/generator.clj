@@ -75,10 +75,12 @@
   (let [sch (merge-with
               into
               {}
-              (when-let [type-sym (when-let [tp (:type el)]
-                                    (url->symbol fhir-inter
-                                                 (str "http://hl7.org/fhir/StructureDefinition/" tp)
-                                                 {:type :element-type :e el :url url}))]
+              (when-let [type-sym (when-let [tp (and (:type el))]
+                                    (let [tp-url (str "http://hl7.org/fhir/StructureDefinition/" tp)]
+                                      (when (not= url tp-url)
+                                        (url->symbol fhir-inter
+                                                     (str "http://hl7.org/fhir/StructureDefinition/" tp)
+                                                     {:type :element-type :e el :url url}))))]
                 {:confirms #{type-sym}})
               (when-let [ext-sym (when-let [ext (:fhir/extension el)]
                                    (url->symbol fhir-inter ext {:type :extension :el el :url url}))]
