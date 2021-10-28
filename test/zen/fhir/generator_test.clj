@@ -320,6 +320,7 @@
      'hl7-fhir-us-davinci-pdex-plan-net.practitioner-qualification
      {'schema
       {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+       :confirms empty?
        :keys {:status {:confirms #{'fhir-r4.code/schema}}
               :whereValid {:type 'zen/vector
                            :every {:type 'zen/map

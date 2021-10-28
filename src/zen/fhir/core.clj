@@ -273,11 +273,14 @@
     (-> (assoc res
                :fhir/extension (get-in res [:| :url :fixedUri])
                :| (->> (get-in res [:| :extension :slicing :slices])
-                           (reduce (fn [acc [k v]]
-                                     (assert (= (name k) (:sliceName v)) (pr-str :slice-name k (:sliceName v)))
-                                     (assoc acc k (*normalize-extension ext (dissoc v :sliceName))))
-                                   {})))
-        (dissoc :fhir-poly-keys))
+                       (reduce (fn [acc [k v]]
+                                 (assert (= (name k) (:sliceName v)) (pr-str :slice-name k (:sliceName v)))
+                                 (assoc acc k (*normalize-extension ext (dissoc v :sliceName))))
+                               {})))
+        (dissoc :fhir-poly-keys)
+        (cond->
+          (= "http://hl7.org/fhir/StructureDefinition/Extension" (:baseDefinition res))
+          (dissoc :baseDefinition)))
 
     (= 1 (count (get-in res [:| :value :types]))) ;; value[x] with a single type
     (let [value (get-in res [:| :value])

@@ -234,7 +234,8 @@
        "http://hl7.org/test-plannet/StructureDefinition/newpatients"}}})
 
   (match-inter ztx "StructureDefinition" "http://hl7.org/test-plannet/StructureDefinition/newpatients"
-    {:|
+    {:baseDefinition nil?
+     :|
      {:acceptingPatients {}
       :fromnetwork {:fhir/extension "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"}}})
 
