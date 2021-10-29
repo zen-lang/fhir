@@ -121,10 +121,9 @@
      :derivation     "specialization"
      :differential
      {:element
-      (->> els
-           (mapv
-             (fn [x] (update x :id #(str base-name "." %))))
-           (into [{:id base-name}]))}}))
+      (into [{:id base-name}]
+            (map (fn [x] (update x :id #(str base-name "." %))))
+            els)}}))
 
 
 (defn load-profile [{prof-name :name base :base els :els}]
@@ -138,13 +137,12 @@
      :baseDefinition (some->> base (str "url://"))
      :differential
      {:element
-      (->> els
-           (mapv
-             (fn [x] (update x :id #(str prof-name "." %))))
-           (into [{:id prof-name}]))}}))
+      (into [{:id prof-name}]
+            (map (fn [x] (update x :id #(str prof-name "." %))))
+            els)}}))
 
 
-(defn load-type [{type-name :name, els :els}]
+(defn load-primitive-type [{type-name :name, els :els}]
   (sut/load-definiton
     aztx {}
     {:url (str "http://hl7.org/fhir/StructureDefinition/" type-name)}
@@ -155,10 +153,9 @@
      :kind         "primitive-type"
      :differential
      {:element
-      (->> els
-           (mapv
-             (fn [x] (update x :id #(str type-name "." %))))
-           (into [{:id type-name}]))}}))
+      (into [{:id type-name}]
+            (map (fn [x] (update x :id #(str type-name "." %))))
+            els)}}))
 
 
 (defn load-extension [{ext-name :name els :els}]
@@ -172,10 +169,9 @@
      :url          (str "uri://" ext-name)
      :differential
      {:element
-      (->> els
-           (mapv
-             (fn [x] (update x :id #(str ext-name "." %))))
-           (into [{:id ext-name}]))}}))
+      (into [{:id ext-name}]
+            (map (fn [x] (update x :id #(str ext-name "." %))))
+            els)}}))
 
 
 (defn reload []
@@ -196,10 +192,10 @@
 
 (t/deftest preprocess-process-resources-test
 
-  (load-type
+  (load-primitive-type
     {:name "prim"})
 
-  (load-type
+  (load-primitive-type
     {:name "string"})
 
 
@@ -252,7 +248,7 @@
 
   (t/testing "Inherit complex type attrs properties"
 
-    (load-type
+    (load-primitive-type
       {:name "ComplexType"
        :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
 
@@ -275,11 +271,11 @@
 
 
   (t/testing "Complex type inheritance"
-    (load-type
+    (load-primitive-type
       {:name "BaseType"
        :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
 
-    (load-type
+    (load-primitive-type
       {:name "InhComplexType"
        :base "BaseType"
        :els  []})
@@ -366,11 +362,11 @@
 
   (t/testing "Dependency escalation"
 
-    (load-type
+    (load-primitive-type
       {:name "ComplexType"
        :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
 
-    (load-type
+    (load-primitive-type
       {:name "Reference"
        :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
 
