@@ -19,7 +19,10 @@
   {:use "usual", :given ["Jim"]}
   {:use "maiden",
    :given ["Peter" "James"],
+   :_given [{:extension [{:url "rus", :value {:string "Пётр"}}]}
+            {:extension [{:url "rus", :value {:string "Жемис"}}]}]
    :family "Windsor",
+   :_family {:extension [{:url "rus", :value {:string "Виндсор"}}]}
    :period {:end "2002"}}],
  :birthDate "1974-12-25",
  :resourceType "Patient",

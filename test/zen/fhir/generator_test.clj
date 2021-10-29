@@ -211,6 +211,21 @@
       'value-set {:zen/tags #{'zenbox/value-set}
                   :uri "http://hl7.org/fhir/ValueSet/administrative-gender"}}
 
+     'fhir-r4.HumanName
+     {'ns 'fhir-r4.HumanName
+      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+               :confirms #{'fhir-r4.Element/schema}
+               :type 'zen/map
+               :zenbox/type "HumanName"
+               :zenbox/profileUri "http://hl7.org/fhir/StructureDefinition/HumanName"
+               :keys {:family  {:confirms #{'fhir-r4.string/schema}}
+                      :_family {:confirms #{'fhir-r4.Element/schema}}
+
+                      :given  {:type  'zen/vector
+                               :every {:confirms #{'fhir-r4.string/schema}}}
+                      :_given {:type  'zen/vector
+                               :every {:confirms #{'fhir-r4.Element/schema}}}}}}
+
      'fhir-r4.Patient
      {'ns     'fhir-r4.Patient
       'import #(and (contains? % 'fhir-r4.DomainResource)

@@ -210,7 +210,12 @@
 
     (matcho/match
       (sut/get-definition aztx "url://VectorBase")
-      {:| {:attr {:vector true :type "prim"}}})
+      {:| {:attr  {:type                "prim"
+                   :vector              true
+                   :fhir/primitive-attr true}
+           :_attr {:type         "Element"
+                   :vector       true
+                   :original-key :attr}}})
 
     (load-profile
       {:name "VectorProfile"

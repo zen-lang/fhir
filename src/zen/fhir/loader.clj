@@ -9,8 +9,6 @@
             [edamame.core :as edamame]
             [com.rpl.specter :as sp]))
 
-(def fhir-primitive-types #{"base64Binary" "boolean" "canonical" "code" "date" "dateTime" "decimal" "id" "instant" "integer" "markdown" "oid" "positiveInt" "string" "time" "unsignedInt" "uri" "url" "uuid"})
-
 (def poly-id-terminator "[x]")
 
 (defn drop-poly-name [id poly-name]
@@ -509,9 +507,10 @@
                  (assoc acc ext-k (dissoc ext-el :type :sliceName)))
                acc)))
 
-(defn fhir-primitive? [el base-els]
-  (or (fhir-primitive-types (:type el))
-      (some #(fhir-primitive-types (:type %)) base-els)))
+
+(defn fhir-primitive? [_el base-els]
+  (some #(= "primitive-type" (:kind %))
+        base-els))
 
 
 (defn enrich-element [ctx el base-els]
@@ -527,14 +526,13 @@
                  (->> base-els
                       (filter (fn [{tp :type}] (and (not (nil? tp))
                                                     (not (= "Element" tp)))))
-                      (some :type)))
-          primitive? (fhir-primitive? el base-els)]
+                      (some :type)))]
       (cond-> el
-        v?            (assoc :vector true)
-        (not v?)      (dissoc :minItems :maxItems)
-        tp            (assoc :type tp)
-        (seq (:| el)) (update :| (partial reduce make-first-class-extensions {}))
-        primitive?    (assoc :fhir/primitive true)))))
+        v?                            (assoc :vector true)
+        (not v?)                      (dissoc :minItems :maxItems)
+        tp                            (assoc :type tp)
+        (seq (:| el))                 (update :| (partial reduce make-first-class-extensions {}))
+        (fhir-primitive? el base-els) (assoc :fhir/primitive-attr true)))))
 
 
 (defn search-base-elements [ztx subj k el bases]
@@ -563,11 +561,11 @@
       search-result
       (find-poly-base-el ztx subj el-key element bases))))
 
-(defn primitive-extension-name [primitive-type]
-  (keyword (str "_" (name primitive-type))))
+(defn primitive-element-key [primitive-k]
+  (keyword (str "_" (name primitive-k))))
 
-(defn primitive->extension [primitive]
-  (dissoc primitive :fhir/primitive :type))
+(defn primitive-element [primitive]
+  (dissoc primitive :fhir/primitive-attr :type))
 
 
 
@@ -587,12 +585,16 @@
                                         new-ctx (-> (update ctx :lvl inc) (update :path conj el-key))]
                                     (when (and (not= "specialization" (:derivation ctx)) (empty? base-elements))
                                       (println :no-base-for-element (conj (:path ctx) k) el))
-                                    (let [walked (walk-with-bases ztx new-ctx element base-elements)]
-                                      (if (and (:| walked) (:fhir/primitive walked))
-                                        (assoc acc
-                                               (primitive-extension-name el-key) (primitive->extension walked)
-                                               el-key (dissoc walked :|))
-                                        (assoc acc el-key walked)))))
+                                    (assoc acc el-key (walk-with-bases ztx new-ctx element base-elements))))
+                                {})
+                        (reduce (fn [acc [k el]]
+                                  (if (:fhir/primitive-attr el)
+                                    (let [element-key (primitive-element-key k)
+                                          element-attr (assoc (select-keys el [:vector])
+                                                              :type "Element"
+                                                              :original-key k)]
+                                      (assoc acc k el, element-key element-attr))
+                                    (assoc acc k el)))
                                 {})))))))
 
 
