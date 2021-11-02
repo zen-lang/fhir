@@ -582,8 +582,17 @@
   (keyword (str "_" (name primitive-k))))
 
 
-(defn primitive-element [primitive]
-  (dissoc primitive :fhir/primitive-attr :type))
+(defn primitive-element [k primitive]
+  (assoc (select-keys primitive [:vector :|])
+         :type "Element"
+         :original-key k))
+
+
+(defn extract-_primitive [k el]
+  {:primitive {:key k
+               :el (dissoc el :|)}
+   :_primitive {:key (primitive-element-key k)
+                :el (primitive-element k el)}})
 
 
 ;; Profile.element
@@ -603,13 +612,10 @@
 
           (add-primitive-element-attrs [acc [k el]]
             (if (:fhir/primitive-attr el)
-              (let [element-key (primitive-element-key k)
-                    element-attr (assoc (select-keys el [:vector :|])
-                                        :type "Element"
-                                        :original-key k)]
+              (let [{:keys [primitive _primitive]} (extract-_primitive k el)]
                 (assoc acc
-                       k (dissoc el :|)
-                       element-key element-attr))
+                       (:key primitive) (:el primitive)
+                       (:key _primitive) (:el _primitive)))
               (assoc acc k el)))]
     (let [enr-subj (enrich-element ctx subj bases)]
       (cond-> enr-subj
