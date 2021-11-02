@@ -120,9 +120,10 @@
 
 (defn extension-profiles [el]
   (if-let [ext-profs (:profile (first (:type el)))]
-    (do
-      (assert (= 1 (count ext-profs)) (pr-str :unexpected-extension-profiles (:type el)))
-      (assoc el :fhir/extension (first ext-profs)))
+    (let [ext-profs (if (string? ext-profs) [ext-profs] ext-profs)]
+      (do
+        (assert (= 1 (count ext-profs)) (pr-str :unexpected-extension-profiles (:type el)))
+        (assoc el :fhir/extension (first ext-profs))))
     el))
 
 
@@ -603,10 +604,12 @@
           (add-primitive-element-attrs [acc [k el]]
             (if (:fhir/primitive-attr el)
               (let [element-key (primitive-element-key k)
-                    element-attr (assoc (select-keys el [:vector])
+                    element-attr (assoc (select-keys el [:vector :|])
                                         :type "Element"
                                         :original-key k)]
-                (assoc acc k el, element-key element-attr))
+                (assoc acc
+                       k (dissoc el :|)
+                       element-key element-attr))
               (assoc acc k el)))]
     (let [enr-subj (enrich-element ctx subj bases)]
       (cond-> enr-subj
