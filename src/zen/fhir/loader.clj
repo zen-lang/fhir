@@ -520,7 +520,8 @@
 (defn make-first-class-ext-keys [acc el]
   (->> (get-in el [:slicing :slices])
        (reduce (fn [acc [ext-k ext-el]]
-                 (assert (= ext-k (keyword (:sliceName ext-el))) (pr-str ext-k "!=" (:sliceName ext-el)))
+                 (when-not (= ext-k (keyword (:sliceName ext-el)))
+                   (prn "WARN:" (pr-str ext-k "!=" (:sliceName ext-el))))
                  (assoc acc ext-k (dissoc ext-el :type :sliceName)))
                acc)))
 
