@@ -110,11 +110,12 @@
 
 
 (defn reference-profiles [el]
-  (let [tp   (first (:type el))
-        tpc  (:code tp)
-        prof (:targetProfile tp)]
-    (if (and (= tpc "Reference") prof)
-      (assoc el :profiles (into #{} prof))
+  (let [tp       (first (:type el))
+        tpc      (:code tp)
+        prof     (:targetProfile tp)
+        profiles (if (string? prof) [prof] prof)]
+    (if (and (= tpc "Reference") profiles)
+      (assoc el :profiles (into #{} profiles))
       el)))
 
 
