@@ -326,13 +326,13 @@
 
 
 (defn load-intermidiate [res]
-  (let [res (if (or (= "Element" (:id res)) ;; NOTE: fix FHIR bug - element missed derivation
+  (let [#_#_res (if (or (= "Element" (:id res)) ;; NOTE: fix FHIR bug - element missed derivation
                     (= "Resource" (:id res))
                     (and (= "logical" (:kind res))
                          (nil? (:derivation res))))
               (update res :derivation (fn [x] (or x "specialization")))
               res)]
-    (assert (:derivation res) (str ":derivation is required " (pr-str (:url res))))
+    #_(assert (:derivation res) (str ":derivation is required " (pr-str (:url res))))
     (let [stu3? ((fnil str/starts-with? "") (:fhirVersion res) "3")]
       (->> (get-in res [:differential :element])
            (mapv #(normalize-element % stu3?))
