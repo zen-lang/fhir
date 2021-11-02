@@ -149,6 +149,22 @@
             els)}}))
 
 
+(defn load-complex-type [{type-name :name, els :els}]
+  (sut/load-definiton
+    aztx
+    {:url (str "http://hl7.org/fhir/StructureDefinition/" type-name)}
+    {:resourceType "StructureDefinition"
+     :url          (str "http://hl7.org/fhir/StructureDefinition/" type-name)
+     :type         "Element"
+     :derivation   "specialization"
+     :kind         "complex-type"
+     :differential
+     {:element
+      (into [{:id type-name}]
+            (map (fn [x] (update x :id #(str type-name "." %))))
+            els)}}))
+
+
 (defn load-extension [{ext-name :name els :els}]
   (sut/load-definiton
     aztx
@@ -188,7 +204,7 @@
      :url          "http://hl7.org/fhir/StructureDefinition/Element"
      :type         "Element"
      :derivation   "specialization"
-     :kind         "primitive-type"
+     :kind         "complex-type"
      :differential
      {:element [{:id "Element"}]}})
 
@@ -253,7 +269,7 @@
 
   (t/testing "Inherit complex type attrs properties"
 
-    (load-primitive-type
+    (load-complex-type
       {:name "ComplexType"
        :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
 
@@ -276,11 +292,11 @@
 
 
   (t/testing "Complex type inheritance"
-    (load-primitive-type
+    (load-complex-type
       {:name "BaseType"
        :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
 
-    (load-primitive-type
+    (load-complex-type
       {:name "InhComplexType"
        :base "BaseType"
        :els  []})
@@ -367,11 +383,11 @@
 
   (t/testing "Dependency escalation"
 
-    (load-primitive-type
+    (load-complex-type
       {:name "ComplexType"
        :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
 
-    (load-primitive-type
+    (load-complex-type
       {:name "Reference"
        :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
 
