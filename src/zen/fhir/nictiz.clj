@@ -1,7 +1,9 @@
 (ns zen.fhir.nictiz
   (:require [zen.fhir.core :as c]
             [clojure.java.io :as io]
-            [clojure.string :as str]))
+            [cheshire.core]
+            [clojure.string :as str]
+            [com.rpl.specter :as sp]))
 
 (def blacklist
   {"StructureDefinition"
@@ -15,6 +17,35 @@
      "http://hl7.org/fhir/StructureDefinition/patient-clinicalTrial"
      "http://hl7.org/fhir/StructureDefinition/procedurerequest-genetics"
      "http://hl7.org/fhir/StructureDefinition/procedurerequest-geneticsItem"}})
+
+
+(defn load-definiton [ztx packages header res]
+  (if-let [rt (:resourceType res)]
+    (if-let [url (:url header)]
+      (swap! ztx update-in [:fhir/src rt url]
+             (fn [x] (when x (println :WARN :override-resource header)) res))
+      (println :WARN :no-url header))
+    (println :WARN :no-resource-type header)))
+
+
+(defn load-json-file [ztx package header f & [{:keys [params]}]]
+  (let [res (-> (cheshire.core/parse-string (str/replace (slurp f) \ufeff \space) keyword)
+                (assoc :zen.fhir/header header :zen.fhir/package package :zen.fhir/file (.getPath f))
+                (merge
+                  {:zen.fhir/package-ns (some-> package :name (str/replace #"\." "-") symbol)
+                   :_source "zen.fhir"}
+                  (select-keys params #{:zen.fhir/package-ns})))]
+    (load-definiton ztx package header res)))
+
+
+(defn preprocess-resources
+  ;; this is pure transformation of original resources (i.e. without context)
+  [ztx]
+  (swap! ztx assoc :fhir/inter
+         (sp/transform [sp/MAP-VALS sp/MAP-VALS]
+                       c/process-on-load
+                       (:fhir/src @ztx))))
+
 
 (defn load-all [ztx package & [{:keys [params node-modules-folder whitelist]
                                 :or {node-modules-folder "node_modules"}}]]
@@ -38,10 +69,10 @@
                       (not (contains? rt-blacklist (:url header))))
                   (or (nil? rt-whitelist)
                       (contains? rt-whitelist (:url header))))]
-    (c/load-json-file ztx package header
-                      (io/file (str (.getPath pkg-dir) "/" (:filename header)))
-                      {:params package-params}))
-  (c/preprocess-resources ztx)
+    (load-json-file ztx package header
+                    (io/file (str (.getPath pkg-dir) "/" (:filename header)))
+                    {:params package-params}))
+  (preprocess-resources ztx)
   (swap! ztx assoc-in [:fhir/inter
                        "StructureDefinition"
                        "http://nictiz.nl/fhir/StructureDefinition/zib-NutritionAdvice"

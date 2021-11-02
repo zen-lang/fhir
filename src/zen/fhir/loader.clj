@@ -9,13 +9,17 @@
             [edamame.core :as edamame]
             [com.rpl.specter :as sp]))
 
+
 (def poly-id-terminator "[x]")
+
 
 (defn drop-poly-name [id poly-name]
   (subs id (count poly-name)))
 
+
 (defn drop-poly-terminator [id]
   (subs id 0 (- (count id) (count poly-id-terminator))))
+
 
 (defn rich-parse-path [id]
   (if (str/blank? id)
@@ -38,6 +42,7 @@
                                       :type :key}]))))
          vec)))
 
+
 (defn build-path [id-path]
   (->> id-path
        (reduce (fn [acc {k :key tp :type}]
@@ -58,6 +63,7 @@
       (.toUpperCase s)
       (str (.toUpperCase (subs s 0 1))
            (subs s 1)))))
+
 
 (defn ^String decapitalize-first-letter
   "Converts first character of the string to lower-case, all other characters leaves as is"
@@ -120,8 +126,6 @@
     el))
 
 
-
-
 (defn get-type-code[{code :code extension :extension}]
   ;; wellknonw bug in FHIR SDs
   ;; StructureDefinition generator has a bug
@@ -132,6 +136,7 @@
                                  extension)
               (utils/poly-get :value))
       code))
+
 
 (defn normalize-polymorphic [el & [stu3?]]
   (if (str/ends-with? (str (or (:path el) (:id el))) "[x]")
@@ -233,6 +238,7 @@
                          (mapv keyword)))
     x))
 
+
 (defn normalize-flags [x]
   (let [flags (cond-> #{}
                 (:isModifier x)  (conj :?!)
@@ -242,6 +248,7 @@
         (dissoc :isModifier :isSummary :mustSupport)
         (cond->
             (not (empty? flags)) (assoc :fhir/flags flags)))))
+
 
 (defn normalize-element [x & [stu3?]]
   (-> (dissoc x
@@ -267,10 +274,10 @@
     (-> (assoc res
                :fhir/extension (get-in res [:| :url :fixedUri])
                :| (->> (get-in res [:| :extension :slicing :slices])
-                           (reduce (fn [acc [k v]]
-                                     (assert (= (name k) (:sliceName v)) (pr-str :slice-name k (:sliceName v)))
-                                     (assoc acc k (*normalize-extension ext (dissoc v :sliceName))))
-                                   {})))
+                       (reduce (fn [acc [k v]]
+                                 (assert (= (name k) (:sliceName v)) (pr-str :slice-name k (:sliceName v)))
+                                 (assoc acc k (*normalize-extension ext (dissoc v :sliceName))))
+                               {})))
         (dissoc :fhir-poly-keys)
         (cond->
           (= "http://hl7.org/fhir/StructureDefinition/Extension" (:baseDefinition res))
@@ -319,8 +326,10 @@
 
 
 (defn load-intermidiate [res]
-  ;; fix FHIR bug - element missed derivation
-  (let [res (if (= "Element" (:id res))
+  (let [res (if (or (= "Element" (:id res)) ;; NOTE: fix FHIR bug - element missed derivation
+                    (= "Resource" (:id res))
+                    (and (= "logical" (:kind res))
+                         (nil? (:derivation res))))
               (update res :derivation (fn [x] (or x "specialization")))
               res)]
     (assert (:derivation res) (str ":derivation is required " (pr-str (:url res))))
@@ -332,9 +341,9 @@
            (normalize-description)
            (normalize-extension)
            (merge
-            (when-let [package-ns (:zen.fhir/package-ns res)]
-              {:zen.fhir/package-ns package-ns
-               :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))}))))))
+             (when-let [package-ns (:zen.fhir/package-ns res)]
+               {:zen.fhir/package-ns package-ns
+                :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))}))))))
 
 
 (defmulti process-on-load
@@ -434,25 +443,30 @@
   [res]
   (load-intermidiate res))
 
+
 ;; TODO filter by resource type
 (defn load-definiton [ztx opts res]
   (let [rt (:resourceType res)
-        url (:url res)]
+        url (or (:url res) (:url opts))]
     (if (and rt url)
       (swap! ztx update-in [:fhir/inter rt url]
              (fn [x] (when x (println :override-resource url))
                (assoc (process-on-load res) :zen/loader (:zen/loader res))))
       (println :skip-resource "no url or rt" (get-in res [:zen/loader :file])))))
 
+
 (defn read-json [f] (cheshire.core/parse-string (slurp f) keyword))
+
 
 (defn base-url [subj]
   (println(:type subj) (pr-str :no-type-in subj))
   (or (:baseDefinition subj)
       (str "http://hl7.org/fhir/StructureDefinition/" (:type subj))))
 
+
 (defn get-definition [ztx url]
   (get-in @ztx [:fhir/inter "StructureDefinition" url]))
+
 
 (defn get-type-definition [ztx subj el type-name]
   (let [tp (if (str/starts-with? type-name "http://hl7.org/fhirpath/System.")
@@ -461,10 +475,10 @@
         definition (get-definition ztx (str "http://hl7.org/fhir/StructureDefinition/" tp))]
     (when-not definition
       (throw (Exception.
-              (str "Could not find type definition: " (pr-str tp) " url " (pr-str (str "http://hl7.org/fhir/StructureDefinition/" tp))
-                   " in "    (pr-str (:url  subj))
-                   " element " (pr-str el)
-                   " file: " (pr-str (get-in subj [:zen/loader :file]))))))
+               (str "Could not find type definition: " (pr-str tp) " url " (pr-str (str "http://hl7.org/fhir/StructureDefinition/" tp))
+                    " in "    (pr-str (:url  subj))
+                    " element " (pr-str el)
+                    " file: " (pr-str (get-in subj [:zen/loader :file]))))))
     definition))
 
 
@@ -486,6 +500,7 @@
         (recur (:baseDefinition base-def)
                (conj base-stack base-def)
                (conj bases base))))))
+
 
 (defn get-base-elements [ztx subj k el bases]
   (let [elements-stack bases ;;(cons el bases) ;; ????
@@ -561,41 +576,43 @@
       search-result
       (find-poly-base-el ztx subj el-key element bases))))
 
+
 (defn primitive-element-key [primitive-k]
   (keyword (str "_" (name primitive-k))))
+
 
 (defn primitive-element [primitive]
   (dissoc primitive :fhir/primitive-attr :type))
 
 
-
 ;; Profile.element
 ;; Base.element
 (defn walk-with-bases [ztx ctx subj bases]
-  (let [enr-subj (enrich-element ctx subj bases)]
-    (cond-> enr-subj
-      (seq (:| enr-subj))
-      (update :| (fn [els]
-                   (->> els
-                        (reduce (fn [acc [k el]]
-                                  (let [{:keys [el-key element base-elements]
-                                         :or   {el-key k, element el, base-elements []}}
-                                        (find-base-els ztx subj k el bases)
+  (letfn [(walk-with-bases-recursive [acc [k el]]
+            (let [{:keys [el-key element base-elements]
+                   :or   {el-key k, element el, base-elements []}}
+                  (find-base-els ztx subj k el bases)
 
-                                        new-ctx (-> (update ctx :lvl inc) (update :path conj el-key))]
-                                    (when (and (not= "specialization" (:derivation ctx)) (empty? base-elements))
-                                      (println :no-base-for-element (conj (:path ctx) k) el))
-                                    (assoc acc el-key (walk-with-bases ztx new-ctx element base-elements))))
-                                {})
-                        (reduce (fn [acc [k el]]
-                                  (if (:fhir/primitive-attr el)
-                                    (let [element-key (primitive-element-key k)
-                                          element-attr (assoc (select-keys el [:vector])
-                                                              :type "Element"
-                                                              :original-key k)]
-                                      (assoc acc k el, element-key element-attr))
-                                    (assoc acc k el)))
-                                {})))))))
+                  new-ctx
+                  (-> (update ctx :lvl inc) (update :path conj el-key))]
+              (when (and (not= "specialization" (:derivation ctx))
+                         (empty? base-elements))
+                (println :no-base-for-element (conj (:path ctx) k) el))
+              (assoc acc el-key (walk-with-bases ztx new-ctx element base-elements))))
+
+          (add-primitive-element-attrs [acc [k el]]
+            (if (:fhir/primitive-attr el)
+              (let [element-key (primitive-element-key k)
+                    element-attr (assoc (select-keys el [:vector])
+                                        :type "Element"
+                                        :original-key k)]
+                (assoc acc k el, element-key element-attr))
+              (assoc acc k el)))]
+    (let [enr-subj (enrich-element ctx subj bases)]
+      (cond-> enr-subj
+        (seq (:| enr-subj))
+        (-> (update :| (partial reduce walk-with-bases-recursive {}))
+            (update :| (partial reduce add-primitive-element-attrs {})))))))
 
 
 (defn is-extension?
@@ -688,6 +705,7 @@
                            (assoc acc url (process-sd ztx url resource)))
                   {})))
 
+
 (defn collect-concepts [ztx]
   (let [code-systems (vals (get-in @ztx [:fhir/inter "CodeSystem"]))
         value-sets (vals (get-in @ztx [:fhir/inter "ValueSet"]))
@@ -709,6 +727,7 @@
                         (partial process-concept ztx)
                         %)))
 
+
 (defn process-resources
   "this is processing of resources with context"
   [ztx]
@@ -720,35 +739,56 @@
   (and (.isDirectory file)
        (not (str/starts-with? (.getName file) "."))))
 
+
 ;; TODO write test with all corner cases of npm dir organization
 (defn find-packages [project-root]
   (->> [(io/file project-root)
         (io/file (str project-root "/node_modules"))]
        (mapcat (fn [dir] (when (dir? dir) (cons dir (.listFiles dir)))))
-       (mapcat (fn [x] (if (and (dir? x) (str/starts-with? (.getName x) "@")) (.listFiles x) [x])))
+       (mapcat (fn [x] (if (and (dir? x) (str/starts-with? (.getName x) "@"))
+                         (.listFiles x)
+                         [x])))
        (filter dir?)
        distinct
        (filter (fn [f] (.exists (io/file (str (.getPath f) "/package.json")))))))
 
 
-(defn do-load-file [ztx opts package f]
+(defn do-load-file [ztx {:as opts :keys [whitelist blacklist params]} package f]
   (let [file-name (.getName f)
         content (cond
                   (str/ends-with? file-name ".json")
                   (cheshire.core/parse-string (str/replace (slurp f) \ufeff \space) keyword)
 
                   (str/ends-with? file-name ".edn")
-                  (edamame/parse-string (slurp f)))]
-    (when content
+                  (edamame/parse-string (slurp f)))
+        rt-whitelist (get whitelist (:resourceType content))
+        rt-blacklist (get blacklist (:resourceType content))]
+    (when (and content
+               (or (nil? rt-blacklist)
+                   (not (contains? rt-blacklist (:url content))))
+               (or (nil? rt-whitelist)
+                   (contains? rt-whitelist (:url content))))
       (load-definiton ztx opts (assoc content
+                                      :_source "zen.fhir"
                                       :zen/loader {:package package :file (.getPath f)}
-                                      :zen.fhir/package-ns (some-> package :name (str/replace #"\." "-") symbol))))))
+                                      :zen.fhir/package package
+                                      :zen.fhir/file (.getPath f)
+                                      :zen.fhir/package-ns (or (:zen.fhir/package-ns params)
+                                                               (some-> package :name (str/replace #"\." "-") symbol)))))))
 
-(defn load-all [ztx opts project-dir]
-  (doseq [pkg-dir  (find-packages project-dir)]
-    (let [package (read-json (str (.getPath pkg-dir) "/package.json"))]
+
+(defn load-all [ztx _ & [{:keys [params node-modules-folder whitelist blacklist]
+                          :or {node-modules-folder "node_modules"}}]]
+  (doseq [pkg-dir  (find-packages node-modules-folder)]
+    (let [package (read-json (str (.getPath pkg-dir) "/package.json"))
+          package-params (get params (:name package))]
       (assert package (str "No package for " pkg-dir))
       (doseq [f (.listFiles pkg-dir)]
-        (do-load-file ztx opts package f))))
+        (do-load-file ztx
+                      {:params package-params
+                       :whitelist whitelist
+                       :blacklist blacklist}
+                      package
+                      f))))
   (process-resources ztx)
   :done)

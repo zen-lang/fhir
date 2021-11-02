@@ -109,9 +109,9 @@
         (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
         (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
         (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
-        (zen.fhir.core/load-definiton ztx nil {:url (:url practitioner-role-profile)} (assoc practitioner-role-profile :zen.fhir/package-ns "plannet"))
-        (zen.fhir.core/load-definiton ztx nil {:url (:url new-patients-extension)} (assoc new-patients-extension :zen.fhir/package-ns "plannet"))
-        (zen.fhir.core/load-definiton ztx nil {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet")))
+        (zen.fhir.core/load-definiton ztx {:url (:url practitioner-role-profile)} (assoc practitioner-role-profile :zen.fhir/package-ns "plannet"))
+        (zen.fhir.core/load-definiton ztx {:url (:url new-patients-extension)} (assoc new-patients-extension :zen.fhir/package-ns "plannet"))
+        (zen.fhir.core/load-definiton ztx {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet")))
 
       (zen.fhir.core/load-all ztx nil
                               {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
@@ -320,7 +320,7 @@
        :confirms #{'fhir-r4.string/schema}
        :zenbox/type "string"
        :zenbox/profileUri "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/org-description"
-       :fhir/flags #{:MS}}}
+       }}
 
      'fhir-r4.condition-dueTo
      {'schema

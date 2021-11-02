@@ -32,6 +32,10 @@
      "http://hl7.org/fhir/administrative-gender"}})
 
 
+(def blacklist
+  {"StructureDefinition" #{}})
+
+
 (t/use-fixtures :once
   (fn [t]
     (reset! ztx @(zen.core/new-context {}))
@@ -41,11 +45,11 @@
       (def new-patients-extension    (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
       (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
 
-      (sut/load-definiton ztx nil {:url (:url practitioner-role-profile)} practitioner-role-profile)
-      (sut/load-definiton ztx nil {:url (:url new-patients-extension)} new-patients-extension)
-      (sut/load-definiton ztx nil {:url (:url from-network-extension)} from-network-extension))
+      (sut/load-definiton ztx {:url (:url practitioner-role-profile)} practitioner-role-profile)
+      (sut/load-definiton ztx {:url (:url new-patients-extension)} new-patients-extension)
+      (sut/load-definiton ztx {:url (:url from-network-extension)} from-network-extension))
 
-    (sut/load-all ztx "hl7.fhir.r4.core" {:whitelist deps})
+    (sut/load-all ztx nil {:whitelist deps, :blacklist blacklist})
 
     (t)))
 

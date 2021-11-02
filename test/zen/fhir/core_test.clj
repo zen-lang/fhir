@@ -7,15 +7,6 @@
             [matcho.core :as matcho]))
 
 
-(defn see-definition-els [ztx url]
-  (let [d (sut/get-original ztx url)]
-    (->
-      (select-keys d [:kind :type :url :baseDefinition :derivation])
-      (assoc :els
-             (->> (:element (:differential d))
-                  (mapv #(select-keys % [:id :min :max :sliceName :binding :fixedUri :type])))))))
-
-
 (defmacro match-definition [ztx url pattern]
   `(let [res# (sut/get-definition ~ztx ~url)]
      (matcho/match res# ~pattern)
@@ -112,7 +103,7 @@
 
 (defn load-base [{base-name :name tp :base els :els}]
   (sut/load-definiton
-    aztx {}
+    aztx
     {:url (some->> base-name (str "url://"))}
     {:resourceType   "StructureDefinition"
      :url            (some->> base-name (str "url://"))
@@ -128,7 +119,7 @@
 
 (defn load-profile [{prof-name :name base :base els :els}]
   (sut/load-definiton
-    aztx {}
+    aztx
     {:url (some->> prof-name (str "url://"))}
     {:resourceType   "StructureDefinition"
      :url            (some->> prof-name (str "url://"))
@@ -144,7 +135,7 @@
 
 (defn load-primitive-type [{type-name :name, els :els}]
   (sut/load-definiton
-    aztx {}
+    aztx
     {:url (str "http://hl7.org/fhir/StructureDefinition/" type-name)}
     {:resourceType "StructureDefinition"
      :url          (str "http://hl7.org/fhir/StructureDefinition/" type-name)
@@ -160,7 +151,7 @@
 
 (defn load-extension [{ext-name :name els :els}]
   (sut/load-definiton
-    aztx {}
+    aztx
     {:url (str "uri://" ext-name)}
     {:resourceType "StructureDefinition"
      :type         "Extension"
@@ -175,7 +166,6 @@
 
 
 (defn reload []
-  (sut/preprocess-resources aztx)
   (sut/process-resources aztx))
 
 
@@ -191,6 +181,16 @@
 
 
 (t/deftest preprocess-process-resources-test
+  (sut/load-definiton
+    aztx
+    {:url "http://hl7.org/fhir/StructureDefinition/Element"}
+    {:resourceType "StructureDefinition"
+     :url          "http://hl7.org/fhir/StructureDefinition/Element"
+     :type         "Element"
+     :derivation   "specialization"
+     :kind         "primitive-type"
+     :differential
+     {:element [{:id "Element"}]}})
 
   (load-primitive-type
     {:name "prim"})
@@ -386,10 +386,7 @@
               {:id  "extension:some-ext" :type   [{:code    "Extension" :profile ["url://some-ext"]}] :sliceName "some-ext"}
               {:id  "polyattr[x]" :type  [{:code "prim"} {:code "string"}] :binding {:strength "required", :valueSet "url://valueset"}}]})
 
-    (reload)
-
-    (sut/get-definition aztx "url://BaseResource2")
-    (sut/get-base-elements aztx :key {:type "ComplexType"} [])
+   (reload)
 
     (matcho/match
       (sut/get-definition aztx "url://BaseResource2")
