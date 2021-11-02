@@ -47,7 +47,8 @@
 
 
 (defmethod generate-kind-schema :primitive-type [fhir-inter [url inter-res]]
-  (let [tp         (get-in inter-res [:| :value :type])
+  (let [tp         (or (get-in inter-res [:| :value :type])
+                       (:type inter-res))
         zen-type   (fhir-primitive->zen-primitive tp)]
     (merge {:type zen-type}
            (when (not= "http://hl7.org/fhir/StructureDefinition/Element"
