@@ -85,8 +85,10 @@
                 {:confirms #{type-sym}})
               (when-let [ext-sym (when-let [ext (:fhir/extension el)]
                                    (url->symbol fhir-inter ext {:type :extension :el el :url url}))]
-                {:confirms #{ext-sym}
-                 :fhir/extensionUri (:fhir/extension el)})
+                {:confirms #{ext-sym}})
+              (when-let [ext-uri (and (or (nil? (:type el)) (= "Extension" (:type el)))
+                                      (:fhir/extension el))]
+                {:fhir/extensionUri ext-uri})
               (when (:polymorphic el)
                 (let [types (into #{} (map keyword) (:types el))]
                   (utils/strip-nils
