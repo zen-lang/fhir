@@ -69,16 +69,13 @@ jobs:
           cli: 1.10.1.693
 
       - run: make init-r3
-        name: Install npm Nictiz-R3 packages
+        name: Install npm R3 packages
 
-      - name: Generate .index.json for Nictiz
-        run: 'cd r3/node_modules/nictiz.fhir.nl.stu3.zib2017 && bash ../../generate.sh'
-
-      - name: Genrate npm Zen packages for Nictiz
-        run: make zen-profiles-nictiz node_modules="r3/node_modules/" zrc="r3/zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
+      - name: Genrate npm R3 Zen packages
+        run: make zen-profiles node_modules="r3/node_modules/" zrc="r3/zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
 
       - run:
           for folder in $(ls -d r3/zrc/node_modules/*); do npm publish $folder --access=public; done
-        name: Publish npm Zen packages for Nictiz
+        name: Publish npm R3 Zen packages 
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
