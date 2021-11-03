@@ -327,6 +327,28 @@
     res))
 
 
+(declare normalize-slicing)
+
+
+(defn remove-slicing [[k v]]
+  (if (and (contains? v :slicing)
+           (not= :extension k) #_"NOTE: slicing in extensions is processed differently")
+    (do
+      (prn 'dissoc)
+      (when-let [sliceless-v (not-empty (dissoc v :slicing))] #_"NOTE: slicing is not supported yet, removing instead of processing"
+                [k sliceless-v]))
+    [k (normalize-slicing v)]))
+
+
+(defn normalize-slicing [res]
+  (cond-> res
+    (contains? res :|) (update :| (partial into {} (keep remove-slicing)))
+    :always            (as-> $ (utils/dissoc-when empty? $ :|))
+
+    (contains? res :slicing) (update-in [:slicing :slices] (partial into {} (keep remove-slicing)))
+    :always                  (as-> $ (utils/dissoc-when (comp empty? :slices) $ :slicing))))
+
+
 (defn load-intermidiate [res]
   (let [#_#_res (if (or (= "Element" (:id res)) ;; NOTE: fix FHIR bug - element missed derivation
                     (= "Resource" (:id res))
@@ -342,6 +364,7 @@
                                              :baseDefinition :description :fhirVersion :type :url]))
            (normalize-description)
            (normalize-extension)
+           (normalize-slicing)
            (merge
              (when-let [package-ns (:zen.fhir/package-ns res)]
                {:zen.fhir/package-ns package-ns
