@@ -230,7 +230,11 @@
       (contains? #{"required" "preferred"} (:strength bn))
       (assoc :binding (-> bn
                           (dissoc :extension)
-                          (update :valueSet parse-canonical-url))))
+                          (dissoc :valueSet :valueSetUri :valueSetReference)
+                          (assoc :valueSet (parse-canonical-url
+                                             (or (get-in bn [:valueSet])
+                                                 (get-in bn [:valueSetUri])
+                                                 (get-in bn [:valueSetReference :reference])))))))
     el))
 
 
