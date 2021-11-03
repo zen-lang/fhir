@@ -788,8 +788,8 @@
                                                                (some-> package :name (str/replace #"\." "-") symbol)))))))
 
 
-(defn load-all [ztx _ & [{:keys [params node-modules-folder whitelist blacklist]
-                          :or {node-modules-folder "node_modules"}}]]
+(defn preload-all [ztx & [{:keys [params node-modules-folder whitelist blacklist]
+                           :or {node-modules-folder "node_modules"}}]]
   (doseq [pkg-dir  (find-packages node-modules-folder)]
     (let [package (read-json (str (.getPath pkg-dir) "/package.json"))
           package-params (get params (:name package))]
@@ -800,6 +800,10 @@
                        :whitelist whitelist
                        :blacklist blacklist}
                       package
-                      f))))
+                      f)))))
+
+
+(defn load-all [ztx _ & [params]]
+  (preload-all ztx params)
   (process-resources ztx)
   :done)
