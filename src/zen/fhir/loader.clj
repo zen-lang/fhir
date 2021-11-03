@@ -333,10 +333,8 @@
 (defn remove-slicing [[k v]]
   (if (and (contains? v :slicing)
            (not= :extension k) #_"NOTE: slicing in extensions is processed differently")
-    (do
-      (prn 'dissoc)
-      (when-let [sliceless-v (not-empty (dissoc v :slicing))] #_"NOTE: slicing is not supported yet, removing instead of processing"
-                [k sliceless-v]))
+    (when-let [sliceless-v (not-empty (dissoc v :slicing))] #_"NOTE: slicing is not supported yet, removing instead of processing"
+              [k sliceless-v])
     [k (normalize-slicing v)]))
 
 
