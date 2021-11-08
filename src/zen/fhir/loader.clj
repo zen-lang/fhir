@@ -304,6 +304,18 @@
       (dissoc res :| :fhir-poly-keys :baseDefinition :minItems :maxItems)
       (dissoc (get-in res [:| :value]) :fhir-poly-keys))
 
+    (and (= 1 (count (dissoc (:| res) :url :extension)))
+         (= 1 (count (get-in res [:| :value :|]))))
+    (let [value (first (vals (get-in res [:| :value :|])))]
+      (merge (dissoc res :| :fhir-poly-keys :baseDefinition) ;; baseDefinition here is http://.../Extension, thus dissoc
+             (dissoc value :minItems :maxItems :required :polymorphic :sliceName)
+             {:kind "first-class-extension"
+              :baseDefinition (str "http://hl7.org/fhir/StructureDefinition/" (:type value))}))
+
+    (and (= 1 (count (dissoc (:| res) :url :extension)))
+         (< 1 (count (get-in res [:| :value :|]))))
+    (assert false (pr-str :not-supported res))
+
     (= 1 (count (dissoc (:| res) :url :extension))) ;; extension with a single value
     (let [value (first (vals (dissoc (:| res) :url :extension)))]
       (merge (dissoc res :| :fhir-poly-keys :baseDefinition) ;; baseDefinition here is http://.../Extension, thus dissoc
