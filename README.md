@@ -1,64 +1,96 @@
+<!---
+Input:
+- FHIR npm package (simplifier.net repo)
+
+Output:
+- zen-lang npm package (npmjs.com)
+- zen-lang package as Aidbox standalone project (zip, github release)
+- Executable (jar, github release)
+
+TODO: Convert zen-lang to FHIR
+-->
 # Convert FHIR to zen-lang
+[FHIR package](https://registry.fhir.org/learn) to [zen-lang](https://github.com/zen-lang/zen) schemas converter.
 
-![example workflow](https://github.com/zen-lang/fhir/actions/workflows/main/badge.svg)
+## Artifacts
+On each release Github action publishes:
+- [zen-lang npm packages on npmjs.com](https://www.npmjs.com/search?q=%40zen-lang%2F)
+- [zen-lang standalone projects on github](https://github.com/zen-lang/fhir/releases)
+- [jar executable on github](https://github.com/zen-lang/fhir/releases)
 
+How to enable and use zen-lang packages is described in [this guide](https://docs.aidbox.app/profiling/draft-profiling-with-zen-lang)
 
-Documentation generator for zen
+## How to
 
+### Convert FHIR to zen-lang
 
-Get FHIR IGs as input produce zen bundle as output.
+Download and execute a jar executable from [the latest release](https://github.com/zen-lang/fhir/releases) like this:
+```bash
+java -jar [JAR_PATH] [FHIR_FROM_PATH] [ZEN_TO_PATH] [VER] [PACKAGE_NAME]
+```
+#### Arguments description
+  - `JAR_PATH` - path to downloaded jar file _(**required**)_
+  - `FHIR_FROM_PATH` - path to directory with FHIR packages _(**required**)_
+  - `ZEN_TO_PATH` - path to directory where converted zen-lang schemas will be saved _(**required**)_
+  - `VER` - converted zen-lang packages version _(**required**)_
+  - `PACKAGE_NAME` - save only this specific package _(optional)_
 
-* SD => schemas
-* Aidbox transformation?
-* VS => validation? & load into Concept (ndjson)
-* SP + algorythm => search params 
-* Generate API Constructor
+#### Example
 
+```bash
+# Create and open directory
+$ mkdir zen-profiling && cd zen-profiling
 
-Aidbox + zen bundle => Conformant FHIR Server
+# Download needed FHIR package
+$ npm --registry https://packages.simplifier.net install hl7.fhir.us.davinci-cdex@latest                                
++ hl7.fhir.us.davinci-cdex@0.2.0
+added 1 package from 1 contributor
 
+# Download the package dependencies
+$ npm --registry https://packages.simplifier.net install                                                                 
+added 3 packages from 3 contributors
 
-## Structure Definitions
+# Current directory structure:
+├── node_modules
+│   ├── hl7.fhir.r4.core
+│   ├── hl7.fhir.us.core
+│   ├── hl7.fhir.us.davinci-cdex
+│   └── hl7.fhir.us.davinci-hrex
+└── package-lock.json
 
+# Convert downloaded FHIR packages to zen-lang
+$ java -jar ~/Downloads/zen-fhir-0.0.24-2-standalone.jar node_modules zen/node_modules 0.1.0   
+:done
 
-npm module (package name, index.json, resources )
+# Directory structure after convertion
+├── node_modules
+├── package-lock.json
+└── zen
+    └── node_modules
+        ├── hl7-fhir-r4-core
+        │   ├── hl7-fhir-r4-core
+        │   ├── hl7-fhir-r4-core.edn
+        │   ├── hl7-fhir-r4-core-terminology-bundle.ndjson.gz
+        │   └── package.json
+        ├── hl7-fhir-us-core
+        │   ├── hl7-fhir-us-core
+        │   ├── hl7-fhir-us-core.edn
+        │   ├── hl7-fhir-us-core-terminology-bundle.ndjson.gz
+        │   └── package.json
+        ├── hl7-fhir-us-davinci-cdex
+        │   ├── hl7-fhir-us-davinci-cdex
+        │   ├── hl7-fhir-us-davinci-cdex.edn
+        │   ├── hl7-fhir-us-davinci-cdex-terminology-bundle.ndjson.gz
+        │   └── package.json
+        └── hl7-fhir-us-davinci-hrex
+            ├── hl7-fhir-us-davinci-hrex
+            ├── hl7-fhir-us-davinci-hrex.edn
+            ├── hl7-fhir-us-davinci-hrex-terminology-bundle.ndjson.gz
+            └── package.json
+```
+[How to use zen-lang schemas guide](https://docs.aidbox.app/profiling/draft-profiling-with-zen-lang)
 
-
-loader(npm, custom?) => inter-1 => inter-2 (context dependent) => zen => export (zen npm, zen sa, load in memory)
-
-Unique identificator of resource is uri
-
-1. Load into memory (URL)
-- strip unimportant attributes
-- fix bugs like type of primitives
-- min/max => collection & requir*
-- type of attribute
-- elements (id,path) =>  recursive structure
-- union types as aidbox
-- first class extensions
-- * non-first class (mode?) => { extension: [] } problem with references
-- * first class primitive extensions: primitive ext => _given: {fcext: }
-- * non-first class => propertyPattern (keyPattern) :_ {:type zen/any}
-- reference?
-
-2. Walk all resources with parents & enrich with parents (collection?, type) 
-- deps
-
-3. Generate zen schemas 
-- recursive schemas (Questionnaire, CodeSystem )
-
-
-4. Generate zen module
-
-
-
-JSON:
-
-given:
-_givne {extensions: []}
-
-
-
-
-
-
+<!---
+### Convert zen-lang to FHIR
+TBD
+-->
