@@ -12,7 +12,9 @@
         conceptmap' (dissoc parsed-conceptmap :group)
         maprules (mapcat (fn [group] ;;NOTE: Ungroup group by element
                            (reduce (fn [acc element]
-                                     (conj acc (-> group (assoc :element element))))
+                                     (conj acc (-> group (assoc :element element
+                                                                :url (:url conceptmap')
+                                                                :resourceType "MapRule"))))
                                    [] (:element group)))
                          (:group parsed-conceptmap))]
     (with-open [gzip (-> output-path
