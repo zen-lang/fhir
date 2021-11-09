@@ -26,14 +26,26 @@ How to enable and use zen-lang packages is described in [this guide](https://doc
 
 Download and execute a jar executable from [the latest release](https://github.com/zen-lang/fhir/releases) like this:
 ```bash
-java -jar [JAR_PATH] [FHIR_FROM_PATH] [ZEN_TO_PATH] [VER] [PACKAGE_NAME]
+java -jar [JAR_PATH] [COMMAND] [OPTIONS]
 ```
-#### Arguments description
-  - `JAR_PATH` - path to downloaded jar file _(**required**)_
-  - `FHIR_FROM_PATH` - path to directory with FHIR packages _(**required**)_
-  - `ZEN_TO_PATH` - path to directory where converted zen-lang schemas will be saved _(**required**)_
-  - `VER` - converted zen-lang packages version _(**required**)_
-  - `PACKAGE_NAME` - save only this specific package _(optional)_
+  
+  #### Commands
+  **`zenbnd`**               Builds zen project from provided IG
+  ###### Options:
+   `-i`, `--input` S    Path to node-modules-folder\
+   `-o`, `--output` S   Path to resulting zip archive\
+   `-v`, `--version` S  Resulting package version\
+   `-n`, `--name` S     Resulting package name (optional)
+   
+  **`stndlp`**               Builds standalone Aidbox zen project
+  ###### Options:
+   `-i`, `--input` S   Path to node-modules-folder\
+   `-o`, `--output` S  Path to resulting zip archive
+   
+  **`cmndj`**                Converts ConceptMap to .ndjson.gz bundle
+  ###### Options:
+   `-i`, `--input` S   Path to node-modules-folder\
+   `-o`, `--output` S  Path to resulting zip archive
 
 #### Example
 
