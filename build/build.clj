@@ -5,7 +5,7 @@
 
 (def lib 'zen-lang/zen.fhir)
 
-(def main-ns 'zen.fhir.tooling)
+(def main-ns 'zen.fhir.tooling.cli)
 
 (def tag (-> {:command-args ["git" "describe" "--tags"]
               :dir "./."
