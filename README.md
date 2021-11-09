@@ -71,7 +71,7 @@ added 3 packages from 3 contributors
 └── package-lock.json
 
 # Convert downloaded FHIR packages to zen-lang
-$ java -jar ~/Downloads/zen-fhir-0.0.24-2-standalone.jar node_modules zen/node_modules 0.1.0   
+$ java -jar ~/Downloads/zen-fhir-0.0.24-2-standalone.jar zenbnd -i node_modules -o zen/node_modules -v 0.1.0   
 :done
 
 # Directory structure after convertion
