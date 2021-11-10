@@ -9,12 +9,16 @@
 
 (defn conceptmap-to-ndjson-gz [path-to-conceptmap output-path]
   (let [parsed-conceptmap (json/parse-string (slurp path-to-conceptmap) keyword)
-        conceptmap' (dissoc parsed-conceptmap :group)
+        conceptmap' (-> parsed-conceptmap
+                        (assoc :id (get parsed-conceptmap :id (java.util.UUID/randomUUID)))
+                        (dissoc :group))
         maprules (mapcat (fn [group] ;;NOTE: Ungroup group by element
                            (reduce (fn [acc element]
-                                     (conj acc (-> group (assoc :element element
-                                                                :url (:url conceptmap')
-                                                                :resourceType "MapRule"))))
+                                     (conj acc (-> group (assoc :id (java.util.UUID/randomUUID)
+                                                                :element element
+                                                                :conceptmapId (:id conceptmap')
+                                                                :conceptmapUrl (:url conceptmap')
+                                                                :resourceType "ConceptMapRule"))))
                                    [] (:element group)))
                          (:group parsed-conceptmap))]
     (with-open [gzip (-> output-path
