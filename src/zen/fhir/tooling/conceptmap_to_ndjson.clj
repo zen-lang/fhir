@@ -15,6 +15,12 @@
         maprules (mapcat (fn [group] ;;NOTE: Ungroup group by element
                            (reduce (fn [acc element]
                                      (conj acc (-> group (assoc :id (java.util.UUID/randomUUID)
+                                                                :sourceValueSet (or
+                                                                                 (get-in conceptmap' [:source :uri])
+                                                                                 (get-in conceptmap' [:source :canonical]))
+                                                                :targetValueSet (or
+                                                                                 (get-in conceptmap' [:target :uri])
+                                                                                 (get-in conceptmap' [:target :canonical]))
                                                                 :element element
                                                                 :conceptmapId (:id conceptmap')
                                                                 :conceptmapUrl (:url conceptmap')
