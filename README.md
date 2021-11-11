@@ -13,10 +13,10 @@ TODO: Convert zen-lang to FHIR
 [FHIR package](https://registry.fhir.org/learn) to [zen-lang](https://github.com/zen-lang/zen) schemas converter.
 
 ## Artifacts
-On each release Github action publishes:
+On each [release](https://github.com/zen-lang/fhir/releases) Github action publishes:
 - [zen-lang npm packages on npmjs.com](https://www.npmjs.com/search?q=%40zen-lang%2F)
-- [zen-lang standalone projects on github](https://github.com/zen-lang/fhir/releases)
-- [jar executable on github](https://github.com/zen-lang/fhir/releases)
+- [zen-lang standalone projects on github](https://github.com/zen-lang/fhir/releases/latest)
+- [jar executable on github](https://github.com/zen-lang/fhir/releases/latest)
 
 How to enable and use zen-lang packages is described in [this guide](https://docs.aidbox.app/profiling/draft-profiling-with-zen-lang)
 
@@ -24,7 +24,7 @@ How to enable and use zen-lang packages is described in [this guide](https://doc
 
 ### Convert FHIR to zen-lang
 
-Download and execute a jar executable from [the latest release](https://github.com/zen-lang/fhir/releases) like this:
+Download and execute a jar executable from [the latest release](https://github.com/zen-lang/fhir/releases/latest) like this:
 ```bash
 java -jar [JAR_PATH] [COMMAND] [OPTIONS]
 ```
