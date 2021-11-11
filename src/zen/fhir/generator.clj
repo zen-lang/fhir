@@ -179,7 +179,7 @@
       (utils/strip-nils
         {:zen/tags #{'zenbox/value-set}
          :zen/desc (:description inter-res)
-         :zen.fhir/version "0.3.0-1"
+         :zen.fhir/version "0.3.2-1"
          :uri (:url inter-res)
          :version (:version inter-res)})}}))
 
@@ -212,7 +212,7 @@
                                :zen/desc (:text-description inter-res)
                                :zenbox/type (:type inter-res)
                                :zenbox/profileUri url
-                               :zen.fhir/version "0.3.0-1"}
+                               :zen.fhir/version "0.3.2-1"}
                               schema-part)
                             (update :confirms (comp not-empty disj) this-schema-sym)
                             utils/strip-nils)}}))
