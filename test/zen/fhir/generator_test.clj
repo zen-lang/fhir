@@ -11,72 +11,87 @@
    [clojure.set]))
 
 
-(def zenbox
-  '{ns zenbox
+(def memory-store
+  '{zen.fhir
+    {ns zen.fhir
 
-    Resource
-    {:zen/tags #{zen/tag zen/schema}
-     :type zen/map
-     :keys {:resourceType {:type zen/string}
-            :id {:type zen/string}
-            :meta {:type zen/map :values {:type zen/any}}}}
+     version
+     {:zen/tags #{zen/schema zen/tag zen.fhir/version}
+      :type zen/map
+      :validation-type :open
+      :zen.fhir/version "0.3.0-1"
+      :require #{:zen.fhir/version}
+      :keys {:zen.fhir/version {:type zen/string
+                                :const {:value "0.3.0-1"}}}}}
 
-    Reference
-    {:zen/tags #{zen/schema}
-     :zen/desc "reference datatype"
-     :type zen/map
-     :keys {:id {:type zen/string}
-            :resourceType {:type zen/string}
-            :display {:type zen/string}}}
+    zenbox
+    {ns zenbox
+     import #{zen.fhir}
 
-    value-set
-    {:zen/tags #{zen/schema zen/tag}
-     :zen/desc "Value set"
-     :type zen/map
-     :keys {:uri {:type zen/string}
-            :version {:type zen/string}}}
+     Resource
+     {:zen/tags #{zen/tag zen/schema}
+      :type zen/map
+      :keys {:resourceType {:type zen/string}
+             :id {:type zen/string}
+             :meta {:type zen/map :values {:type zen/any}}}}
 
-    nested-schema
-    {:zen/tags #{zen/schema}
-     :type zen/map
-     :keys {:fhir/flags {:type zen/set}
-            :fhir/extensionUri {:type zen/string}
-            :fhir/polymorphic {:type zen/boolean}
-            :zenbox/reference {:type zen/map
-                               :keys {:refers {:type zen/set
-                                               :every {:type zen/symbol
-                                                       #_#_:tags #{#{zenbox/base-schema zenbox/profile-schema}}}}}} ;; TODO
-            :zenbox/value-set {:type zen/map
-                               :keys {:symbol {:type zen/symbol}
-                                      :strength {:type zen/keyword
-                                                 :enum [{:value :required}
-                                                        {:value :extensible}
-                                                        {:value :preferred}
-                                                        {:value :example}]}}}
-            :keys {:type zen/map
-                   :values {:confirms #{nested-schema}}}
-            :every {:confirms #{nested-schema}}}}
+     Reference
+     {:zen/tags #{zen/schema}
+      :zen/desc "reference datatype"
+      :type zen/map
+      :keys {:id {:type zen/string}
+             :resourceType {:type zen/string}
+             :display {:type zen/string}}}
 
-    structure-schema
-    {:zen/tags #{zen/schema zen/tag}
-     :confirms #{nested-schema}
-     :type     zen/map
-     :keys     {:zenbox/type {:type zen/string}
-                :zenbox/profileUri {:type zen/string}}}
+     value-set
+     {:zen/tags #{zen/schema zen/tag}
+      :zen/desc "Value set"
+      :confirms #{zen.fhir/version}
+      :type zen/map
+      :keys {:uri {:type zen/string}
+             :version {:type zen/string}}}
 
-    base-schema
-    {:zen/tags #{zen/schema zen/tag}
-     :zen/desc "This schema should be used to validate all resources of its type"
-     :confirms #{structure-schema}
-     :type     zen/map
-     :require  #{:zenbox/type}}
+     nested-schema
+     {:zen/tags #{zen/schema}
+      :type zen/map
+      :keys {:fhir/flags {:type zen/set}
+             :fhir/extensionUri {:type zen/string}
+             :fhir/polymorphic {:type zen/boolean}
+             :zenbox/reference {:type zen/map
+                                :keys {:refers {:type zen/set
+                                                :every {:type zen/symbol
+                                                        #_#_:tags #{#{zenbox/base-schema zenbox/profile-schema}}}}}} ;; TODO
+             :zenbox/value-set {:type zen/map
+                                :keys {:symbol {:type zen/symbol}
+                                       :strength {:type zen/keyword
+                                                  :enum [{:value :required}
+                                                         {:value :extensible}
+                                                         {:value :preferred}
+                                                         {:value :example}]}}}
+             :keys {:type zen/map
+                    :values {:confirms #{nested-schema}}}
+             :every {:confirms #{nested-schema}}}}
 
-    profile-schema
-    {:zen/tags #{zen/schema zen/tag}
-     :zen/desc "This schema should be used only when mentioned in meta.profile"
-     :confirms #{structure-schema}
-     :type     zen/map
-     :require  #{:zenbox/profileUri}}})
+     structure-schema
+     {:zen/tags #{zen/schema zen/tag}
+      :confirms #{nested-schema zen.fhir/version}
+      :type     zen/map
+      :keys     {:zenbox/type {:type zen/string}
+                 :zenbox/profileUri {:type zen/string}}}
+
+     base-schema
+     {:zen/tags #{zen/schema zen/tag}
+      :zen/desc "This schema should be used to validate all resources of its type"
+      :confirms #{structure-schema}
+      :type     zen/map
+      :require  #{:zenbox/type}}
+
+     profile-schema
+     {:zen/tags #{zen/schema zen/tag}
+      :zen/desc "This schema should be used only when mentioned in meta.profile"
+      :confirms #{structure-schema}
+      :type     zen/map
+      :require  #{:zenbox/profileUri}}}})
 
 
 (defn delete-directory-recursive
@@ -598,7 +613,7 @@
   (t/testing "read zen npm modules"
     (def zctx (zen.core/new-context
                 {:paths ["test-temp-zrc/"]
-                 :memory-store {'zenbox zenbox}}))
+                 :memory-store memory-store}))
 
     (def _ (zen.core/read-ns zctx 'us-core-v3.us-core-patient))
 
@@ -617,8 +632,8 @@
 (t/deftest zen-schemas-validation
   (def zctx (zen.core/new-context
               {:memory-store
-               (assoc (:fhir.zen/ns @ztx)
-                      'zenbox zenbox)}))
+               (merge (:fhir.zen/ns @ztx)
+                      memory-store)}))
 
   (run! (fn [zen-ns]
           (zen.core/load-ns zctx (get-in @zctx [:memory-store zen-ns])))
@@ -691,7 +706,7 @@
                 :fhir/flags        #{:MS}}}}))
 
   (t/testing "Generated zen schemas are correct"
-    (swap! ztx assoc :memory-store (assoc (:fhir.zen/ns @ztx) 'zenbox zenbox))
+    (swap! ztx assoc :memory-store (merge (:fhir.zen/ns @ztx) memory-store))
 
     (zen.core/load-ns ztx (get (:fhir.zen/ns @ztx) 'plannet.plannet-PractitionerRole))
 

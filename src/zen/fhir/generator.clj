@@ -179,6 +179,7 @@
       (utils/strip-nils
         {:zen/tags #{'zenbox/value-set}
          :zen/desc (:description inter-res)
+         :zen.fhir/version "0.3.0-1"
          :uri (:url inter-res)
          :version (:version inter-res)})}}))
 
@@ -210,7 +211,8 @@
                                                (when severity-tag [severity-tag]))
                                :zen/desc (:text-description inter-res)
                                :zenbox/type (:type inter-res)
-                               :zenbox/profileUri url}
+                               :zenbox/profileUri url
+                               :zen.fhir/version "0.3.0-1"}
                               schema-part)
                             (update :confirms (comp not-empty disj) this-schema-sym)
                             utils/strip-nils)}}))
