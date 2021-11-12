@@ -3,7 +3,12 @@
 
 SHELL = bash
 
-init:
+ZEN_FHIR_GENERATOR_VER = $(shell git describe --tag --abbrev=0)
+
+set-zen-fhir-version:
+	echo -n ${ZEN_FHIR_GENERATOR_VER} > resources/zen-fhir-version
+
+init: set-zen-fhir-version
 	 npm --registry=https://packages.simplifier.net install
 	 npm --registry=https://packages.simplifier.net install
 
