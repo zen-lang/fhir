@@ -19,10 +19,10 @@
      {:zen/tags #{zen/schema zen/tag zen.fhir/version}
       :type zen/map
       :validation-type :open
-      :zen.fhir/version "0.3.3"
+      :zen.fhir/version "0.3.3-1"
       :require #{:zen.fhir/version}
       :keys {:zen.fhir/version {:type zen/string
-                                :const {:value "0.3.3"}}}}}
+                                :const {:value "0.3.3-1"}}}}}
 
     zenbox
     {ns zenbox
