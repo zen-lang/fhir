@@ -170,8 +170,26 @@
 (defmethod generate-zen-schema :default [_rt _fhir-inter [_url _inter-res]])
 
 
-(defmethod generate-zen-schema :ValueSet [_rt _fhir-inter [_url inter-res]]
-  (let [schema-ns   (:zen.fhir/schema-ns inter-res)]
+(defn find-value-set-systems [rt fhir-inter [url inter-res]]
+  (-> (:compose inter-res)
+      (select-keys [:include :exclude])
+      vals
+      (->> (apply concat)
+           (into #{}
+                 (mapcat (fn [compose-elem]
+                           (let [nested-systems
+                                 (mapcat (fn [nested-vs-url]
+                                           (when-let [nested-vs (get-in fhir-inter ["ValueSet" nested-vs-url])]
+                                             (find-value-set-systems rt fhir-inter [nested-vs-url nested-vs])))
+                                         (:valueSet compose-elem))]
+                             (cond->> nested-systems
+                               (:system compose-elem)
+                               (cons (:system compose-elem))))))))))
+
+
+(defmethod generate-zen-schema :ValueSet [rt fhir-inter [url inter-res]]
+  (let [schema-ns    (:zen.fhir/schema-ns inter-res)
+        code-systems (find-value-set-systems rt fhir-inter [url inter-res])]
     {schema-ns
      {'ns     schema-ns
       'import #{'zenbox}
