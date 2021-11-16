@@ -7,7 +7,7 @@ ZEN_FHIR_VERSION = $(shell git describe --tag --abbrev=0)
 
 set-zen-fhir-version:
 	echo -n ${ZEN_FHIR_VERSION} > resources/zen-fhir-version
-	envsubst < zrc/zen/fhir.edn.tpl > zrc/zen/fhir.edn
+	sed "s/\$${ZEN_FHIR_VERSION}/${ZEN_FHIR_VERSION}/" zrc/zen/fhir.edn.tpl > zrc/zen/fhir.edn
 
 init: set-zen-fhir-version
 	 npm --registry=https://packages.simplifier.net install
