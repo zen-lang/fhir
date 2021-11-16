@@ -14,82 +14,7 @@
 (def zen-fhir-version (slurp (clojure.java.io/resource "zen-fhir-version")))
 
 
-(def memory-store
-  '{zenbox
-    {ns zenbox
-     import #{zen.fhir}
-
-     Resource
-     {:zen/tags #{zen/tag zen/schema}
-      :type zen/map
-      :keys {:resourceType {:type zen/string}
-             :id {:type zen/string}
-             :meta {:type zen/map :values {:type zen/any}}}}
-
-     Reference
-     {:zen/tags #{zen/schema}
-      :zen/desc "reference datatype"
-      :type zen/map
-      :keys {:id {:type zen/string}
-             :resourceType {:type zen/string}
-             :display {:type zen/string}}}
-
-     value-set
-     {:zen/tags #{zen/schema zen/tag}
-      :zen/desc "Value set"
-      :confirms #{zen.fhir/version}
-      :type zen/map
-      :keys {:uri {:type zen/string}
-             :fhir/code-systems {:type zen/set
-                                 :every {:type zen/map
-                                         :require #{:fhir/url}
-                                         :keys {:fhir/url {:type zen/string}
-                                                :zen.fhir/content {:type zen/keyword
-                                                                   :enum [{:value :bundled}
-                                                                          {:value :not-present}]}}}}
-             :version {:type zen/string}}}
-
-     nested-schema
-     {:zen/tags #{zen/schema}
-      :type zen/map
-      :keys {:fhir/flags {:type zen/set}
-             :fhir/extensionUri {:type zen/string}
-             :fhir/polymorphic {:type zen/boolean}
-             :zenbox/reference {:type zen/map
-                                :keys {:refers {:type zen/set
-                                                :every {:type zen/symbol
-                                                        #_#_:tags #{#{zenbox/base-schema zenbox/profile-schema}}}}}} ;; TODO
-             :zenbox/value-set {:type zen/map
-                                :keys {:symbol {:type zen/symbol}
-                                       :strength {:type zen/keyword
-                                                  :enum [{:value :required}
-                                                         {:value :extensible}
-                                                         {:value :preferred}
-                                                         {:value :example}]}}}
-             :keys {:type zen/map
-                    :values {:confirms #{nested-schema}}}
-             :every {:confirms #{nested-schema}}}}
-
-     structure-schema
-     {:zen/tags #{zen/schema zen/tag}
-      :confirms #{nested-schema zen.fhir/version}
-      :type     zen/map
-      :keys     {:zenbox/type {:type zen/string}
-                 :zenbox/profileUri {:type zen/string}}}
-
-     base-schema
-     {:zen/tags #{zen/schema zen/tag}
-      :zen/desc "This schema should be used to validate all resources of its type"
-      :confirms #{structure-schema}
-      :type     zen/map
-      :require  #{:zenbox/type}}
-
-     profile-schema
-     {:zen/tags #{zen/schema zen/tag}
-      :zen/desc "This schema should be used only when mentioned in meta.profile"
-      :confirms #{structure-schema}
-      :type     zen/map
-      :require  #{:zenbox/profileUri}}}})
+(def memory-store '{})
 
 
 (defn delete-directory-recursive
@@ -169,14 +94,14 @@
 
      'fhir-r4.string
      {'ns     'fhir-r4.string
-      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+      'schema {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
                :confirms #(not (contains? % 'fhir-r4.Element/schema))
                :type 'zen/string
                :zen.fhir/version zen-fhir-version}}
 
      'fhir-r4.Extension
      {'ns     'fhir-r4.Extension
-      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+      'schema {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
                :confirms #{'fhir-r4.Element/schema}
                :zen.fhir/version zen-fhir-version
                :type     'zen/map
@@ -186,11 +111,11 @@
                                   :keys {:uri {:confirms #{'fhir-r4.uri/schema}}
                                          :url {:confirms #{'fhir-r4.url/schema}}
                                          :string {:confirms #{'fhir-r4.string/schema}}
-                                         :Reference {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}}}}}}}
+                                         :Reference {:confirms #{'fhir-r4.Reference/schema 'zen.fhir/Reference}}}}}}}
 
      'fhir-r4.Element
      {'ns     'fhir-r4.Element
-      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+      'schema {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
                :confirms empty?
                :zen.fhir/version zen-fhir-version
                :type     'zen/map
@@ -200,8 +125,8 @@
 
      'fhir-r4.Resource
      {'ns     'fhir-r4.Resource
-      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
-               :confirms #{'zenbox/Resource}
+      'schema {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
+               :confirms #{'zen.fhir/Resource}
                :type 'zen/map
                :keys {:id            {:confirms #{'fhir-r4.string/schema}
                                       :fhir/flags #{:SU}}
@@ -215,8 +140,8 @@
      'fhir-r4.DomainResource
      {'ns     'fhir-r4.DomainResource
       'import #(contains? % 'fhir-r4.Resource)
-      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
-               :confirms #{'fhir-r4.Resource/schema 'zenbox/Resource}
+      'schema {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
+               :confirms #{'fhir-r4.Resource/schema 'zen.fhir/Resource}
                :type 'zen/map
                :keys {:text              {:confirms #{'fhir-r4.Narrative/schema}}
                       :contained         {:type  'zen/vector
@@ -228,8 +153,8 @@
 
      'fhir-r4.value-set.administrative-gender
      {'ns 'fhir-r4.value-set.administrative-gender
-      'import #(contains? % 'zenbox)
-      'value-set {:zen/tags #{'zenbox/value-set}
+      'import #(contains? % 'zen.fhir)
+      'value-set {:zen/tags #{'zen.fhir/value-set}
                   :uri "http://hl7.org/fhir/ValueSet/administrative-gender"
                   :fhir/code-systems #{{:fhir/url "http://hl7.org/fhir/administrative-gender"
                                         :zen.fhir/content :bundled}}
@@ -237,11 +162,11 @@
 
      'fhir-r4.HumanName
      {'ns 'fhir-r4.HumanName
-      'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+      'schema {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
                :confirms #{'fhir-r4.Element/schema}
                :type 'zen/map
-               :zenbox/type "HumanName"
-               :zenbox/profileUri "http://hl7.org/fhir/StructureDefinition/HumanName"
+               :zen.fhir/type "HumanName"
+               :zen.fhir/profileUri "http://hl7.org/fhir/StructureDefinition/HumanName"
                :keys {:family  {:confirms #{'fhir-r4.string/schema}}
                       :_family {:confirms #{'fhir-r4.Element/schema}}
 
@@ -253,14 +178,14 @@
      'fhir-r4.Patient
      {'ns     'fhir-r4.Patient
       'import #(and (contains? % 'fhir-r4.DomainResource)
-                    (contains? % 'zenbox)
+                    (contains? % 'zen.fhir)
                     (contains? % 'fhir-r4.value-set.administrative-gender))
-      'schema {:zen/tags #{'zen/schema 'zenbox/base-schema}
-               :confirms #{'fhir-r4.DomainResource/schema 'zenbox/Resource}
+      'schema {:zen/tags #{'zen/schema 'zen.fhir/base-schema}
+               :confirms #{'fhir-r4.DomainResource/schema 'zen.fhir/Resource}
                :zen.fhir/version zen-fhir-version
                :type 'zen/map
-               :zenbox/type "Patient"
-               :zenbox/profileUri "http://hl7.org/fhir/StructureDefinition/Patient"
+               :zen.fhir/type "Patient"
+               :zen.fhir/profileUri "http://hl7.org/fhir/StructureDefinition/Patient"
                :keys {:name {:type 'zen/vector
                              :every {:confirms #{'fhir-r4.HumanName/schema}}}
                       :active {:confirms #{'fhir-r4.boolean/schema}}
@@ -270,36 +195,36 @@
                                  :keys {:boolean {:confirms #{'fhir-r4.boolean/schema}}
                                         :dateTime {:confirms #{'fhir-r4.dateTime/schema}}}}
                       :managingOrganization {:zen/desc "Organization that is the custodian of the patient record"
-                                             :confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}
-                                             :zenbox/reference {:refers #{'fhir-r4.Organization/schema}}}
+                                             :confirms #{'fhir-r4.Reference/schema 'zen.fhir/Reference}
+                                             :zen.fhir/reference {:refers #{'fhir-r4.Organization/schema}}}
                       :gender {:confirms #{'fhir-r4.code/schema}
-                               :zenbox/value-set {:symbol 'fhir-r4.value-set.administrative-gender/value-set
+                               :zen.fhir/value-set {:symbol 'fhir-r4.value-set.administrative-gender/value-set
                                                   :strength :required}}
                       :link {:type 'zen/vector
                              :every {:require #{:other :type}}}}}}
 
      'fhir-r4.ServiceRequest
      {'ns     'fhir-r4.ServiceRequest
-      'schema {:keys {:supportingInfo {:every {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}
-                                               :zenbox/reference {:refers #{}}}}}}}
+      'schema {:keys {:supportingInfo {:every {:confirms #{'fhir-r4.Reference/schema 'zen.fhir/Reference}
+                                               :zen.fhir/reference {:refers #{}}}}}}}
 
      'fhir-r4.Practitioner
      {'ns     'fhir-r4.Practitioner
       'import #(contains? % 'fhir-r4.value-set.administrative-gender)
       'schema {:keys {:gender {:confirms #{'fhir-r4.code/schema}
-                               :zenbox/value-set {:symbol 'fhir-r4.value-set.administrative-gender/value-set
+                               :zen.fhir/value-set {:symbol 'fhir-r4.value-set.administrative-gender/value-set
                                                   :strength :required}}}}}
 
      'us-core-v3.us-core-patient
      {'ns     'us-core-v3.us-core-patient
       'import #(and (contains? % 'fhir-r4.Patient)
-                    (contains? % 'zenbox))
-      'schema {:zen/tags #{'zen/schema 'zenbox/profile-schema}
+                    (contains? % 'zen.fhir))
+      'schema {:zen/tags #{'zen/schema 'zen.fhir/profile-schema}
                :zen/desc "Defines constraints and extensions on the patient resource for the minimal set of data to query and retrieve patient demographic information."
-               :confirms #{'fhir-r4.Patient/schema 'zenbox/Resource}
+               :confirms #{'fhir-r4.Patient/schema 'zen.fhir/Resource}
                :type 'zen/map
-               :zenbox/type "Patient"
-               :zenbox/profileUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+               :zen.fhir/type "Patient"
+               :zen.fhir/profileUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
                :zen.fhir/version zen-fhir-version
                :require #{:name :gender :identifier}
                :keys {:race      {:confirms #{'us-core-v3.us-core-race/schema}
@@ -318,7 +243,7 @@
 
      'us-core-v3.value-set.birthsex
      {'ns 'us-core-v3.value-set.birthsex
-      'import #{'zenbox}
+      'import #{'zen.fhir}
 
       'value-set
       {:uri "http://hl7.org/fhir/us/core/ValueSet/birthsex"
@@ -331,42 +256,42 @@
      'us-core-v3.us-core-birthsex
      {'ns 'us-core-v3.us-core-birthsex
       'import #(and (contains? % 'us-core-v3.value-set.birthsex)
-                    (contains? % 'zenbox))
+                    (contains? % 'zen.fhir))
 
       'schema
       {:zen.fhir/version zen-fhir-version
-       :zenbox/value-set {:symbol 'us-core-v3.value-set.birthsex/value-set
+       :zen.fhir/value-set {:symbol 'us-core-v3.value-set.birthsex/value-set
                           :strength :required}}}
 
      'fhir-r4.MolecularSequence
      {'schema
-      {:keys {:structureVariant {:every {:keys {:variantType {:zenbox/value-set nil?}}}}}}}
+      {:keys {:structureVariant {:every {:keys {:variantType {:zen.fhir/value-set nil?}}}}}}}
 
      'hl7-fhir-us-davinci-pdex-plan-net.org-description
      {'ns 'hl7-fhir-us-davinci-pdex-plan-net.org-description
-      'import #{'zenbox 'fhir-r4.string}
+      'import #{'zen.fhir 'fhir-r4.string}
 
       'schema
-      {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+      {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
        :zen/desc "An extension to provide a human-readable description of an organization."
        :confirms #{'fhir-r4.string/schema}
-       :zenbox/type "string"
-       :zenbox/profileUri "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/org-description"
+       :zen.fhir/type "string"
+       :zen.fhir/profileUri "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/org-description"
        }}
 
      'fhir-r4.condition-dueTo
      {'schema
-      {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+      {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
        :type 'zen/map
        :confirms nil?
-       :zenbox/profileUri "http://hl7.org/fhir/StructureDefinition/condition-dueTo"
+       :zen.fhir/profileUri "http://hl7.org/fhir/StructureDefinition/condition-dueTo"
        :fhir/polymorphic true
        :keys {:CodeableConcept {:confirms #{'fhir-r4.CodeableConcept/schema}}
-              :Reference {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}}}}}
+              :Reference {:confirms #{'fhir-r4.Reference/schema 'zen.fhir/Reference}}}}}
 
      'hl7-fhir-us-davinci-pdex-plan-net.practitioner-qualification
      {'schema
-      {:zen/tags #{'zen/schema 'zenbox/structure-schema}
+      {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
        :confirms empty?
        :keys {:status {:confirms #{'fhir-r4.code/schema}}
               :whereValid {:type 'zen/vector
@@ -374,12 +299,12 @@
                                    :fhir/polymorphic true
                                    :exclusive-keys #{#{:CodeableConcept :Reference}}
                                    :keys {:CodeableConcept {:confirms #{'fhir-r4.CodeableConcept/schema}}
-                                          :Reference {:confirms #{'fhir-r4.Reference/schema 'zenbox/Reference}}}}}}}}
+                                          :Reference {:confirms #{'fhir-r4.Reference/schema 'zen.fhir/Reference}}}}}}}}
 
 
      'hl7-fhir-us-davinci-pdex-plan-net.plannet-Practitioner
      {'schema
-      {:zen/tags #{'zen/schema 'zenbox/profile-schema}
+      {:zen/tags #{'zen/schema 'zen.fhir/profile-schema}
        :keys {:qualification {:type 'zen/vector
                               :every {:type 'zen/map
                                       :keys {:practitioner-qualification
@@ -390,9 +315,9 @@
 
      'fhir-r4.HealthcareService
      {'schema
-      {:zen/tags #{'zen/schema 'zenbox/base-schema}
+      {:zen/tags #{'zen/schema 'zen.fhir/base-schema}
        :keys {:specialty
-              {:every {:zenbox/value-set
+              {:every {:zen.fhir/value-set
                        {:symbol 'fhir-r4.value-set.c80-practice-codes/value-set
                         :strength :preferred}}}}}}
 
@@ -404,9 +329,9 @@
 
      'hl7-fhir-us-davinci-pdex-plan-net.plannet-HealthcareService
      {'schema
-      {:zen/tags #{'zen/schema 'zenbox/profile-schema}
+      {:zen/tags #{'zen/schema 'zen.fhir/profile-schema}
        :keys {:specialty
-              {:every {:zenbox/value-set
+              {:every {:zen.fhir/value-set
                        {:symbol 'hl7-fhir-us-davinci-pdex-plan-net.value-set.SpecialtiesVS/value-set
                         :strength :required}}}}}}})
 
@@ -723,12 +648,12 @@
       'plannet.plannet-FromNetwork-extension
       {'ns 'plannet.plannet-FromNetwork-extension
 
-       'schema {:zen/tags          #{'zen/schema 'zenbox/structure-schema}
+       'schema {:zen/tags          #{'zen/schema 'zen.fhir/structure-schema}
                 :zen/desc          "A reference to a healthcare provider insurance network (plannet-Network) for which the entity is/isn’t accepting new patients. This is a component of the NewPatients extension."
-                :confirms          #{'fhir-r4.Reference/schema 'zenbox/Reference}
+                :confirms          #{'fhir-r4.Reference/schema 'zen.fhir/Reference}
                 :zen.fhir/version zen-fhir-version
-                :zenbox/type       "Reference"
-                :zenbox/profileUri "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"
+                :zen.fhir/type       "Reference"
+                :zen.fhir/profileUri "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"
                 :fhir/flags        #{:MS}}}}))
 
   (t/testing "Generated zen schemas are correct"

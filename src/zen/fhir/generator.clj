@@ -101,11 +101,11 @@
                 (select-keys el #{:fhir/flags}))
               (when-let [value-set-sym (some->> (get-in el [:binding :valueSet])
                                                 (value-set->symbol fhir-inter))]
-                {:zenbox/value-set {:symbol value-set-sym
+                {:zen.fhir/value-set {:symbol value-set-sym
                                     :strength (keyword (get-in el [:binding :strength]))}})
               (when (= "Reference" (:type el))
-                {:confirms #{'zenbox/Reference}
-                 :zenbox/reference
+                {:confirms #{'zen.fhir/Reference}
+                 :zen.fhir/reference
                  {:refers (->> (:profiles el)
                                (remove #(= % "http://hl7.org/fhir/StructureDefinition/Resource"))
                                (keep (fn [x] (url->symbol fhir-inter x {:type :reference :el el :url url})))
@@ -143,7 +143,7 @@
 (defmethod generate-kind-schema :resource [fhir-inter [url inter-res]]
   (merge-with
     into
-    {:confirms #{'zenbox/Resource}}
+    {:confirms #{'zen.fhir/Resource}}
     (confirms-base fhir-inter [url inter-res])
     (els-schema fhir-inter [url inter-res])))
 
@@ -198,10 +198,10 @@
         code-systems (find-value-set-systems rt fhir-inter [url inter-res])]
     {schema-ns
      {'ns     schema-ns
-      'import #{'zenbox}
+      'import #{'zen.fhir}
       'value-set
       (utils/strip-nils
-        {:zen/tags #{'zenbox/value-set}
+        {:zen/tags #{'zen.fhir/value-set}
          :zen/desc (:description inter-res)
          :zen.fhir/version (:zen.fhir/version inter-res)
          :fhir/code-systems code-systems
@@ -215,7 +215,7 @@
                            (contains? inter-res :fhir/extension))
                       (dissoc :type))
         schema-ns   (:zen.fhir/schema-ns inter-res)
-        imports     (into #{'zenbox}
+        imports     (into #{'zen.fhir}
                           (keep (fn [inter-path]
                                   (get-in fhir-inter (conj inter-path :zen.fhir/schema-ns))))
                           (mapcat (fn [[tp urls&reasons]] (map (fn [url] [tp url]) (keys urls&reasons)))
@@ -224,9 +224,9 @@
                                     (= "resource" (:kind inter-res)))
         severity-tag           (case (and instantiated-resource?
                                           (:derivation inter-res))
-                                 "constraint"     'zenbox/profile-schema
-                                 "specialization" 'zenbox/base-schema
-                                 'zenbox/structure-schema)
+                                 "constraint"     'zen.fhir/profile-schema
+                                 "specialization" 'zen.fhir/base-schema
+                                 'zen.fhir/structure-schema)
         schema-part            (generate-kind-schema fhir-inter [url inter-res])
         this-schema-sym        (symbol (name schema-ns) "schema")]
     {schema-ns {'ns     schema-ns
@@ -235,8 +235,8 @@
                               {:zen/tags (into #{'zen/schema}
                                                (when severity-tag [severity-tag]))
                                :zen/desc (:text-description inter-res)
-                               :zenbox/type (:type inter-res)
-                               :zenbox/profileUri url
+                               :zen.fhir/type (:type inter-res)
+                               :zen.fhir/profileUri url
                                :zen.fhir/version (:zen.fhir/version inter-res)}
                               schema-part)
                             (update :confirms (comp not-empty disj) this-schema-sym)
