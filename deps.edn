@@ -1,4 +1,4 @@
-{:paths ["src" "zrc" "test-zrc" "test-temp-zrc"]
+{:paths ["src" "zrc" "test-zrc" "test-temp-zrc" "resources"]
 
  :deps {org.clojure/clojure  {:mvn/version "1.10.3"}
         cheshire/cheshire    {:mvn/version "5.10.0"}

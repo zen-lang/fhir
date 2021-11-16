@@ -3,16 +3,17 @@
 
 SHELL = bash
 
-ZEN_FHIR_GENERATOR_VER = $(shell git describe --tag --abbrev=0)
+ZEN_FHIR_VERSION = $(shell git describe --tag --abbrev=0)
 
 set-zen-fhir-version:
-	echo -n ${ZEN_FHIR_GENERATOR_VER} > resources/zen-fhir-version
+	echo -n ${ZEN_FHIR_VERSION} > resources/zen-fhir-version
+	envsubst < zrc/zen/fhir.edn.tpl > zrc/zen/fhir.edn
 
 init: set-zen-fhir-version
 	 npm --registry=https://packages.simplifier.net install
 	 npm --registry=https://packages.simplifier.net install
 
-repl:
+repl: sen-zen-fhir-version
 	clj -M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]
 
 test:

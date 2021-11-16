@@ -489,9 +489,13 @@
   (let [rt (:resourceType res)
         url (or (:url res) (:url opts))]
     (if (and rt url)
-      (swap! ztx update-in [:fhir/inter rt url]
-             (fn [x] (when x (println :override-resource url))
-               (assoc (process-on-load res) :zen/loader (:zen/loader res))))
+      (when-let [processed-res (process-on-load res)]
+        (swap! ztx update-in [:fhir/inter rt url]
+               (fn [x] (when x (println :override-resource url))
+                 (merge processed-res
+                        {:_source "zen.fhir"
+                         :zen.fhir/version (:zen.fhir/version @ztx)}
+                        (select-keys res #{:_source :zen.fhir/version :zen/loader :zen.fhir/package :zen.fhir/file :zen.fhir/package-ns})))))
       (println :skip-resource "no url or rt" (get-in res [:zen/loader :file])))))
 
 
@@ -819,6 +823,7 @@
                    (contains? rt-whitelist (:url content))))
       (load-definiton ztx opts (assoc content
                                       :_source "zen.fhir"
+                                      :zen.fhir/version (:zen.fhir/version @ztx)
                                       :zen/loader {:package package :file (.getPath f)}
                                       :zen.fhir/package package
                                       :zen.fhir/file (.getPath f)
@@ -826,8 +831,18 @@
                                                                (some-> package :name (str/replace #"\." "-") symbol)))))))
 
 
+(defn init-ztx
+  ([]
+   (init-ztx (zen.core/new-context)))
+
+  ([ztx]
+   (zen.core/read-ns ztx 'zen.fhir)
+   (swap! ztx assoc :zen.fhir/version (:zen.fhir/version (zen.core/get-symbol ztx 'zen.fhir/version)))
+   ztx))
+
 (defn preload-all [ztx & [{:keys [params node-modules-folder whitelist blacklist]
                            :or {node-modules-folder "node_modules"}}]]
+  (init-ztx ztx)
   (doseq [pkg-dir  (find-packages node-modules-folder)]
     (let [package (read-json (str (.getPath pkg-dir) "/package.json"))
           package-params (get params (:name package))]

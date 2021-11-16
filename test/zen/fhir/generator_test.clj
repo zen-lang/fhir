@@ -11,20 +11,11 @@
    [clojure.set]))
 
 
+(def zen-fhir-version (slurp (clojure.java.io/resource "zen-fhir-version")))
+
+
 (def memory-store
-  '{zen.fhir
-    {ns zen.fhir
-
-     version
-     {:zen/tags #{zen/schema zen/tag zen.fhir/version}
-      :type zen/map
-      :validation-type :open
-      :zen.fhir/version "0.3.3-1"
-      :require #{:zen.fhir/version}
-      :keys {:zen.fhir/version {:type zen/string
-                                :const {:value "0.3.3-1"}}}}}
-
-    zenbox
+  '{zenbox
     {ns zenbox
      import #{zen.fhir}
 
@@ -120,6 +111,8 @@
     (try
       (reset! ztx @(zen.core/new-context {}))
 
+      (zen.fhir.core/init-ztx ztx)
+
       (do ;; 'nested-extension test fixtures
         (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
         (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
@@ -143,6 +136,7 @@
       (catch Exception e
         (throw e))
       (finally (t)))))
+
 
 
 (t/deftest generate-project-integration
@@ -170,12 +164,14 @@
      {'ns     'fhir-r4.string
       'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
                :confirms #(not (contains? % 'fhir-r4.Element/schema))
-               :type 'zen/string}}
+               :type 'zen/string
+               :zen.fhir/version zen-fhir-version}}
 
      'fhir-r4.Extension
      {'ns     'fhir-r4.Extension
       'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
                :confirms #{'fhir-r4.Element/schema}
+               :zen.fhir/version zen-fhir-version
                :type     'zen/map
                :keys     {:url {:confirms #{'fhir-r4.uri/schema}}
                           :value {:type 'zen/map
@@ -189,6 +185,7 @@
      {'ns     'fhir-r4.Element
       'schema {:zen/tags #{'zen/schema 'zenbox/structure-schema}
                :confirms empty?
+               :zen.fhir/version zen-fhir-version
                :type     'zen/map
                :keys     {:id        {:confirms #{'fhir-r4.string/schema}}
                           :extension {:type  'zen/vector
@@ -227,7 +224,8 @@
       'import #(contains? % 'zenbox)
       'value-set {:zen/tags #{'zenbox/value-set}
                   :uri "http://hl7.org/fhir/ValueSet/administrative-gender"
-                  :fhir/code-systems #{"http://hl7.org/fhir/administrative-gender"}}}
+                  :fhir/code-systems #{"http://hl7.org/fhir/administrative-gender"}
+                  :zen.fhir/version zen-fhir-version}}
 
      'fhir-r4.HumanName
      {'ns 'fhir-r4.HumanName
@@ -251,6 +249,7 @@
                     (contains? % 'fhir-r4.value-set.administrative-gender))
       'schema {:zen/tags #{'zen/schema 'zenbox/base-schema}
                :confirms #{'fhir-r4.DomainResource/schema 'zenbox/Resource}
+               :zen.fhir/version zen-fhir-version
                :type 'zen/map
                :zenbox/type "Patient"
                :zenbox/profileUri "http://hl7.org/fhir/StructureDefinition/Patient"
@@ -293,6 +292,7 @@
                :type 'zen/map
                :zenbox/type "Patient"
                :zenbox/profileUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+               :zen.fhir/version zen-fhir-version
                :require #{:name :gender :identifier}
                :keys {:race      {:confirms #{'us-core-v3.us-core-race/schema}
                                   :fhir/extensionUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
@@ -314,6 +314,7 @@
 
       'value-set
       {:uri "http://hl7.org/fhir/us/core/ValueSet/birthsex"
+       :zen.fhir/version zen-fhir-version
        :fhir/code-systems #{"http://terminology.hl7.org/CodeSystem/v3-AdministrativeGender"
                             "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"}}}
 
@@ -323,7 +324,8 @@
                     (contains? % 'zenbox))
 
       'schema
-      {:zenbox/value-set {:symbol 'us-core-v3.value-set.birthsex/value-set
+      {:zen.fhir/version zen-fhir-version
+       :zenbox/value-set {:symbol 'us-core-v3.value-set.birthsex/value-set
                           :strength :required}}}
 
      'fhir-r4.MolecularSequence
@@ -694,13 +696,15 @@
       {'ns 'plannet.plannet-PractitionerRole
        'import #(contains? % 'plannet.newpatients)
 
-       'schema {:keys {:newpatients {:every {:confirms #{'plannet.newpatients/schema}}}}}}
+       'schema {:zen.fhir/version zen-fhir-version
+                :keys {:newpatients {:every {:confirms #{'plannet.newpatients/schema}}}}}}
 
       'plannet.newpatients
       {'ns 'plannet.newpatients
        'import #(contains? % 'plannet.plannet-FromNetwork-extension)
 
        'schema {:require #{:acceptingPatients}
+                :zen.fhir/version zen-fhir-version
                 :keys {:acceptingPatients {:confirms #{'fhir-r4.CodeableConcept/schema}
                                            :fhir/flags #{:MS}}
                        :fromnetwork {:confirms #{'plannet.plannet-FromNetwork-extension/schema}}}}}
@@ -711,6 +715,7 @@
        'schema {:zen/tags          #{'zen/schema 'zenbox/structure-schema}
                 :zen/desc          "A reference to a healthcare provider insurance network (plannet-Network) for which the entity is/isn’t accepting new patients. This is a component of the NewPatients extension."
                 :confirms          #{'fhir-r4.Reference/schema 'zenbox/Reference}
+                :zen.fhir/version zen-fhir-version
                 :zenbox/type       "Reference"
                 :zenbox/profileUri "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"
                 :fhir/flags        #{:MS}}}}))

@@ -19,3 +19,5 @@ package-lock.json
 yarn.lock
 
 /resources/zen-fhir-version
+
+/zrc/zen/fhir.edn

@@ -69,4 +69,5 @@
 (def dir?                          zen.fhir.loader/dir?)
 (def find-packages                 zen.fhir.loader/find-packages)
 (def do-load-file                  zen.fhir.loader/do-load-file)
+(def init-ztx                      zen.fhir.loader/init-ztx)
 (def load-all                      zen.fhir.loader/load-all)
