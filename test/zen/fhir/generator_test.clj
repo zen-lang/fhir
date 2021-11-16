@@ -40,6 +40,8 @@
       :confirms #{zen.fhir/version}
       :type zen/map
       :keys {:uri {:type zen/string}
+             :fhir/code-systems {:type zen/set
+                                 :every {:type zen/string}}
              :version {:type zen/string}}}
 
      nested-schema
