@@ -13,10 +13,10 @@ init: set-zen-fhir-version
 	 npm --registry=https://packages.simplifier.net install
 	 npm --registry=https://packages.simplifier.net install
 
-repl: sen-zen-fhir-version
+repl: set-zen-fhir-version
 	clj -M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]
 
-test:
+test: set-zen-fhir-version
 	clojure -M:test:kaocha
 
 init-r3:
