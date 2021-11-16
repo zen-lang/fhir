@@ -41,7 +41,12 @@
       :type zen/map
       :keys {:uri {:type zen/string}
              :fhir/code-systems {:type zen/set
-                                 :every {:type zen/string}}
+                                 :every {:type zen/map
+                                         :require #{:fhir/url}
+                                         :keys {:fhir/url {:type zen/string}
+                                                :zen.fhir/content {:type zen/keyword
+                                                                   :enum [{:value :bundled}
+                                                                          {:value :not-present}]}}}}
              :version {:type zen/string}}}
 
      nested-schema
@@ -226,7 +231,8 @@
       'import #(contains? % 'zenbox)
       'value-set {:zen/tags #{'zenbox/value-set}
                   :uri "http://hl7.org/fhir/ValueSet/administrative-gender"
-                  :fhir/code-systems #{"http://hl7.org/fhir/administrative-gender"}
+                  :fhir/code-systems #{{:fhir/url "http://hl7.org/fhir/administrative-gender"
+                                        :zen.fhir/content :bundled}}
                   :zen.fhir/version zen-fhir-version}}
 
      'fhir-r4.HumanName
@@ -317,8 +323,10 @@
       'value-set
       {:uri "http://hl7.org/fhir/us/core/ValueSet/birthsex"
        :zen.fhir/version zen-fhir-version
-       :fhir/code-systems #{"http://terminology.hl7.org/CodeSystem/v3-AdministrativeGender"
-                            "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"}}}
+       :fhir/code-systems #{{:fhir/url "http://terminology.hl7.org/CodeSystem/v3-AdministrativeGender"
+                             :zen.fhir/content :bundled}
+                            {:fhir/url "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"
+                             :zen.fhir/content :bundled}}}}
 
      'us-core-v3.us-core-birthsex
      {'ns 'us-core-v3.us-core-birthsex
@@ -391,7 +399,8 @@
      'hl7-fhir-us-davinci-pdex-plan-net.value-set.SpecialtiesVS
      {'value-set
       {:uri "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
-       :fhir/code-systems #{"http://nucc.org/provider-taxonomy"}}}
+       :fhir/code-systems #{{:fhir/url "http://nucc.org/provider-taxonomy"
+                             :zen.fhir/content :bundled}}}}
 
      'hl7-fhir-us-davinci-pdex-plan-net.plannet-HealthcareService
      {'schema

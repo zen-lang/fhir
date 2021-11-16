@@ -182,9 +182,15 @@
                                            (when-let [nested-vs (get-in fhir-inter ["ValueSet" nested-vs-url])]
                                              (find-value-set-systems rt fhir-inter [nested-vs-url nested-vs])))
                                          (:valueSet compose-elem))]
-                             (cond->> nested-systems
-                               (:system compose-elem)
-                               (cons (:system compose-elem))))))))))
+                             (if-let [system (:system compose-elem)]
+                               (let [content (if (or (contains? compose-elem :concept)
+                                                     (= "complete" (get-in fhir-inter ["CodeSystem" system :content])))
+                                               :bundled
+                                               :not-present)
+                                     code-system {:fhir/url system
+                                                  :zen.fhir/content content}]
+                                 (cons code-system nested-systems))
+                               nested-systems))))))))
 
 
 (defmethod generate-zen-schema :ValueSet [rt fhir-inter [url inter-res]]
