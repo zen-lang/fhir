@@ -168,6 +168,12 @@
                        :| {:Quantity
                            {:| {:value {:required true}}}}}}})
 
+  (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Appointment"
+               {:| {:participant
+                    {:vector true
+                     :minItems 1
+                     :required true}}})
+
   (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Patient"
     {:kind           "resource"
      :derivation     "specialization",

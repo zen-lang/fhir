@@ -203,6 +203,22 @@
                       :link {:type 'zen/vector
                              :every {:require #{:other :type}}}}}}
 
+     'fhir-r4.Appointment
+     {'schema {:require #{:status :participant}
+               :keys {:status {:confirms #{'fhir-r4.code/schema}}
+                      :participant {:type     'zen/vector
+                                    :minItems 1
+                                    :every    {:confirms #{'fhir-r4.BackboneElement/schema}
+                                               :type 'zen/map
+                                               :require #{:status}
+                                               :keys {:type     {:type 'zen/vector
+                                                                 :every {:confirms #{'fhir-r4.CodeableConcept/schema}}}
+                                                      :actor    {:confirms #{'zen.fhir/Reference 'fhir-r4.Reference/schema}
+                                                                 :zen.fhir/reference {:refers set?}}
+                                                      :required {:confirms #{'fhir-r4.code/schema}}
+                                                      :status   {:confirms #{'fhir-r4.code/schema}}
+                                                      :period   {:confirms #{'fhir-r4.Period/schema}}}}}}}}
+
      'fhir-r4.ServiceRequest
      {'ns     'fhir-r4.ServiceRequest
       'schema {:keys {:supportingInfo {:every {:confirms #{'fhir-r4.Reference/schema 'zen.fhir/Reference}

@@ -581,7 +581,7 @@
             (if (and (= :extension k) (not (:do-not-handle-first-class-ext? ctx)))
               (make-first-class-ext-keys acc el)
               (assoc acc k el)))]
-    (let [v? (some :vector base-els)
+    (let [v? (some :vector (cons el base-els))
           tp (or (:type el)
                  (->> base-els
                       (filter (fn [{tp :type}] (and (not (nil? tp))
