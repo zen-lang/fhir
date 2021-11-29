@@ -6,8 +6,8 @@ on:
       - "*"
 
 jobs:
-  build-r4:
-    name: Generate FHIR R4 profiles
+  build:
+    name: Generate FHIR profiles
     runs-on: ubuntu-latest
 
     steps:
@@ -33,49 +33,17 @@ jobs:
       - run: make init
         name: Install npm FHIR packages
 
+      - run: make init-r3
+        name: Install npm R3 packages
+
       - run: make zen-profiles node_modules="node_modules/" zrc="zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
         name: Generate npm Zen packages
+
+      - name: Genrate npm R3 Zen packages
+        run: make zen-profiles node_modules="r3/node_modules/" zrc="zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
 
       - run:
           for folder in $(ls -d zrc/node_modules/*); do npm publish $folder --access=public; done
         name: Publish npm Zen packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  build-r3:
-    name: Generate FHIR R3 profiles
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install jq
-        run: sudo apt-get install jq -y
-
-      - name: Set tag env
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14.x'
-          registry-url: 'https://registry.npmjs.org'
-
-      - uses: actions/setup-java@v2
-        with:
-          distribution: 'zulu'
-          java-version: '8'
-
-      - uses: DeLaGuardo/setup-clojure@3.5
-        with:
-          cli: 1.10.1.693
-
-      - run: make init-r3
-        name: Install npm R3 packages
-
-      - name: Genrate npm R3 Zen packages
-        run: make zen-profiles node_modules="r3/node_modules/" zrc="r3/zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
-
-      - run:
-          for folder in $(ls -d r3/zrc/node_modules/*); do npm publish $folder --access=public; done
-        name: Publish npm R3 Zen packages 
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
