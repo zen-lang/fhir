@@ -118,6 +118,20 @@
     (Integer/parseInt x)))
 
 
+(defn poly-find-all
+  "Finds all values by fhir polymorphic key[x]"
+  [m k]
+  (let [key-pat (name k)]
+    (sp/select [sp/ALL (comp #(str/starts-with? % key-pat) name first)]
+               m)))
+
+
+(defn poly-find
+  "Finds first value by fhir polymorphic key[x]"
+  [m k]
+  (first (poly-find-all m k)))
+
+
 (defn poly-get-all
   "Gets all values by fhir polymorphic key[x]"
   [m k]

@@ -21,6 +21,28 @@
   (subs id 0 (- (count id) (count poly-id-terminator))))
 
 
+(defn rich-parse-path-full [id]
+  (if (str/blank? id)
+    []
+    (->> (str/split id #"\.")
+         (mapcat
+           (fn [id-part]
+             (let [[key-part slice-part] (str/split id-part #":" 2)]
+               (cond
+                 (str/ends-with? key-part poly-id-terminator)
+                 (let [poly-name (drop-poly-terminator key-part)]
+                   (cond-> [{:type :poly :key poly-name}]
+                     (some? slice-part) (conj {:type :poly-slice
+                                               :key  (drop-poly-name slice-part poly-name)
+                                               :poly-name poly-name})))
+
+                 (some? slice-part) [{:key key-part :type :key}
+                                     {:key slice-part :type :slice}]
+                 :else              [{:key key-part
+                                      :type :key}]))))
+         vec)))
+
+
 (defn rich-parse-path [id]
   (if (str/blank? id)
     []
@@ -37,7 +59,7 @@
                                                :poly-name poly-name})))
 
                  (some? slice-part) [{:key key-part :type :key}
-                                     {:key slice-part :type :slice }]
+                                     {:key slice-part :type :slice}]
                  :else              [{:key key-part
                                       :type :key}]))))
          vec)))
@@ -347,21 +369,70 @@
 (declare normalize-slicing)
 
 
-(defn remove-slicing [[k v]]
+(def preprocess-discriminator-type-dispatch
+  (fn [discriminator]
+    (keyword (:type discriminator))))
+
+
+(defmulti preprocess-discriminator-type #'preprocess-discriminator-type-dispatch)
+
+
+(defmethod preprocess-discriminator-type :pattern [discriminator]
+  (-> discriminator
+      (update :type keyword)
+      (update :path #(mapv
+                       (fn [path-el]
+                         (assert (= :key (:type path-el)))
+                         (keyword (:key path-el)))
+                       (rich-parse-path-full %)))))
+
+
+(def supported-discriminator-type
+  (set (keys (methods preprocess-discriminator-type))))
+
+
+#_"TODO: fix discriminator type logic structure. Currently this is hardcoded for :pattern"
+(defn preprocess-slicing* [{:as el-with-slicing, :keys [slicing]}]
+  (let [slices (into {}
+                (map (fn [[k v]]
+                       [(or (:sliceName v) (name k))
+                        v
+                        #_(let [[pattern-k pattern] (utils/poly-find v :pattern)]
+                          (-> v
+                              (dissoc pattern-k)
+                              (assoc :pattern pattern)))]))
+                (:slices slicing))
+        discriminator (mapv preprocess-discriminator-type
+                            (:discriminator slicing))
+        processed-slicing (assoc slicing
+                                 :slices slices
+                                 :discriminator discriminator)]
+    (-> el-with-slicing
+        (dissoc :slicing)
+        (assoc :fhir/slicing processed-slicing))))
+
+
+(defn preprocess-slicing [[k v]]
   (if (and (contains? v :slicing)
-           (not= :extension k) #_"NOTE: slicing in extensions is processed differently")
-    (when-let [sliceless-v (not-empty (dissoc v :slicing))] #_"NOTE: slicing is not supported yet, removing instead of processing"
-              [k sliceless-v])
+           (not= :extension k) #_"NOTE: slicing in extensions is processed differently"
+           (seq (get-in v [:slicing :discriminator]))
+           (every? (comp supported-discriminator-type keyword :type)
+                   (get-in v [:slicing :discriminator])))
+    (when-let [v' (preprocess-slicing* v)]
+      [k (normalize-slicing v')])
     [k (normalize-slicing v)]))
 
 
 (defn normalize-slicing [res]
   (cond-> res
-    (contains? res :|) (update :| (partial into {} (keep remove-slicing)))
+    (contains? res :|) (update :| (partial into {} (keep preprocess-slicing)))
     :always            (as-> $ (utils/dissoc-when empty? $ :|))
 
-    (contains? res :slicing) (update-in [:slicing :slices] (partial into {} (keep remove-slicing)))
-    :always                  (as-> $ (utils/dissoc-when (comp empty? :slices) $ :slicing))))
+    (contains? res :slicing) (update-in [:slicing :slices] (partial into {} (keep preprocess-slicing)))
+    :always                  (as-> $ (utils/dissoc-when (comp empty? :slices) $ :slicing))
+
+    (contains? res :fhir/slicing) (update-in [:fhir/slicing :slices] (partial into {} (keep preprocess-slicing)))
+    :always                       (as-> $ (utils/dissoc-when (comp empty? :slices) $ :fhir/slicing))))
 
 
 (defn load-intermidiate [res]
@@ -573,6 +644,13 @@
         base-els))
 
 
+(defn process-slicing [ctx el base-els])
+
+
+(defn enrich-slicing [ctx el base-els]
+  el)
+
+
 (defn enrich-element [ctx el base-els]
   ;; TODO: if vector do min/max items
   ;;       required/prohibited
@@ -591,6 +669,7 @@
         v?                            (assoc :vector true)
         (not v?)                      (dissoc :minItems :maxItems)
         tp                            (assoc :type tp)
+        (contains? el :fhir/slicing)  (as-> $ (enrich-slicing ctx $ base-els))
         (seq (:| el))                 (update :| (partial reduce make-first-class-extensions {}))
         (fhir-primitive? el base-els) (assoc :fhir/primitive-attr true)))))
 
