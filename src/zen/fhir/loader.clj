@@ -414,12 +414,14 @@
 
 (defn preprocess-slicing [[k v]]
   (if (and (contains? v :slicing)
-           (not= :extension k) #_"NOTE: slicing in extensions is processed differently"
-           (seq (get-in v [:slicing :discriminator]))
-           (every? (comp supported-discriminator-type keyword :type)
-                   (get-in v [:slicing :discriminator])))
-    (when-let [v' (preprocess-slicing* v)]
-      [k (normalize-slicing v')])
+           (not= :extension k) #_"NOTE: slicing in extensions is processed differently")
+    (if-let [v' (and (seq (get-in v [:slicing :discriminator]))
+                     (every? (comp supported-discriminator-type keyword :type)
+                             (get-in v [:slicing :discriminator]))
+                     (preprocess-slicing* v))]
+      [k (normalize-slicing v')]
+      (when-let [sliceless-v (not-empty (dissoc v :slicing))]
+        [k sliceless-v]))
     [k (normalize-slicing v)]))
 
 
