@@ -388,17 +388,20 @@
 
 
 (defmethod preprocess-slices-by-discriminator :pattern [slices discriminator]
-  (let [path (->> (rich-parse-path-full (:path discriminator))
-                  (remove (fn [path-el]
-                            (assert (= :key (:type path-el)))
-                            (= "$this" (:key path-el))))
-                  build-path)]
+  (let [rich-path  (->> (rich-parse-path-full (:path discriminator))
+                       (remove (fn [path-el]
+                                 (assert (= :key (:type path-el)))
+                                 (= "$this" (:key path-el)))))
+        inter-path (build-path rich-path)
+        path       (mapv (comp keyword :key) rich-path)]
     (sp/transform [sp/MAP-VALS]
                   (fn [v]
-                    (let [[pattern-k pattern] (-> (get-in v path) (utils/poly-find :pattern))
-                          match               (pattern->zen-match pattern)]
+                    (let [[pattern-k pattern] (-> (get-in v inter-path) (utils/poly-find :pattern))
+                          match               (cond->> (pattern->zen-match pattern)
+                                                (seq path)
+                                                (assoc-in {} path))]
                       (-> v
-                          (update-in path dissoc pattern-k)
+                          (update-in inter-path dissoc pattern-k)
                           (assoc :match match))))
                   slices)))
 
