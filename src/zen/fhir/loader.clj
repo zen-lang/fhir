@@ -400,8 +400,9 @@
                           match               (cond->> (pattern->zen-match pattern)
                                                 (seq path)
                                                 (assoc-in {} path))]
-                      (-> v
-                          (update-in inter-path dissoc pattern-k)
+                      (-> (if (seq path)
+                            (update-in v path dissoc pattern-k)
+                            (dissoc v pattern-k))
                           (assoc :match match))))
                   slices)))
 
