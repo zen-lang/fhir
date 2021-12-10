@@ -3,7 +3,7 @@
  :deps {org.clojure/clojure  {:mvn/version "1.10.3"}
         cheshire/cheshire    {:mvn/version "5.10.0"}
         zen-lang/zen         {:git/url "https://github.com/zen-lang/zen"
-                              :sha "ec2cb9dc8f345f3a16a2177717338fa17fc4242a"}
+                              :sha "e9408617f55c71b859017de32d091a0080b286a6"}
         fipp/fipp            {:mvn/version "0.6.24"}
         http-kit/http-kit             {:mvn/version "2.5.3"}
 
