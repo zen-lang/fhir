@@ -69,6 +69,30 @@
             "value-set")))
 
 
+(defn slice-schema [fhir-inter url [slice-k slice]]
+  (let [slice-filter (cond
+                       (some? (:match slice))
+                       {:engine :match
+                        :match (:match slice)})
+        slice-schema (merge {:type 'zen/vector}
+                            (when-let [min-items (:minItems slice)]
+                              {:minItems min-items})
+                            (when-let [max-items (:maxItems slice)]
+                              {:maxItems max-items}))]
+    (if (not slice-filter)
+      (prn "WARN: omitting slice without any filter: " url " " slice)
+      [slice-k
+       {:schema slice-schema
+        :filter slice-filter}])))
+
+
+(defn slicing-schema [fhir-inter [url inter-res]]
+  (when-let [slicing (not-empty (:fhir/slicing inter-res))]
+    {:slicing {:slices (into {}
+                             (keep #(slice-schema fhir-inter url %))
+                             (:slices slicing))}}))
+
+
 (declare els-schema)
 
 
@@ -111,12 +135,15 @@
                                (keep (fn [x] (url->symbol fhir-inter x {:type :reference :el el :url url})))
                                (into #{}))}})
               (when-let [text (or (:short el) (:definiton el))]
-                {:zen/desc text}))]
-    (if (:vector el)
-      (merge {:type 'zen/vector
-              :every sch}
-             (select-keys el [:minItems :maxItems]))
-      sch)))
+                {:zen/desc text}))
+        slicing (when (seq (:fhir/slicing el))
+                  (slicing-schema fhir-inter [url el]))]
+    (merge slicing
+           (if (:vector el)
+             (merge {:type 'zen/vector
+                     :every sch}
+                    (select-keys el [:minItems :maxItems]))
+             sch))))
 
 
 (defn els-schema [fhir-inter [url inter-res]]
