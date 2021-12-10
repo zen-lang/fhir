@@ -6,6 +6,7 @@
             [fipp.edn]
             [clojure.string :as str]
             [zen.fhir.utils :as utils]
+            [clojure.walk]
             [edamame.core :as edamame]
             [com.rpl.specter :as sp]))
 
@@ -369,47 +370,59 @@
 (declare normalize-slicing)
 
 
-(def preprocess-discriminator-type-dispatch
-  (fn [discriminator]
+(def preprocess-slices-by-discriminator-dispatch
+  (fn [_slices discriminator]
     (keyword (:type discriminator))))
 
 
-(defmulti preprocess-discriminator-type #'preprocess-discriminator-type-dispatch)
+(defmulti preprocess-slices-by-discriminator #'preprocess-slices-by-discriminator-dispatch)
 
 
-(defmethod preprocess-discriminator-type :pattern [discriminator]
-  (-> discriminator
-      (update :type keyword)
-      (update :path #(mapv
-                       (fn [path-el]
-                         (assert (= :key (:type path-el)))
-                         (keyword (:key path-el)))
-                       (rich-parse-path-full %)))))
+(defn pattern->zen-match [pattern]
+  (clojure.walk/postwalk
+    (fn [x]
+      (if (and (sequential? x) (not (map-entry? x)))
+        (set x)
+        x))
+    pattern))
 
 
-(def supported-discriminator-type
-  (set (keys (methods preprocess-discriminator-type))))
+(defmethod preprocess-slices-by-discriminator :pattern [slices discriminator]
+  (let [path (->> (rich-parse-path-full (:path discriminator))
+                  (remove (fn [path-el]
+                            (assert (= :key (:type path-el)))
+                            (= "$this" (:key path-el))))
+                  build-path)]
+    (sp/transform [sp/MAP-VALS]
+                  (fn [v]
+                    (let [[pattern-k pattern] (-> (get-in v path) (utils/poly-find :pattern))
+                          match               (pattern->zen-match pattern)]
+                      (-> v
+                          (update-in path dissoc pattern-k)
+                          (assoc :match match))))
+                  slices)))
 
 
-#_"TODO: fix discriminator type logic structure. Currently this is hardcoded for :pattern"
+(defn fix-slices-names [slices]
+  (into {}
+        (map (fn [[k v]] [(or (:sliceName v) (name k)) v]))
+        slices))
+
+
 (defn preprocess-slicing* [{:as el-with-slicing, :keys [slicing]}]
-  (let [slices (into {}
-                (map (fn [[k v]]
-                       [(or (:sliceName v) (name k))
-                        v
-                        #_(let [[pattern-k pattern] (utils/poly-find v :pattern)]
-                          (-> v
-                              (dissoc pattern-k)
-                              (assoc :pattern pattern)))]))
-                (:slices slicing))
-        discriminator (mapv preprocess-discriminator-type
-                            (:discriminator slicing))
-        processed-slicing (assoc slicing
-                                 :slices slices
-                                 :discriminator discriminator)]
+  (let [slices (reduce preprocess-slices-by-discriminator
+                       (fix-slices-names (:slices slicing))
+                       (:discriminator slicing))
+        processed-slicing (-> slicing
+                              (assoc :slices slices)
+                              (dissoc :discriminator))]
     (-> el-with-slicing
         (dissoc :slicing)
         (assoc :fhir/slicing processed-slicing))))
+
+
+(def supported-discriminator-type
+  (set (keys (methods preprocess-slices-by-discriminator))))
 
 
 (defn preprocess-slicing [[k v]]
