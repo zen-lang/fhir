@@ -396,14 +396,15 @@
         path       (mapv (comp keyword :key) rich-path)]
     (sp/transform [sp/MAP-VALS]
                   (fn [v]
-                    (let [[pattern-k pattern] (-> (get-in v inter-path) (utils/poly-find :pattern))
-                          match               (cond->> (pattern->zen-match pattern)
-                                                (seq path)
-                                                (assoc-in {} path))]
-                      (-> (if (seq path)
-                            (update-in v path dissoc pattern-k)
-                            (dissoc v pattern-k))
-                          (assoc :match match))))
+                    (if-let [[pattern-k pattern] (some-> (get-in v inter-path) (utils/poly-find :pattern))]
+                      (let [match (cond->> (pattern->zen-match pattern)
+                                    (seq path)
+                                    (assoc-in {} path))]
+                        (-> (if (seq path)
+                              (update-in v path dissoc pattern-k)
+                              (dissoc v pattern-k))
+                            (assoc :match match)))
+                      v))
                   slices)))
 
 
