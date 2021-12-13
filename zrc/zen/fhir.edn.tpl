@@ -21,7 +21,9 @@
   :type zen/map
   :keys {:id {:type zen/string}
          :resourceType {:type zen/string}
-         :display {:type zen/string}}}
+         :display {:type zen/string}
+         :localRef {:type zen/string}
+         :uri {:type zen/string}}}
 
  value-set
  {:zen/tags #{zen/schema zen/tag}
