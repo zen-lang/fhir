@@ -68,10 +68,7 @@
     (symbol (str (:zen.fhir/package-ns value-set) ".value-set." (:id value-set)) ;; TODO: use :zen.fhir/schema-ns
             "value-set")))
 
-
 (declare els-schema)
-
-
 (defn slice-schema [fhir-inter url [slice-k slice]]
   (let [slice-filter (cond
                        (some? (:match slice))
@@ -96,6 +93,9 @@
     {:slicing {:slices (into {}
                              (keep #(slice-schema fhir-inter url %))
                              (:slices slicing))}}))
+
+
+(declare els-schema)
 
 
 (defn el-schema [fhir-inter [url el]]
