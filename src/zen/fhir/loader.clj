@@ -764,7 +764,21 @@
       (cond-> enr-subj
         (seq (:| enr-subj))
         (-> (update :| (partial reduce walk-with-bases-recursive {}))
-            (update :| (partial reduce add-primitive-element-attrs {})))))))
+            (update :| (partial reduce add-primitive-element-attrs {})))
+
+        #_#_
+        (seq (get-in enr-subj [:fhir/slicing :slices]))
+        (update-in [:fhir/slicing :slices]
+                   (fn [slices]
+                     (reduce (fn [acc [k v]]
+                               (persist-scope)
+                               (if (seq (:| v))
+                                 (assoc acc k (-> v
+                                                  (update :| (partial reduce walk-with-bases-recursive {}))
+                                                  (update :| (partial reduce add-primitive-element-attrs {}))))
+                                 acc))
+                             slices
+                             slices)))))))
 
 
 (defn is-extension?
