@@ -78,7 +78,9 @@
                             (when-let [min-items (:minItems slice)]
                               {:minItems min-items})
                             (when-let [max-items (:maxItems slice)]
-                              {:maxItems max-items}))]
+                              {:maxItems max-items})
+                            (when (seq (:| slice))
+                              {:every (els-schema fhir-inter [url slice])}))]
     (if (not slice-filter)
       (prn "WARN: omitting slice without any filter: " url " " slice)
       [slice-k
