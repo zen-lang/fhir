@@ -689,17 +689,17 @@
 
 
 (defn fix-match-vectors* [slice path acc match-el]
-  (reduce (fn [out [k v]]
-            (let [match-path (conj path k)
-                  el-path (vec (interleave (repeat :|) match-path))
-                  out' (if (map? v)
-                         (fix-match-vectors* slice match-path out v)
-                         out)]
-              (if (:vector (get-in slice el-path))
-                (update-in out' (conj path k) hash-set)
-                out')))
-          acc
-          match-el))
+  (if (map? match-el)
+    (reduce (fn [out [k v]]
+              (let [match-path (conj path k)
+                    el-path (vec (interleave (repeat :|) match-path))
+                    out' (fix-match-vectors* slice match-path out v)]
+                (if (:vector (get-in slice el-path))
+                  (update-in out' (conj path k) hash-set)
+                  out')))
+            acc
+            match-el)
+    acc))
 
 
 (defn fix-match-vectors [slice]
