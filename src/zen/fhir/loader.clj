@@ -408,6 +408,28 @@
                   slices)))
 
 
+(defmethod preprocess-slices-by-discriminator :value [slices discriminator]
+  (let [rich-path  (->> (rich-parse-path-full (:path discriminator))
+                        (remove (fn [path-el]
+                                  (assert (= :key (:type path-el)))
+                                  (= "$this" (:key path-el)))))
+        inter-path (build-path rich-path)
+        path       (mapv (comp keyword :key) rich-path)]
+    (sp/transform [sp/MAP-VALS]
+                  (fn [v]
+                    (if-let [[pattern-k pattern] (some-> (get-in v inter-path) (utils/poly-find :fixed))]
+                      (let [match (cond->> (pattern->zen-match pattern)
+                                    (seq path)
+                                    (assoc-in (:match v) path))]
+                        (persist-scope)
+                        (-> (if (seq path)
+                              (update-in v path dissoc pattern-k)
+                              (dissoc v pattern-k))
+                            (assoc :match match)))
+                      v))
+                  slices)))
+
+
 (defn fix-slices-names [slices]
   (into {}
         (map (fn [[k v]] [(or (:sliceName v) (name k)) v]))
