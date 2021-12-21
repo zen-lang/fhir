@@ -829,78 +829,20 @@
   subj)
 
 
-(defn collect-extension-profiles [acc path v]
-  (if-let [url (:fhir/extension v)]
-    (update-in acc ["StructureDefinition" url] (comp vec distinct concat) [(conj path :fhir/extension)])
-    acc))
-
-
-(defn collect-types [acc path v]
-  (reduce (fn [acc' el-type]
-            (update-in acc'
-                       ["StructureDefinition" (str "http://hl7.org/fhir/StructureDefinition/" el-type)]
-                       (comp vec distinct concat) [(conj path :type)]))
-          acc
-          (cons (:type v) (:types v))))
-
-
-(defn collect-references [acc path v]
-  (reduce (fn [acc' profile-url]
-            (update-in acc' ["StructureDefinition" profile-url] (comp vec distinct concat) [(conj path :profiles)]))
-          acc
-          (:profiles v)))
-
-
-(defn collect-valuesets [acc path v]
-  (if-let [{:keys [url version]} (get-in v [:binding :valueSet])]
-    (update-in acc ["ValueSet" url version] (comp vec distinct concat) [(conj path :binding)])
-    acc))
-
-
-(declare collect-nested)
-
-
-(defn collect-element [path-fn acc [k v]]
-  (let [new-path (path-fn k)]
-    (-> acc
-        (collect-nested new-path v)
-        (collect-extension-profiles new-path v)
-        (collect-types new-path v)
-        (collect-references new-path v)
-        (collect-valuesets new-path v))))
-
-
-(defn collect-nested [acc path subj]
-  (as-> acc acc
-    (reduce (partial collect-element (fn [k] (-> (butlast path) vec (conj k))))
-            acc
-            (:slice subj))
-    (reduce (partial collect-element (fn [k] (conj path k)))
-            acc
-            (:| subj))))
-
-
-(defn collect-deps [sd-processed]
-  (as-> {"StructureDefinition" {(:baseDefinition sd-processed) [[:baseDefinition]]}} acc
-    (collect-element (constantly []) acc [nil sd-processed])))
-
-
 (defn process-sd [ztx url subj]
-  (let [processed-sd
-        (if (is-extension? url subj)
-          (process-extension ztx url subj)
-          (let [bases (get-bases ztx subj)]
-            (when (and (= "constraint" (:derivation subj)) (empty? bases))
-              (println :no-base-resource (pr-str url)))
-            (walk-with-bases ztx {:lvl 0
-                                  :path [url]
-                                  :derivation (:derivation subj)
-                                  :do-not-handle-first-class-ext?
-                                  (or (= "http://hl7.org/fhir/StructureDefinition/Element" (:url subj))
-                                      (= "http://hl7.org/fhir/StructureDefinition/DomainResource" (:url subj)))}
-                             subj
-                             bases)))]
-    (assoc processed-sd :deps (collect-deps processed-sd))))
+  (if (is-extension? url subj)
+    (process-extension ztx url subj)
+    (let [bases (get-bases ztx subj)]
+      (when (and (= "constraint" (:derivation subj)) (empty? bases))
+        (println :no-base-resource (pr-str url)))
+      (walk-with-bases ztx {:lvl 0
+                            :path [url]
+                            :derivation (:derivation subj)
+                            :do-not-handle-first-class-ext?
+                            (or (= "http://hl7.org/fhir/StructureDefinition/Element" (:url subj))
+                                (= "http://hl7.org/fhir/StructureDefinition/DomainResource" (:url subj)))}
+                       subj
+                       bases))))
 
 
 (defn process-structure-definitions [ztx]

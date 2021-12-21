@@ -315,11 +315,26 @@
                                  package-nses))}})))
 
 
+(defn collect-deps [zen-ns]
+  (let [used-zen-nss (atom #{})]
+    (clojure.walk/postwalk
+      (fn [x] (when (qualified-symbol? x)
+                (swap! used-zen-nss conj (symbol (namespace x)))))
+      zen-ns)
+    (update zen-ns 'import
+            (fn [imp]
+              (-> (or imp #{})
+                  (into @used-zen-nss)
+                  (disj 'zen))))))
+
+
 (defn generate-zen-schemas* [fhir-inter]
   (into (generate-root-package-nses fhir-inter)
         (for [[rt inters] fhir-inter
               inter       inters]
-          (generate-zen-schema rt fhir-inter inter))))
+          (sp/transform [sp/MAP-VALS]
+                        collect-deps
+                        (generate-zen-schema rt fhir-inter inter)))))
 
 
 (defn generate-zen-schemas [ztx]

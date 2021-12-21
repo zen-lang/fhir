@@ -380,48 +380,6 @@
       {:| {:el {:| {:ComplexType {:type "ComplexType"
                                   :|    {:attr {:vector true :type "prim"}}}}}}}))
 
-  (t/testing "Dependency escalation"
-
-    (load-complex-type
-      {:name "ComplexType"
-       :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
-
-    (load-complex-type
-      {:name "Reference"
-       :els  [{:id "attr" :min 0 :max "*" :type [{:code "prim"}]}]})
-
-    (load-profile
-      {:name "BaseResource2"
-       :base "DomainResource"
-       :els  [{:id  "complexattr" :type [{:code "ComplexType"}]}
-              {:id  "complexattr.attr" :type    [{:code "prim"}] :binding {:strength "required", :valueSet "url://valueset"}}
-              {:id  "complexattr.attr2" :type    [{:code "prim"}] :binding {:strength "required", :valueSet "url://valueset|ver1"}}
-              {:id  "ref" :type [{:code "Reference" :targetProfile ["url://SomeResource"]}]}
-              {:id  "extension", :type [{:code "Extension"}] :slicing {:discriminator [{:type "value", :path "url"}]}}
-              {:id  "extension:some-ext" :type   [{:code    "Extension" :profile ["url://some-ext"]}] :sliceName "some-ext"}
-              {:id  "polyattr[x]" :type  [{:code "prim"} {:code "string"}] :binding {:strength "required", :valueSet "url://valueset"}}]})
-
-   (reload)
-
-    (matcho/match
-      (sut/get-definition aztx "url://BaseResource2")
-      {:deps {"ValueSet"
-              {"url://valueset" {nil    [[:complexattr :attr :binding] [:polyattr :binding]]
-                                 "ver1" [[:complexattr :attr2 :binding]]}}
-
-              "StructureDefinition"
-              {"http://hl7.org/fhir/StructureDefinition/ComplexType" [[:complexattr :type]]
-               "http://hl7.org/fhir/StructureDefinition/Reference"   [[:ref :type]]
-               "http://hl7.org/fhir/StructureDefinition/prim"        [[:complexattr :attr :type] [:complexattr :attr2 :type] [:polyattr :prim :type]]
-               "http://hl7.org/fhir/StructureDefinition/string"      [[:polyattr :string :type]]
-
-               "url://some-ext" [[:some-ext :fhir/extension]]
-
-               "url://SomeResource" [[:ref :profiles]]
-
-               "url://DomainResource" [[:baseDefinition]]}}}))
-
-
   (load-extension
     {:name "us-race"
      :els  [{:id        "extension:ombCategory",
@@ -551,23 +509,6 @@
      :url            "uri://simple-ext"
      :fhir/extension string?
      :type           "string"}))
-
-
-(t/deftest deps
-  (matcho/match
-    (sut/collect-deps
-      '{:fhir/extension
-        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex",
-        :binding
-        {:strength    "required",
-         :description "Code for sex assigned at birth",
-         :valueSet    {:url "http://hl7.org/fhir/us/core/ValueSet/birthsex"}},
-        :url            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex",
-        :baseDefinition "http://hl7.org/fhir/StructureDefinition/code"})
-    {"StructureDefinition"
-     {"http://hl7.org/fhir/StructureDefinition/code" [[:baseDefinition]]}
-     "ValueSet"
-     {"http://hl7.org/fhir/us/core/ValueSet/birthsex" {nil [[:binding]]}}}))
 
 
 (t/deftest fix-match-vectors
