@@ -421,7 +421,6 @@
                       (let [match (cond->> (pattern->zen-match pattern)
                                     (seq path)
                                     (assoc-in (:match v) path))]
-                        (persist-scope)
                         (-> (if (seq path)
                               (update-in v path dissoc pattern-k)
                               (dissoc v pattern-k))
@@ -689,8 +688,27 @@
 (defn process-slicing [ctx el base-els])
 
 
+(defn fix-match-vectors* [slice path acc match-el]
+  (reduce (fn [out [k v]]
+            (let [match-path (conj path k)
+                  el-path (vec (interleave (repeat :|) match-path))
+                  out' (if (map? v)
+                         (fix-match-vectors* slice match-path out v)
+                         out)]
+              (if (:vector (get-in slice el-path))
+                (update-in out' (conj path k) hash-set)
+                out')))
+          acc
+          match-el))
+
+
+(defn fix-match-vectors [slice]
+  (update slice :match
+          #(fix-match-vectors* slice [] % %)))
+
+
 (defn enrich-slicing [ctx el base-els]
-  el)
+  (update-in el [:fhir/slicing :slices] #(sp/transform [sp/MAP-VALS] fix-match-vectors %)))
 
 
 (defn enrich-element [ctx el base-els]
@@ -788,12 +806,10 @@
         (-> (update :| (partial reduce walk-with-bases-recursive {}))
             (update :| (partial reduce add-primitive-element-attrs {})))
 
-        #_#_
         (seq (get-in enr-subj [:fhir/slicing :slices]))
         (update-in [:fhir/slicing :slices]
                    (fn [slices]
                      (reduce (fn [acc [k v]]
-                               (persist-scope)
                                (if (seq (:| v))
                                  (assoc acc k (-> v
                                                   (update :| (partial reduce walk-with-bases-recursive {}))

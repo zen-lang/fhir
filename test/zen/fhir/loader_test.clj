@@ -568,3 +568,22 @@
      {"http://hl7.org/fhir/StructureDefinition/code" [[:baseDefinition]]}
      "ValueSet"
      {"http://hl7.org/fhir/us/core/ValueSet/birthsex" {nil [[:binding]]}}}))
+
+
+(t/deftest fix-match-vectors
+  (matcho/match
+   (sut/fix-match-vectors {:|
+                           {:coding
+                            {:|
+                             {:system {} :code {}}
+                             :vector true}},
+                           :match {:coding {:code "fixedcode"
+                                            :system "fixeduri"}}})
+   {:match {:coding #{{:code "fixedcode" :system "fixeduri"}}}})
+
+  (matcho/match
+   (sut/fix-match-vectors {:| {:foo {:| {:bar {:| {:baz {}}
+                                          :vector true}}
+                                :vector true}}
+                           :match {:foo {:bar {:baz {}}}}})
+   {:match {:foo #{{:bar #{{:baz {}}}}}}}))
