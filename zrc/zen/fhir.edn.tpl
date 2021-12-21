@@ -59,7 +59,12 @@
                                                        {:value :example}]}}}
          :keys {:type zen/map
                 :values {:confirms #{nested-schema}}}
-         :every {:confirms #{nested-schema}}}}
+         :every {:confirms #{nested-schema}}
+         :slicing {:type zen/map
+                   :keys {:slices
+                          {:type zen/map
+                           :values {:type zen/map
+                                    :keys {:schema {:confirms #{nested-schema}}}}}}}}}
 
  structure-schema
  {:zen/tags #{zen/schema zen/tag}

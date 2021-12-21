@@ -610,12 +610,11 @@
            hl7-fhir-us-davinci-pdex-plan-net
            hl7-fhir-us-mcode})
 
-  (t/is (->> (:errors @zctx)
-             (remove ;; FIXME
-               #{{:message "Invalid token: :",
-                  :file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/familymemberhistory-genetic.edn",
-                  :ns 'fhir-r4.familymemberhistory-genetic}})
-             empty?))
+  (t/is (empty? (->> (:errors @zctx)
+                     (remove ;; FIXME
+                       #{{:message "Invalid token: :",
+                          :file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/familymemberhistory-genetic.edn",
+                          :ns 'fhir-r4.familymemberhistory-genetic}}))))
 
   (t/is (every? #(contains? (:ns @zctx) %)
                 ['us-core-v3.us-core-patient
