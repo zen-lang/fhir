@@ -387,28 +387,7 @@
     pattern))
 
 
-(defmethod preprocess-slices-by-discriminator :pattern [slices discriminator]
-  (let [rich-path  (->> (rich-parse-path-full (:path discriminator))
-                       (remove (fn [path-el]
-                                 (assert (= :key (:type path-el)))
-                                 (= "$this" (:key path-el)))))
-        inter-path (build-path rich-path)
-        path       (mapv (comp keyword :key) rich-path)]
-    (sp/transform [sp/MAP-VALS]
-                  (fn [v]
-                    (if-let [[pattern-k pattern] (some-> (get-in v inter-path) (utils/poly-find :pattern))]
-                      (let [match (cond->> (pattern->zen-match pattern)
-                                    (seq path)
-                                    (assoc-in {} path))]
-                        (-> (if (seq path)
-                              (update-in v path dissoc pattern-k)
-                              (dissoc v pattern-k))
-                            (assoc :match match)))
-                      v))
-                  slices)))
-
-
-(defmethod preprocess-slices-by-discriminator :value [slices discriminator]
+(defn slice-discriminator->match [slices discriminator d-type-key]
   (let [rich-path  (->> (rich-parse-path-full (:path discriminator))
                         (remove (fn [path-el]
                                   (assert (= :key (:type path-el)))
@@ -417,7 +396,7 @@
         path       (mapv (comp keyword :key) rich-path)]
     (sp/transform [sp/MAP-VALS]
                   (fn [v]
-                    (if-let [[pattern-k pattern] (some-> (get-in v inter-path) (utils/poly-find :fixed))]
+                    (if-let [[pattern-k pattern] (some-> (get-in v inter-path) (utils/poly-find d-type-key))]
                       (let [match (cond->> (pattern->zen-match pattern)
                                     (seq path)
                                     (assoc-in (:match v) path))]
@@ -427,6 +406,13 @@
                             (assoc :match match)))
                       v))
                   slices)))
+
+(defmethod preprocess-slices-by-discriminator :pattern [slices discriminator]
+  (slice-discriminator->match slices discriminator :pattern))
+
+
+(defmethod preprocess-slices-by-discriminator :value [slices discriminator]
+  (slice-discriminator->match slices discriminator :fixed))
 
 
 (defn fix-slices-names [slices]
