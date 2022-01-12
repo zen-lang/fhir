@@ -378,13 +378,18 @@
 (defmulti preprocess-slices-by-discriminator #'preprocess-slices-by-discriminator-dispatch)
 
 
-(defn pattern->zen-match [pattern]
-  (clojure.walk/postwalk
-    (fn [x]
-      (if (and (sequential? x) (not (map-entry? x)))
-        (set x)
-        x))
-    pattern))
+(defn pattern->zen-match [k pattern]
+  (if (= :patternCanonical k)
+    (let [splits (str/split pattern #"\|")]
+      (if (<= 2 (count splits))
+        (list :zen.match/one-of #{pattern (str/join \| (butlast splits))})
+        pattern))
+    (clojure.walk/postwalk
+      (fn [x]
+        (if (and (sequential? x) (not (map-entry? x)))
+          (set x)
+          x))
+      pattern)))
 
 
 (defn slice-discriminator->match [slices discriminator d-type-key]
@@ -397,7 +402,7 @@
     (sp/transform [sp/MAP-VALS]
                   (fn [v]
                     (if-let [[pattern-k pattern] (some-> (get-in v inter-path) (utils/poly-find d-type-key))]
-                      (let [match (cond->> (pattern->zen-match pattern)
+                      (let [match (cond->> (pattern->zen-match pattern-k pattern)
                                     (seq path)
                                     (assoc-in (:match v) path))]
                         (-> (if (seq path)
