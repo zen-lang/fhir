@@ -81,7 +81,11 @@
         slice-filter (cond
                        (some? (:match slice))
                        {:engine :match
-                        :match (:match slice)})
+                        :match (if (string? (:match slice))
+                                 (let [splits (str/split (:match slice) #"\|")]
+                                   (if (second splits) (list 'zen.match/one-of #{(:match slice) (first splits)})
+                                       (:match slice)))
+                                 (:match slice))})
         slice-schema (merge {:type 'zen/vector}
                             (when-let [min-items (:minItems slice)]
                               {:minItems min-items})
