@@ -380,10 +380,10 @@
 
 (defn pattern->zen-match [k pattern]
   (if (= :patternCanonical k)
-    (let [splits (str/split pattern #"\|")]
-      (if (<= 2 (count splits))
-        (list :zen.match/one-of #{pattern (str/join \| (butlast splits))})
-        pattern))
+    (let [{:keys [url version]} (parse-canonical-url pattern)]
+      (if (and url version)
+        (list :zen.match/one-of #{url pattern})
+        url))
     (clojure.walk/postwalk
       (fn [x]
         (if (and (sequential? x) (not (map-entry? x)))
