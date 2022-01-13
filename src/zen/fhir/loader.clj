@@ -651,11 +651,17 @@
 
 (defn get-base-elements [ztx subj k el bases]
   (let [elements-stack bases ;;(cons el bases) ;; ????
+        base-elements  (keep #(get-in % [:| k]) (reverse elements-stack))]
+    (not-empty (vec base-elements))))
+
+
+(defn get-type-base-elements [ztx subj k el bases]
+  (let [elements-stack bases ;;(cons el bases) ;; ????
         base-elements  (keep #(get-in % [:| k]) (reverse elements-stack))
         types          (cond-> (set (keep #(get-in % [:type]) base-elements))
                          (:type el) (conj (:type el)))
         types-defs     (map (fn [x] (get-type-definition ztx subj el x)) types)]
-    (not-empty (vec (concat base-elements types-defs)))))
+    (not-empty (vec types-defs))))
 
 
 (defn get-base-poly-key [ztx k bases]
@@ -746,10 +752,14 @@
   (let [{:as   search-result
          :keys [el-key element base-elements]
          :or   {el-key k, element el, base-elements []}}
-        (search-base-elements ztx subj k el bases)]
-    (if (seq base-elements)
-      search-result
-      (find-poly-base-el ztx subj el-key element bases))))
+        (search-base-elements ztx subj k el bases)
+
+        result (if (seq base-elements)
+                 search-result
+                 (find-poly-base-el ztx subj el-key element bases))
+
+        type-base-elements (get-type-base-elements ztx subj k el bases)]
+    (update result :base-elements (fnil into []) type-base-elements)))
 
 
 (defn primitive-element-key [primitive-k]
