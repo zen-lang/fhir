@@ -492,6 +492,22 @@
 (defmulti process-on-load
   (fn [res] (keyword (:resourceType res))))
 
+(defmethod process-on-load :SearchParameter [res]
+  (if (nil? (:expression res))
+    (println :search-parameter/no-expression (:url res))
+    (merge res
+           {:id (:id res)
+            :url (:url res)
+            :type (:type res)
+            :sp-name (:code res)
+            :base-resource-types (:base res)
+            :sql (into {}
+                       (for [base-rt (:base res)]
+                         (let [expr (:expression res)]
+                           {(keyword base-rt)
+                            {:parameter-format "%?%"
+                             :where "{{table}}.resource #>> '{name, 0, use}' = 'nickname'
+              AND {{table}}.resource #>> '{name, 0, text}' ilike {{param}}'"}})))})))
 
 (defmethod process-on-load :default
   [res]

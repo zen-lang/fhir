@@ -279,6 +279,13 @@
                             utils/strip-nils)}}))
 
 
+(defmethod generate-zen-schema :SearchParameter [_rt fhir-inter [url inter-res]]
+  #_(let []
+    {schema-ns {'ns     schema-ns
+                'import {}
+                'search {}}}))
+
+
 (defn ns-by-package [fhir-inter]
   (let [inter-by-package
         (->> fhir-inter
