@@ -280,10 +280,17 @@
 
 
 (defmethod generate-zen-schema :SearchParameter [_rt fhir-inter [url inter-res]]
-  #_(let []
+  (let [package-ns (:zen.fhir/package-ns inter-res)
+        schema-ns (symbol (str (name package-ns) ".search." (:id inter-res)))]
     {schema-ns {'ns     schema-ns
-                'import {}
-                'search {}}}))
+                'import #{'zenbox}
+                'search
+                {:zen/tags #{'zenbox/search}
+                 :id       (:id inter-res)
+                 :url      (:url inter-res)
+                 :type     (:type inter-res)
+                 :sp-name  (:sp-name inter-res)
+                 :sql      (:sql inter-res)}}}))
 
 
 (defn ns-by-package [fhir-inter]
