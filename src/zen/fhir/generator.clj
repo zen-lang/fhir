@@ -282,9 +282,9 @@
 (defmethod generate-zen-schema :SearchParameter [_rt fhir-inter [url inter-res]]
   (let [schema-ns (:zen.fhir/schema-ns inter-res)]
     {schema-ns {'ns     schema-ns
-                'import #{'zenbox}
+                'import #{'zen.fhir}
                 'search
-                {:zen/tags #{'zenbox/search}
+                {:zen/tags #{'zen.fhir/search}
                  :id       (:id inter-res)
                  :url      (:url inter-res)
                  :type     (:type inter-res)

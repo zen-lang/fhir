@@ -85,4 +85,19 @@
   :zen/desc "This schema should be used only when mentioned in meta.profile"
   :confirms #{structure-schema}
   :type     zen/map
-  :require  #{:zen.fhir/profileUri}}}
+  :require  #{:zen.fhir/profileUri}}
+
+ search
+ {:zen/tags #{zen/schema zen/tag}
+  :zen/desc "This symbol defines search on a FHIR resource type"
+  :type zen/map
+  :keys {:id {}
+         :url {}
+         :type {}
+         :sp-name {}
+         :sql {:type zen/map
+               :key {:type zen/keyword}
+               :values {:type zen/map
+                        :keys {:where {}
+                               :parameter-format {}
+                               :order-by {}}}}}}}
