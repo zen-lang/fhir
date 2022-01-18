@@ -509,7 +509,7 @@
                            {(keyword base-rt)
                             {:parameter-format "%?%"
                              :where "{{table}}.resource #>> '{name, 0, use}' = 'nickname'
-              AND {{table}}.resource #>> '{name, 0, text}' ilike {{param}}'"}})))})))
+              AND {{table}}.resource #>> '{name, 0, text}' ilike {{param}}"}})))})))
 
 (defmethod process-on-load :default
   [res]
