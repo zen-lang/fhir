@@ -496,6 +496,8 @@
   (if (nil? (:expression res))
     (println :search-parameter/no-expression (:url res))
     (merge res
+           (when-let [package-ns (:zen.fhir/package-ns res)]
+             {:zen.fhir/schema-ns (symbol (str (name package-ns) ".search." (:id res)))})
            {:id (:id res)
             :url (:url res)
             :type (:type res)
