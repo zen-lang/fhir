@@ -528,3 +528,47 @@
                                 :vector true}}
                            :match {:foo {:bar {:baz {}}}}})
    {:match {:foo #{{:bar #{{:baz {}}}}}}}))
+
+
+(t/deftest ^:kaocha/pending sp-fhir-path-parse-test
+  (t/is (= '(. :Patient :active)
+           (sut/parse-fhir-path "Patient.active")))
+
+  (t/is (= '(| (. (. :Patient :address) :city)
+               (. (. :Person :address) :city))
+           (sut/parse-fhir-path "Patient.address.city | Person.address.city")))
+
+  (t/is (= '(| (. :Substance :code)
+               (as (. (. :Substance :ingredient) :substance) :CodeableConcept))
+           (sut/parse-fhir-path "Substance.code | (Substance.ingredient.substance as CodeableConcept)")))
+
+  (t/is (= '(and (.exists (. :Patient :deceased))
+                 (!= (. :Patient :deceased)
+                     false))
+           (sut/parse-fhir-path "Patient.deceased.exists() and Patient.deceased != false")))
+
+  (t/is (= '(.where (. :Patient :name) {:use "nickname"})
+           (sut/parse-fhir-path "Patient.name.where(use='nickname')")))
+
+  (t/is (= '(.where (. :Organization :extension)
+                    {:url "http//hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/location-reference"})
+           (sut/parse-fhir-path "Organization.extension.where(url='http//hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/location-reference')")))
+
+  (t/is (= '(.where (. (. :Person :link) :target)
+                    (is (resolve) :Patient))
+           (sut/parse-fhir-path "Person.link.target.where(resolve() is Patient)")))
+
+  (t/is (= '(. (.where (. :PlanDefinition :relatedArtifact)
+                       {:type "composed-of"})
+               .resource)
+           (sut/parse-fhir-path "PlanDefinition.relatedArtifact.where(type='composed-of').resource")))
+
+  (t/is (= '(as (. :ConceptMap :source)
+                :uri)
+           (sut/parse-fhir-path "(ConceptMap.source as uri)")))
+
+  (t/is (= '(| (as (. (. :Group :characteristic) :value)
+                   :CodeableConcept)
+               (as (. (. :Group :characteristic) :value)
+                   :boolean))
+           (sut/parse-fhir-path "(Group.characteristic.value as CodeableConcept) | (Group.characteristic.value as boolean)"))))

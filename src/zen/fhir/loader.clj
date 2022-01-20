@@ -492,6 +492,11 @@
 (defmulti process-on-load
   (fn [res] (keyword (:resourceType res))))
 
+
+(defn parse-fhir-path [fhir-path]
+  '())
+
+
 (defmethod process-on-load :SearchParameter [res]
   (if (nil? (:expression res))
     (println :search-parameter/no-expression (:url res))
