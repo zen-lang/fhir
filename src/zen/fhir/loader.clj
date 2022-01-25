@@ -905,15 +905,17 @@
                      (map (fn [base-rt]
                             (let [knife (get knife base-rt)
                                   jsonpath #_(zen.fhir.sp-fhir-path/knife->jsonpath knife)
-                                  "$.name?(@.use==\"i-nickname\")[*]"]
+                                  ["$.name?(@.use==\"i-nickname\")[*]"]]
                               {(keyword base-rt)
                                {:knife    knife
                                 :jsonpath jsonpath
-                                :sql      {:where (str "jsonb_path_query_array({{table}}.resource,'"
-                                                       jsonpath
-                                                       "'::jsonpath)::text ilike {{param}}")
+                                :sql      {:where (str/join " or "
+                                                            (for [jp jsonpath]
+                                                              (str "jsonb_path_query_array({{table}}.resource,'"
+                                                                   jp
+                                                                   "'::jsonpath)::text ilike {{param}}")))
                                            :parameter-format "%?%"}}})))
-                     (:base res))))))
+                     (:base inter))))))
 
 
 (defn process-search-parameters [ztx]

@@ -95,9 +95,14 @@
          :url {}
          :type {}
          :sp-name {}
-         :sql {:type zen/map
-               :key {:type zen/keyword}
-               :values {:type zen/map
-                        :keys {:where {}
-                               :parameter-format {}
-                               :order-by {}}}}}}}
+         :expr {:type zen/map
+                :key {:type zen/keyword}
+                :values {:type zen/map
+                         :keys
+                         {:knife {}
+                          :jsonpath {:type zen/vector
+                                     :every {:type zen/string}}
+                          :sql {:type zen/map
+                                :keys {:where {}
+                                       :parameter-format {}
+                                       :order-by {}}}}}}}}}
