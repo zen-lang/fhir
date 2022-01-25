@@ -289,7 +289,7 @@
                  :url      (:url inter-res)
                  :type     (:type inter-res)
                  :sp-name  (:sp-name inter-res)
-                 :sql      (:sql inter-res)}}}))
+                 :expr     (:expr inter-res)}}}))
 
 
 (defn ns-by-package [fhir-inter]

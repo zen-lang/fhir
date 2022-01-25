@@ -8,7 +8,8 @@
             [zen.fhir.utils :as utils]
             [clojure.walk]
             [edamame.core :as edamame]
-            [com.rpl.specter :as sp]))
+            [com.rpl.specter :as sp]
+            [zen.fhir.sp-fhir-path]))
 
 
 (def poly-id-terminator "[x]")
@@ -493,10 +494,6 @@
   (fn [res] (keyword (:resourceType res))))
 
 
-(defn parse-fhir-path [fhir-path]
-  '())
-
-
 (defmethod process-on-load :SearchParameter [res]
   (if (nil? (:expression res))
     (println :search-parameter/no-expression (:url res))
@@ -508,13 +505,15 @@
             :type (:type res)
             :sp-name (:code res)
             :base-resource-types (:base res)
-            :sql (into {}
-                       (for [base-rt (:base res)]
-                         (let [expr (:expression res)]
-                           {(keyword base-rt)
-                            {:parameter-format "%?%"
-                             :where "{{table}}.resource #>> '{name, 0, use}' = 'nickname'
-              AND {{table}}.resource #>> '{name, 0, text}' ilike {{param}}"}})))})))
+            :expr (let [knife (zen.fhir.sp-fhir-path/parse-expression (:expression res))]
+                    (into {}
+                          (map (fn [base-rt]
+                                 {(keyword base-rt)
+                                  {:knife (get knife base-rt)
+                                   :sql {:where ""
+                                         :parameter-format nil}}}))
+                          (:base res)))})))
+
 
 (defmethod process-on-load :default
   [res]
