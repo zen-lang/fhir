@@ -82,10 +82,16 @@
      (str/upper-case (subs x 0 1))))
 
 
+(defn unsupported-syntax? [exp]
+  (or (str/includes? exp "extension")
+      (str/includes? exp "hasExtension")
+      (str/includes? exp "[")))
+
+
 (defn parse-expression [exp]
-  (when exp
+  (when (and exp (not (unsupported-syntax? exp)))
     (if-let [e (get expr-exceptions exp)]
-      [e]
+      e
 
       (->>
        (remove-exists exp)
