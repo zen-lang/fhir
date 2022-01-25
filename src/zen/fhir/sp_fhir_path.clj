@@ -4,29 +4,16 @@
             [clojure.string :as str]))
 
 
-(def skip-params #{"Observation.code-value-concept"
-                   "Observation.code-value-date"
-                   "Observation.code-value-quantity"
-                   "Observation.code-value-string"
-                   "Observation.combo-code-value-concept"
-                   "Observation.combo-code-value-quantity"}) #_"NOTE: why skip them?"
-
-
 (def expr-exceptions
-  {"(Group.characteristic.value as CodeableConcept) | (Group.characteristic.value as boolean)"
-   {:resourceType "Group"
-    :expression [["characteristic" "value" "CodeableConcept"]
-                 ["characteristic" "value" "boolean"]]}
+  {"Patient.deceased.exists() and Patient.deceased != false"
+   {"Patient" [["deceased"]]}
 
-   "Patient.deceased.exists() and Patient.deceased != false"
-   {:resourceType "Patient"
-    :expression [["deceased"]]}
+   "SubstanceSpecification.code" #_"NOTE: why is this needed? For old FHIR versions?"
+   {"SubstanceSpecification" [["type"]]}
 
-   "SubstanceSpecification.code" {:resourceType "SubstanceSpecification"
-                                  :expression [["type"]]}
 
-   "StructureDefinition.context" {:resourceType "StructureDefinition"
-                                  :expression [["context" "type"]]}})
+   "StructureDefinition.context" #_"NOTE: why is this needed? For old FHIR versions?"
+   {"StructureDefinition" [["context" "type"]]}})
 
 
 (def where-eq-regex #"where\((.*)=\s*'(.*)'\s*\)?")
