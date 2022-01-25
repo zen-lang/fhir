@@ -21,30 +21,93 @@ QuestionnaireResponse.item.where(hasExtension('http://hl7.org/fhir/StructureDefi
 Patient.extension.where(url = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race').extension.value.code
 ExplanationOfBenefit.billablePeriod.start | Patient.a | ExplanationOfBenefit.item.servicedDate | ExplanationOfBenefit.item.servicedPeriod.start
 name | alias
-Bundle.entry[0].resource"
+Bundle.entry[0].resource
+"
 
 
 (t/deftest test-sp-parsing
-  (matcho/match
-    (sut/parse-expression "(MedicationRequest.medication as Reference) | (MedicationRequest.medication as string) ")
-    {"MedicationRequest" [["medication" "Reference"] ["medication" "string"]]})
+  (t/is (= {"MedicationRequest" [["medication" "Reference"] ["medication" "string"]]}
+           (sut/parse-expression "(MedicationRequest.medication as Reference) | (MedicationRequest.medication as string) ")))
 
-  (matcho/match
-    (sut/parse-expression "Person.link.target.where(resolve() is Patient)")
-    {"Person" [["link" "target" {:resourceType "Patient"}]]})
+  (t/is (= {"Person" [["link" "target" {:resourceType "Patient"}]]}
+           (sut/parse-expression "Person.link.target.where(resolve() is Patient)")))
 
-  (matcho/match
-    (sut/parse-expression "Person.link.target.where(sys='ups')")
-    {"Person" [["link" "target" {:sys "ups"}]]})
+  (t/is (= {"Person" [["link" "target" {:sys "ups"}]]}
+           (sut/parse-expression "Person.link.target.where(sys='ups')")))
 
-  (matcho/match
-    (sut/parse-expression "Medication.medication.as(Reference)")
-    {"Medication" [["medication" "Reference"]]})
+  (t/is (= {"Medication" [["medication" "Reference"]]}
+           (sut/parse-expression "Medication.medication.as(Reference)")))
 
-  (matcho/match
-    (sut/parse-expression "(Observation.value as CodeableConcept)")
-    {"Observation" [["value" "CodeableConcept"]]})
+  (t/is (= {"Observation" [["value" "CodeableConcept"]]}
+           (sut/parse-expression "(Observation.value as CodeableConcept)")))
 
-  (matcho/match
-    (sut/parse-expression "name | alias")
-    {:default [["name"] ["alias"]]}))
+  (t/is (= {:default [["name"] ["alias"]]}
+           (sut/parse-expression "name | alias")))
+
+
+  (t/is (= {"Patient" [["active"]]}
+           (sut/parse-expression "Patient.active")))
+
+  (t/is (= {"Patient" [["address" "city"]]
+            "Person" [["address" "city"]]}
+           (sut/parse-expression "Patient.address.city | Person.address.city")))
+
+  (t/is (= {"Patient" [["deceased"]]}
+           (sut/parse-expression "Patient.deceased.exists() and Patient.deceased != false")))
+
+  (t/is (= {"Patient" [["name" {:use "nickname"}]]}
+           (sut/parse-expression "Patient.name.where(use='nickname')")))
+
+  (t/is (= {"Person" [["link" "target" {:resourceType "Patient"}]]}
+           (sut/parse-expression "Person.link.target.where(resolve() is Patient)")))
+
+  (t/is (= {"PlanDefinition" [["relatedArtifact" {:type "composed-of"} "resource"]]}
+           (sut/parse-expression "PlanDefinition.relatedArtifact.where(type='composed-of').resource")))
+
+  (t/is (= {"Substance" [["code"]
+                         ["ingredient" "substance" "CodeableConcept"]]}
+           (sut/parse-expression "Substance.code | (Substance.ingredient.substance as CodeableConcept)")))
+
+  (t/is (= {"ConceptMap" [["source" "uri"]]}
+           (sut/parse-expression "(ConceptMap.source as uri)")))
+
+  (t/is (= {"Group" [["characteristic" "value" "CodeableConcept"]
+                     ["characteristic" "value" "boolean"]]}
+           (sut/parse-expression "(Group.characteristic.value as CodeableConcept) | (Group.characteristic.value as boolean)")))
+
+  (t/is (= {"Observation" [["value" "dateTime"]
+                           ["value" "Period"]]}
+           (sut/parse-expression "(Observation.value as dateTime) | (Observation.value as Period)")))
+
+  (t/is (= {"ExplanationOfBenefit" [["billablePeriod" "start"]
+                                    ["item" "servicedDate"]
+                                    ["item" "servicedPeriod" "start"]]}
+           (sut/parse-expression "ExplanationOfBenefit.billablePeriod.start | ExplanationOfBenefit.item.servicedDate | ExplanationOfBenefit.item.servicedPeriod.start")))
+
+  (t/is (= {:default [["name"] ["alias"]]}
+           (sut/parse-expression "name | alias")))
+
+  (t/is (= #_{"Organization" [["extension" {:url "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/location-reference"}]]}
+           nil
+           (sut/parse-expression "Organization.extension.where(url='http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/location-reference')")))
+
+
+  (t/is (= #_{"Patient" [["extension" {:url "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
+                          "extension"
+                          "value"
+                          "code"]]}
+           nil
+           (sut/parse-expression "Patient.extension.where(url = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race').extension.value.code")))
+
+  (t/is (= #_{"QuestionnaireResponse" [["item"
+                                        {:extension [{:url "http://hl7.org/fhir/StructureDefinition/questionnaireresponse-isSubject"}]}
+                                        "answer"
+                                        "value"
+                                        "Reference"]]}
+           nil
+           (sut/parse-expression "QuestionnaireResponse.item.where(hasExtension('http://hl7.org/fhir/StructureDefinition/questionnaireresponse-isSubject')).answer.value.ofType(Reference)")))
+
+
+  (t/is (= #_{"Bundle" [["entry" 0 "resource"]]}
+           nil
+           (sut/parse-expression "Bundle.entry[0].resource"))))
