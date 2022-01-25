@@ -511,13 +511,14 @@
             :type (:type res)
             :sp-name (:code res)
             :base-resource-types (:base res)
-            :expr (let [knife (zen.fhir.sp-fhir-path/parse-expression (:expression res))]
+            :expr (let [knife (zen.fhir.sp-fhir-path/fhirpath->knife (:expression res))]
                     (into {}
                           (map (fn [base-rt]
-                                 {(keyword base-rt)
-                                  {:knife (get knife base-rt)
-                                   :sql {:where ""
-                                         :parameter-format nil}}}))
+                                 (let [knife (get knife base-rt)]
+                                   {(keyword base-rt)
+                                    {:knife knife
+                                     :sql {:where ""
+                                           :parameter-format nil}}})))
                           (:base res)))})))
 
 

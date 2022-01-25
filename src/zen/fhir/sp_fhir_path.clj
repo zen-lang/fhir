@@ -75,7 +75,7 @@
       (str/includes? exp "[")))
 
 
-(defn parse-expression [exp]
+(defn fhirpath->knife [exp]
   (when (and exp (not (unsupported-syntax? exp)))
     (if-let [e (get expr-exceptions exp)]
       e
