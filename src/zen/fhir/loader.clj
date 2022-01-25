@@ -511,15 +511,7 @@
             :type (:type res)
             :sp-name (:code res)
             :base-resource-types (:base res)
-            :expr (let [knife (zen.fhir.sp-fhir-path/fhirpath->knife (:expression res))]
-                    (into {}
-                          (map (fn [base-rt]
-                                 (let [knife (get knife base-rt)]
-                                   {(keyword base-rt)
-                                    {:knife knife
-                                     :sql {:where ""
-                                           :parameter-format nil}}})))
-                          (:base res)))})))
+            :expression (:expression res)})))
 
 
 (defmethod process-on-load :default
@@ -904,10 +896,33 @@
                         %)))
 
 
+(defn process-search-parameter [ztx inter]
+  (-> inter
+      (dissoc :expression)
+      (assoc :expr
+             (let [knife (zen.fhir.sp-fhir-path/fhirpath->knife (:expression inter))]
+               (into {}
+                     (map (fn [base-rt]
+                            (let [knife (get knife base-rt)]
+                              {(keyword base-rt)
+                               {:knife    knife
+                                :sql      {:where            ""
+                                           :parameter-format nil}}})))
+                     (:base res))))))
+
+
+(defn process-search-parameters [ztx]
+  (swap! ztx update-in [:fhir/inter "SearchParameter"]
+         #(sp/transform [sp/MAP-VALS]
+                        (partial process-search-parameter ztx)
+                        %)))
+
+
 (defn process-resources
   "this is processing of resources with context"
   [ztx]
   (process-structure-definitions ztx)
+  (process-search-parameters ztx)
   (process-concepts ztx))
 
 
