@@ -903,11 +903,16 @@
              (let [knife (zen.fhir.sp-fhir-path/fhirpath->knife (:expression inter))]
                (into {}
                      (map (fn [base-rt]
-                            (let [knife (get knife base-rt)]
+                            (let [knife (get knife base-rt)
+                                  jsonpath #_(zen.fhir.sp-fhir-path/knife->jsonpath knife)
+                                  "$.name?(@.use==\"i-nickname\")[*]"]
                               {(keyword base-rt)
                                {:knife    knife
-                                :sql      {:where            ""
-                                           :parameter-format nil}}})))
+                                :jsonpath jsonpath
+                                :sql      {:where (str "jsonb_path_query_array({{table}}.resource,'"
+                                                       jsonpath
+                                                       "'::jsonpath)::text ilike {{param}}")
+                                           :parameter-format "%?%"}}})))
                      (:base res))))))
 
 

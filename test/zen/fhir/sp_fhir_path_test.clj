@@ -115,3 +115,31 @@ Bundle.entry[0].resource
   (t/is (= #_{"Bundle" [["entry" 0 "resource"]]}
            nil
            (sut/fhirpath->knife "Bundle.entry[0].resource"))))
+
+
+(t/deftest ^:kaocha/pending jsonpath-test
+  (t/is (= ["$.medication.Reference[*]"
+            "$.medication.string[*]"]
+           (sut/knife->jsonpath [["medication" "Reference"] ["medication" "string"]])))
+
+  (t/is (= ["$.link.target?(@.resourceType==\"Patient\")"]
+           (sut/knife->jsonpath [["link" "target" {:resourceType "Patient"}]])))
+
+  (t/is (= ["$.link.target?(@.sys==\"ups\")"]
+           (sut/knife->jsonpath [["link" "target" {:sys "ups"}]])))
+
+  (t/is (= ["$.medication.Reference[*]"]
+           (sut/knife->jsonpath [["medication" "Reference"]])))
+
+  (t/is (= ["$.name[*]"
+            "$.alias[*]"]
+           (sut/knife->jsonpath [["name"] ["alias"]])))
+
+  (t/is (= ["$.active[*]"]
+           (sut/knife->jsonpath [["active"]])))
+
+  (t/is (= ["$.address.city[*]"]
+           (sut/knife->jsonpath [["address" "city"]])))
+
+  (t/is (= ["$.relatedArtifact?(type==\"composed-of\").resource[*]"]
+           (sut/knife->jsonpath [["relatedArtifact" {:type "composed-of"} "resource"]]))))

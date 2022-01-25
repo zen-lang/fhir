@@ -94,3 +94,6 @@
                    (if (capital? k)
                      (update acc k #(conj (or % []) (vec (rest exp))))
                      (update acc :default #(conj (or % []) (vec exp)))))) {})))))
+
+
+(defn knife->jsonpath [knife])
