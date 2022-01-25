@@ -75,6 +75,10 @@ Bundle.entry[0].resource
                      ["characteristic" "value" "boolean"]]}
            (sut/parse-expression "(Group.characteristic.value as CodeableConcept) | (Group.characteristic.value as boolean)")))
 
+  (t/is (= {"Condition" [["onset" "dateTime"]
+                         ["onset" "Period"]]}
+           (sut/parse-expression "Condition.onset.as(dateTime) | Condition.onset.as(Period)")))
+
   (t/is (= {"Observation" [["value" "dateTime"]
                            ["value" "Period"]]}
            (sut/parse-expression "(Observation.value as dateTime) | (Observation.value as Period)")))
