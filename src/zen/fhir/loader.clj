@@ -495,8 +495,14 @@
 
 
 (defmethod process-on-load :SearchParameter [res]
-  (if (nil? (:expression res))
+  (cond
+    (nil? (:expression res))
     (println :search-parameter/no-expression (:url res))
+
+    (= "composite" (:type res))
+    (println :search-parameter/composite-not-supported (:url res))
+
+    :else
     (merge res
            (when-let [package-ns (:zen.fhir/package-ns res)]
              {:zen.fhir/schema-ns (symbol (str (name package-ns) ".search." (:id res)))})
