@@ -904,8 +904,7 @@
                (into {}
                      (map (fn [base-rt]
                             (let [knife (get knife base-rt)
-                                  jsonpath #_(zen.fhir.sp-fhir-path/knife->jsonpath knife)
-                                  ["$.name?(@.use==\"i-nickname\")[*]"]]
+                                  jsonpath (zen.fhir.sp-fhir-path/knife->jsonpath knife)]
                               {(keyword base-rt)
                                {:knife    knife
                                 :jsonpath jsonpath

@@ -96,4 +96,20 @@
                      (update acc :default #(conj (or % []) (vec exp)))))) {})))))
 
 
-(defn knife->jsonpath [knife])
+(defn knife-element->jsonpath-element [kel]
+  (cond
+    (string? kel)  (format ".\"%s\"" kel)
+    (integer? kel) (format "[%s]" kel)
+    (map? kel)     (let [preds (map (fn [[k v]] (format "@.\"%s\"==\"%s\"" (name k) v))
+                                    kel)]
+                     (format "?(%s)" (str/join " && " preds)))
+    :else (prn :WARN ::knife-element->jsonpath-element "unknown knife element " kel " skipping")))
+
+
+(defn knife-path->jsonpath [kpath]
+  (let [jsonpath-els (map knife-element->jsonpath-element kpath)]
+    (format "$%s[*]" (str/join jsonpath-els))))
+
+
+(defn knife->jsonpath [knife-paths]
+  (mapv knife-path->jsonpath knife-paths))
