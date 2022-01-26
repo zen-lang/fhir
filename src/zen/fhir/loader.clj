@@ -908,11 +908,15 @@
                               {(keyword base-rt)
                                {:knife    knife
                                 :jsonpath jsonpath
-                                :sql      {:where (str/join " or "
-                                                            (for [jp jsonpath]
-                                                              (str "jsonb_path_query_array({{table}}.resource,'"
-                                                                   jp
-                                                                   "'::jsonpath)::text ilike {{param}}")))
+                                :sql      {:where (into [:or]
+                                                        (for [jp jsonpath]
+                                                          [:ilike
+                                                           [:pg/cast
+                                                            [:pg/jsonb-path-query-array
+                                                             [:pg/sql "{{table}}.resource"]
+                                                             [:pg/cast jp :jsonpath]]
+                                                            :text]
+                                                           [:pg/sql "{{param}}"]]))
                                            :parameter-format "%?%"}}})))
                      (:base inter))))))
 
