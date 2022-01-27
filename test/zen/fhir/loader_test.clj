@@ -1,5 +1,6 @@
 (ns zen.fhir.loader-test
   (:require [zen.fhir.loader :as sut]
+            [zen.fhir.structure-definition.loader :as sut.sd]
             [clojure.test :as t]
             [zen.core]
             [clojure.pprint]
@@ -224,7 +225,7 @@
     (:fhir/inter @aztx)
 
     (matcho/match
-      (sut/get-definition aztx "url://VectorBase")
+      (sut.sd/get-definition aztx "url://VectorBase")
       {:| {:attr  {:type                "prim"
                    :vector              true
                    :fhir/primitive-attr true}
@@ -240,7 +241,7 @@
     (reload)
 
     (matcho/match
-      (sut/get-definition aztx "url://VectorProfile")
+      (sut.sd/get-definition aztx "url://VectorProfile")
       {:| {:attr {:vector true :type "prim"}}}))
 
   (t/testing "Double inheritece"
@@ -262,7 +263,7 @@
     (reload)
 
     (matcho/match
-      (sut/get-definition aztx  "url://InhProfile")
+      (sut.sd/get-definition aztx  "url://InhProfile")
       {:| {:attr {:vector true :type "prim"}}}))
 
 
@@ -285,7 +286,7 @@
     (reload)
 
     (matcho/match
-      (sut/get-definition aztx "url://CProfile")
+      (sut.sd/get-definition aztx "url://CProfile")
       {:| {:el {:vector true
                 :|      {:attr {:vector true :type "prim"}}}}}))
 
@@ -313,7 +314,7 @@
     (reload)
 
     (matcho/match
-      (sut/get-definition aztx "url://InhCProfile")
+      (sut.sd/get-definition aztx "url://InhCProfile")
       {:| {:el {:vector true
                 :|      {:attr {:vector true :type "prim"}}}}}))
 
@@ -354,29 +355,29 @@
     (reload)
 
     (matcho/match
-      (sut/get-definition aztx "url://PProfile1")
+      (sut.sd/get-definition aztx "url://PProfile1")
       {:| {:el     {:| {:prim        {:type "prim"}
                         :ComplexType nil}}
            :elPrim nil?}})
 
     (matcho/match
-      (sut/get-definition aztx  "url://PProfile2")
+      (sut.sd/get-definition aztx  "url://PProfile2")
       {:| {:el {:| {:ComplexType {:type "ComplexType"}
                     :prim        nil?}}}})
 
     (matcho/match
-      (sut/get-definition aztx "url://PProfile3")
+      (sut.sd/get-definition aztx "url://PProfile3")
       {:| {:el {:| {:ComplexType {:type "ComplexType"}
                     :prim        {:type "prim"}}}}})
 
     (matcho/match
-      (sut/get-definition aztx "url://PProfile4")
+      (sut.sd/get-definition aztx "url://PProfile4")
       {:| {:el {:| {:ComplexType {:type "ComplexType"
                                   :|    {:attr {:vector true
                                                 :type   "prim"}}}}}}})
 
     (matcho/match
-      (sut/get-definition aztx "url://PTProfile")
+      (sut.sd/get-definition aztx "url://PTProfile")
       {:| {:el {:| {:ComplexType {:type "ComplexType"
                                   :|    {:attr {:vector true :type "prim"}}}}}}}))
 
@@ -457,7 +458,7 @@
   (reload)
 
   (matcho/match
-    (sut/get-definition aztx "uri://us-race")
+    (sut.sd/get-definition aztx "uri://us-race")
     {:kind           "complex-type"
      :derivation     "constraint"
      :fhir/extension string?
@@ -476,7 +477,7 @@
                                  :required true}}})
 
   (matcho/match
-    (sut/get-definition aztx "uri://pt-nation")
+    (sut.sd/get-definition aztx "uri://pt-nation")
     {:kind           "complex-type"
      :derivation     "constraint"
      :type           "Extension"
@@ -490,7 +491,7 @@
                                :type     "Period"}}})
 
   (matcho/match
-    (sut/get-definition aztx "uri://due-to")
+    (sut.sd/get-definition aztx "uri://due-to")
     {:derivation     "constraint"
      :kind           "complex-type"
      :url            "uri://due-to"
@@ -503,7 +504,7 @@
      :|              {:CodeableConcept {:type "CodeableConcept"} :Reference {:type "Reference"}}})
 
   (matcho/match
-    (sut/get-definition aztx "uri://simple-ext")
+    (sut.sd/get-definition aztx "uri://simple-ext")
     {:derivation     "constraint"
      :kind           "first-class-extension"
      :url            "uri://simple-ext"
@@ -513,7 +514,7 @@
 
 (t/deftest fix-match-vectors
   (matcho/match
-   (sut/fix-match-vectors {:|
+   (sut.sd/fix-match-vectors {:|
                            {:coding
                             {:|
                              {:system {} :code {}}
@@ -523,7 +524,7 @@
    {:match {:coding #{{:code "fixedcode" :system "fixeduri"}}}})
 
   (matcho/match
-   (sut/fix-match-vectors {:| {:foo {:| {:bar {:| {:baz {}}
+   (sut.sd/fix-match-vectors {:| {:foo {:| {:bar {:| {:baz {}}
                                           :vector true}}
                                 :vector true}}
                            :match {:foo {:bar {:baz {}}}}})
