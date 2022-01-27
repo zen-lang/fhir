@@ -91,10 +91,10 @@
  {:zen/tags #{zen/schema zen/tag}
   :zen/desc "This symbol defines search on a FHIR resource type"
   :type zen/map
-  :keys {:id {}
-         :url {}
-         :type {}
-         :sp-name {}
+  :keys {:fhir/id {}
+         :fhir/url {}
+         :fhir/type {}
+         :name {}
          :expr {:type zen/map
                 :key {:type zen/keyword}
                 :values {:type zen/map

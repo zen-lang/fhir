@@ -895,6 +895,29 @@
                         (partial process-concept ztx)
                         %)))
 
+(defmulti expand-search-parameter-template
+  (fn [template-type _jsonpath] template-type))
+
+(defmethod expand-search-parameter-template :string
+  [_type jsonpath]
+  {:where (into [:or]
+                (for [jp jsonpath]
+                  [:ilike
+                   [:pg/cast
+                    [:pg/jsonb-path-query-array
+                     [:pg/sql "{{table}}.resource"]
+                     [:pg/cast jp :jsonpath]]
+                    :text]
+                   [:pg/sql "{{param}}"]]))
+   :parameter-format "%?%"})
+
+(defmethod expand-search-parameter-template :reference
+  [_type _jp]
+  {:where ["@@"]})
+
+(defmethod expand-search-parameter-template :default
+  [_type _jp]
+  {:where :pg/false})
 
 (defn process-search-parameter [ztx inter]
   (-> inter
@@ -904,22 +927,14 @@
                (into {}
                      (map (fn [base-rt]
                             (let [knife (get knife base-rt)
-                                  jsonpath (zen.fhir.sp-fhir-path/knife->jsonpath knife)]
+                                  jsonpath (zen.fhir.sp-fhir-path/knife->jsonpath knife)
+                                  sp-template (keyword (:type inter))]
                               {(keyword base-rt)
                                {:knife    knife
                                 :jsonpath jsonpath
-                                :sql      {:where (into [:or]
-                                                        (for [jp jsonpath]
-                                                          [:ilike
-                                                           [:pg/cast
-                                                            [:pg/jsonb-path-query-array
-                                                             [:pg/sql "{{table}}.resource"]
-                                                             [:pg/cast jp :jsonpath]]
-                                                            :text]
-                                                           [:pg/sql "{{param}}"]]))
-                                           :parameter-format "%?%"}}})))
+                                :template sp-template
+                                :sql (expand-search-parameter-template sp-template jsonpath)}})))
                      (:base inter))))))
-
 
 (defn process-search-parameters [ztx]
   (swap! ztx update-in [:fhir/inter "SearchParameter"]

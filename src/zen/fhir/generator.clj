@@ -285,10 +285,10 @@
                 'import #{'zen.fhir}
                 'search
                 {:zen/tags #{'zen.fhir/search}
-                 :id       (:id inter-res)
-                 :url      (:url inter-res)
-                 :type     (:type inter-res)
-                 :sp-name  (:sp-name inter-res)
+                 :fhir/id       (:id inter-res)
+                 :fhir/url      (:url inter-res)
+                 :fhir/type     (:type inter-res)
+                 :name  (:sp-name inter-res)
                  :expr     (:expr inter-res)}}}))
 
 
