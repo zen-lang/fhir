@@ -1,5 +1,5 @@
-(ns zen.fhir.sp-fhir-path-test
-  (:require [zen.fhir.sp-fhir-path :as sut]
+(ns zen.fhir.search-parameter.fhirpath-test
+  (:require [zen.fhir.search-parameter.fhirpath :as sut]
             [clojure.test :as t]
             [zen.core]
             [clojure.pprint]

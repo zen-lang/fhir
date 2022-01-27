@@ -1,5 +1,6 @@
 (ns zen.fhir.loader
-  (:require [zen.core :as zen]
+  (:require [zen.fhir.search-parameter.loader :as search-parameter.loader]
+            [zen.core :as zen]
             [zen.fhir.value-set-expand]
             [cheshire.core]
             [clojure.java.io :as io]
@@ -8,8 +9,7 @@
             [zen.fhir.utils :as utils]
             [clojure.walk]
             [edamame.core :as edamame]
-            [com.rpl.specter :as sp]
-            [zen.fhir.sp-fhir-path]))
+            [com.rpl.specter :as sp]))
 
 
 (def poly-id-terminator "[x]")
@@ -895,59 +895,11 @@
                         (partial process-concept ztx)
                         %)))
 
-(defmulti expand-search-parameter-template
-  (fn [template-type _jsonpath] template-type))
-
-(defmethod expand-search-parameter-template :string
-  [_type jsonpath]
-  {:where (into [:or]
-                (for [jp jsonpath]
-                  [:ilike
-                   [:pg/cast
-                    [:pg/jsonb-path-query-array
-                     [:pg/sql "{{table}}.resource"]
-                     [:pg/cast jp :jsonpath]]
-                    :text]
-                   [:pg/sql "{{param}}"]]))
-   :parameter-format "%?%"})
-
-(defmethod expand-search-parameter-template :reference
-  [_type _jp]
-  {:where ["@@"]})
-
-(defmethod expand-search-parameter-template :default
-  [_type _jp]
-  {:where :pg/false})
-
-(defn process-search-parameter [ztx inter]
-  (-> inter
-      (dissoc :expression)
-      (assoc :expr
-             (let [knife (zen.fhir.sp-fhir-path/fhirpath->knife (:expression inter))]
-               (into {}
-                     (map (fn [base-rt]
-                            (let [knife (get knife base-rt)
-                                  jsonpath (zen.fhir.sp-fhir-path/knife->jsonpath knife)
-                                  sp-template (keyword (:type inter))]
-                              {(keyword base-rt)
-                               {:knife    knife
-                                :jsonpath jsonpath
-                                :template sp-template
-                                :sql (expand-search-parameter-template sp-template jsonpath)}})))
-                     (:base inter))))))
-
-(defn process-search-parameters [ztx]
-  (swap! ztx update-in [:fhir/inter "SearchParameter"]
-         #(sp/transform [sp/MAP-VALS]
-                        (partial process-search-parameter ztx)
-                        %)))
-
-
 (defn process-resources
   "this is processing of resources with context"
   [ztx]
   (process-structure-definitions ztx)
-  (process-search-parameters ztx)
+  (search-parameter.loader/process-search-parameters ztx)
   (process-concepts ztx))
 
 

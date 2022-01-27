@@ -1,4 +1,4 @@
-(ns zen.fhir.sp-fhir-path
+(ns zen.fhir.search-parameter.fhirpath
   (:require [clojure.java.io :as io]
             [cheshire.core :as json]
             [clojure.string :as str]))
