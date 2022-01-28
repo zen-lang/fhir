@@ -4,6 +4,27 @@
 
             [com.rpl.specter :as sp]))
 
+
+(defn process-on-load [res]
+  (cond
+    (nil? (:expression res))
+    (println :search-parameter/no-expression (:url res))
+
+    (= "composite" (:type res))
+    (println :search-parameter/composite-not-supported (:url res))
+
+    :else
+    (merge res
+           (when-let [package-ns (:zen.fhir/package-ns res)]
+             {:zen.fhir/schema-ns (symbol (str (name package-ns) ".search." (:id res)))})
+           {:id (:id res)
+            :url (:url res)
+            :type (:type res)
+            :sp-name (:code res)
+            :base-resource-types (:base res)
+            :expression (:expression res)})))
+
+
 (defn process-search-parameter [ztx inter]
   (-> inter
       (dissoc :expression)
