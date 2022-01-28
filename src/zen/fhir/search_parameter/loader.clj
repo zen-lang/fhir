@@ -1,5 +1,7 @@
 (ns zen.fhir.search-parameter.loader
-  (:require [zen.fhir.search-parameter.template :as template]
+  (:require [zen.fhir.utils :as utils]
+
+            [zen.fhir.search-parameter.template :as template]
             [zen.fhir.search-parameter.fhirpath :as fhirpath]
 
             [com.rpl.specter :as sp]))
@@ -25,22 +27,41 @@
             :expression (:expression res)})))
 
 
+(defn get-type-by-knife [ztx inter base-rt knife]
+  (let [inter-path (->> (remove map? knife)
+                        (map keyword)
+                        (interleave (repeat :|)))
+        rt-inter (get-in @ztx
+                         [:fhir/inter
+                          "StructureDefinition"
+                          (str "http://hl7.org/fhir/StructureDefinition/" base-rt)])
+        el (get-in rt-inter inter-path)]
+    (if-let [tp (:type el)]
+      #{tp}
+      (:types el))))
+
+
 (defn process-search-parameter [ztx inter]
-  (-> inter
-      (dissoc :expression)
-      (assoc :expr
-             (let [knife (fhirpath/fhirpath->knife (:expression inter))]
-               (into {}
-                     (map (fn [base-rt]
-                            (let [knife (get knife base-rt)
-                                  jsonpath (fhirpath/knife->jsonpath knife)
-                                  sp-template (keyword (:type inter))]
-                              {(keyword base-rt)
-                               {:knife    knife
-                                :jsonpath jsonpath
-                                :template sp-template
-                                :sql (template/expand sp-template jsonpath)}})))
-                     (:base inter))))))
+  (let [knife-paths (fhirpath/fhirpath->knife (:expression inter))
+        expr        (into {}
+                          (map (fn [base-rt]
+                                 (let [knifes      (get knife-paths base-rt)
+                                       jsonpath    (fhirpath/knife->jsonpath knifes)
+                                       sp-template (keyword (:type inter))
+                                       types       (into #{}
+                                                         (mapcat (partial get-type-by-knife ztx inter base-rt))
+                                                         knifes)]
+                                   {(keyword base-rt)
+                                    (utils/strip-nils
+                                      {:knife      knifes
+                                       :jsonpath   jsonpath
+                                       :data-types types
+                                       :template   sp-template
+                                       :sql        (template/expand sp-template types jsonpath)})})))
+                          (:base inter))]
+    (-> inter
+        (dissoc :expression)
+        (assoc :expr expr))))
 
 (defn process-search-parameters [ztx]
   (swap! ztx update-in [:fhir/inter "SearchParameter"]

@@ -103,6 +103,7 @@
                           :jsonpath {:type zen/vector
                                      :every {:type zen/string}}
                           :template {}
+                          :data-types {:type zen/set}
                           :sql {:type zen/map
                                 :keys {:where {}
                                        :parameter-format {}
