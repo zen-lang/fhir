@@ -16,10 +16,10 @@
                    [:pg/cast
                     [:pg/jsonb-path-query-array
                      [:pg/sql "{{table}}.resource"]
-                     [:pg/cast jp :jsonpath]]
+                     [:pg/cast (str "(" jp ")" ".** ? (@.type() == \"string\")") :jsonpath]]
                     :text]
                    [:pg/sql "{{param}}"]]))
-   :parameter-format "%?%"})
+   :parameter-format "%\"?%"})
 
 
 (defmethod expand :reference
