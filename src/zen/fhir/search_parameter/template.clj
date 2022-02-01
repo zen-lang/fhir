@@ -22,6 +22,17 @@
    :parameter-format "%\"?%"})
 
 
+(defmethod expand :date
+  [_type _types jsonpaths]
+  {:where (into [:or]
+                (for [jp jsonpaths]
+                  [:and
+                   [:>= [:pg/call :max_text_date_bound [:pg/sql "{{param}}"]]
+                    [:pg/call :jsonpath_extract_max_timestamptz [:pg/sql "{{table}}.resource"] jp]]
+                   [:<= [:pg/call :min_text_date_bound [:pg/sql "{{param}}"]]
+                    [:pg/call :jsonpath_extract_min_timestamptz [:pg/sql "{{table}}.resource"] jp]]]))})
+
+
 (defmethod expand :reference
   [_type _types _jp]
   nil #_{:where ["@@"]})
