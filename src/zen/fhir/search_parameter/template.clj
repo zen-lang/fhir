@@ -33,6 +33,30 @@
                     [:pg/call :jsonpath_extract_min_timestamptz [:pg/sql "{{table}}.resource"] jp]]]))})
 
 
+(defmethod expand :number
+  [_type _types jsonpaths]
+  {:where (into [:or]
+                (for [jp jsonpaths]
+                  [:and
+                   [:>= [:pg/call :jsonpath_extract_max_numeric [:pg/sql "{{table}}.resource"] jp]
+                    [:pg/cast [:pg/sql "{{param}}"] :numeric]]
+                   [:<= [:pg/call :jsonpath_extract_min_numeric [:pg/sql "{{table}}.resource"] jp]
+                    [:pg/cast [:pg/sql "{{param}}"] :numeric]]]))})
+
+
+(defmethod expand :quantity
+  [_type _types jsonpaths]
+  {:where (into [:or]
+                (for [jp jsonpaths]
+                  [:and
+                   [:>= [:pg/call :jsonpath_extract_max_numeric [:pg/sql "{{table}}.resource"]
+                         (str jp ".\"value\"")]
+                    [:pg/cast [:pg/sql "{{param}}"] :numeric]]
+                   [:<= [:pg/call :jsonpath_extract_min_numeric [:pg/sql "{{table}}.resource"]
+                         (str jp ".\"value\"")]
+                    [:pg/cast [:pg/sql "{{param}}"] :numeric]]]))})
+
+
 (defmethod expand :reference
   [_type _types _jp]
   nil #_{:where ["@@"]})
