@@ -410,18 +410,6 @@
     (spit-ndjson-gz-bundle! package-dir filename package-resources)))
 
 
-(defn spit-zen-modules [ztx zrc-dir & [package-name]]
-  (let [packages (-> (->> (get-in @ztx [:fhir/inter "StructureDefinition"])
-                          vals
-                          (map (comp name :zen.fhir/package-ns))
-                          distinct)
-                     (cond->> (some? package-name) (filter #{(name package-name)})))]
-    (doseq [package packages]
-      (spit-zen-schemas ztx zrc-dir {:package package})
-      (spit-terminology-bundle ztx zrc-dir {:package package}))
-    :done))
-
-
 (defn collect-packages ;; TODO: Shouldn't be a function, result should be stored in ztx
   "Finds all zen packages in ztx"
   [ztx]
@@ -429,6 +417,16 @@
        (mapcat vals)
        (keep #(some-> % :zen.fhir/package-ns name))
        set))
+
+
+(defn spit-zen-modules [ztx zrc-dir & [package-name]]
+  (let [packages (-> (cond->> (collect-packages ztx)
+                       (some? package-name)
+                       (filter #{(name package-name)})))]
+    (doseq [package packages]
+      (spit-zen-schemas ztx zrc-dir {:package package})
+      (spit-terminology-bundle ztx zrc-dir {:package package}))
+    :done))
 
 
 (defn spit-zen-npm-modules [ztx zrc-node-modules-dir ver & [package-name]]
