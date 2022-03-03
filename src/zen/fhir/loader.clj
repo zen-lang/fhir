@@ -543,6 +543,17 @@
                   (assoc :zen.fhir/resource concept))))))
 
 
+(def loader-keys
+  #{:zen/loader
+    :zen.fhir/loader
+    :zen.fhir/package
+    :zen.fhir/package-ns
+    :zen.fhir/schema-ns
+    :zen.fhir/file
+    :zen.fhir/header
+    :zen.fhir/version})
+
+
 (defmethod process-on-load :ValueSet
   [res]
   (merge
@@ -550,8 +561,8 @@
     (when-let [package-ns (:zen.fhir/package-ns res)]
       {:zen.fhir/package-ns package-ns
        :zen.fhir/schema-ns (symbol (str (name package-ns) \. "value-set" \. (:id res) ))
-       :zen.fhir/resource (dissoc res :zen.fhir/file :zen.fhir/package :zen.fhir/package-ns :zen.fhir/header)
-       :fhir/concepts (let [inter-part (select-keys res [:zen.fhir/file :zen.fhir/package :zen.fhir/package-ns :zen.fhir/header])]
+       :zen.fhir/resource (apply dissoc res loader-keys)
+       :fhir/concepts (let [inter-part (select-keys res loader-keys)]
                         (->> (select-keys (:compose res) [:include :exclude])
                              vals
                              (apply concat)
@@ -571,11 +582,11 @@
   (merge
    (dissoc res :concept)
    {:fhir/concepts (into {} (map (juxt :id identity))
-                         (extract-concepts (select-keys res [:zen.fhir/file :zen.fhir/package :zen.fhir/package-ns :zen.fhir/header])
+                         (extract-concepts (select-keys res loader-keys)
                                            (fn [{:keys [code]}] (str/replace (str (:url res) \/ code) \/ \-))
                                            (:url res)
                                            (:concept res)))}
-   {:zen.fhir/resource (dissoc res :concept :zen.fhir/file :zen.fhir/package :zen.fhir/package-ns :zen.fhir/header)}))
+   {:zen.fhir/resource (apply dissoc res :concept loader-keys)}))
 
 
 (defmethod process-on-load :StructureDefinition
@@ -594,7 +605,7 @@
                  (merge processed-res
                         {:_source "zen.fhir"
                          :zen.fhir/version (:zen.fhir/version @ztx)}
-                        (select-keys res #{:_source :zen.fhir/version :zen/loader :zen.fhir/package :zen.fhir/file :zen.fhir/package-ns})))))
+                        (select-keys res (conj loader-keys :_source))))))
       (println :skip-resource "no url or rt" (get-in res [:zen/loader :file])))))
 
 
