@@ -6,6 +6,7 @@
         "hl7.fhir.us.Davinci-drug-formulary": "^1.0.1",
         "hl7.fhir.us.davinci-pdex": "^1.0.0",
         "hl7.fhir.us.davinci-pdex-plan-net": "^1.0.0",
-        "hl7.fhir.us.mcode": "^1.16.0"
+        "hl7.fhir.us.mcode": "^1.16.0",
+        "hl7.fhir.us.dme-orders": "^0.2.0"
     }
 }
