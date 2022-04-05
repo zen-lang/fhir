@@ -156,7 +156,7 @@
 
 
 (defn normalize-polymorphic [el & [stu3?]]
-  (if (str/ends-with? (str (or (:path el) (:id el))) "[x]")
+  (if (str/ends-with? (str (:id el)) "[x]")
     (-> (assoc el :polymorphic true)
         (dissoc :type)
         (assoc :| (->> (:type el)
@@ -703,7 +703,9 @@
         (do-load-file ztx
                       {:params package-params
                        :whitelist whitelist
-                       :blacklist blacklist}
+                       :blacklist (merge-with merge
+                                              {"StructureDefinition" #{"http://hl7.org/fhir/StructureDefinition/familymemberhistory-genetic"}}
+                                              blacklist)}
                       package
                       f)))))
 
