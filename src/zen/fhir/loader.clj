@@ -704,7 +704,8 @@
                       {:params package-params
                        :whitelist whitelist
                        :blacklist (merge-with merge
-                                              {"StructureDefinition" #{"http://hl7.org/fhir/StructureDefinition/familymemberhistory-genetic"}}
+                                              {"StructureDefinition" #{"http://hl7.org/fhir/StructureDefinition/familymemberhistory-genetic"
+                                                                       "http://hl7.org/fhir/uv/sdc/StructureDefinition/parameters-questionnaireresponse-extract-in"}}
                                               blacklist)}
                       package
                       f)))))

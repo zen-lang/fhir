@@ -603,12 +603,13 @@
           (zen.core/load-ns zctx (get-in @zctx [:memory-store zen-ns])))
         '#{fhir-r4
            us-core-v3
-           hl7-fhir-us-carin-bb
-           hl7-fhir-us-Davinci-drug-formulary
-           hl7-fhir-us-davinci-hrex
-           hl7-fhir-us-davinci-pdex
-           hl7-fhir-us-davinci-pdex-plan-net
-           hl7-fhir-us-mcode})
+           hl7.fhir.us.carin-bb
+           hl7.fhir.us.Davinci-drug-formulary
+           hl7.fhir.us.davinci-pdex
+           hl7.fhir.us.davinci-pdex-plan-net
+           hl7.fhir.us.dme-orders
+           hl7.fhir.us.mcode
+           hl7.fhir.uv.sdc})
 
   (t/is (empty? (->> (:errors @zctx)
                      (remove ;; FIXME
