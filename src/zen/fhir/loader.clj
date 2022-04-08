@@ -658,6 +658,18 @@
        (filter (fn [f] (.exists (io/file (str (.getPath f) "/package.json")))))))
 
 
+
+(def package-blacklist
+  #{"hl7.fhir.r2.examples"
+    "hl7.fhir.r2b.examples"
+    "hl7.fhir.r3.examples"
+    "hl7.fhir.r4.examples"})
+
+
+(defn blacklisted-package? [package]
+  (contains? package-blacklist (:name package)))
+
+
 (defn do-load-file [ztx {:as opts :keys [whitelist blacklist params]} package f]
   (let [file-name (.getName f)
         content (cond
@@ -668,7 +680,8 @@
                   (edamame/parse-string (slurp f)))
         rt-whitelist (get whitelist (:resourceType content))
         rt-blacklist (get blacklist (:resourceType content))]
-    (when (and content
+    (when (and (not (blacklisted-package? package))
+               content
                (or (nil? rt-blacklist)
                    (not (contains? rt-blacklist (:url content))))
                (or (nil? rt-whitelist)
