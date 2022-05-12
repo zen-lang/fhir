@@ -26,12 +26,12 @@ jobs:
       - uses: DeLaGuardo/setup-clojure@3.5
         with:
           cli: 1.10.1.693
+
+      - run: make init
+        name: Install npm FHIR packages
           
       - name: Build jar
         run: make build
-        
-      - run: make init
-        name: Install npm FHIR packages
 
       - run: make init-r3
         name: Install npm R3 packages

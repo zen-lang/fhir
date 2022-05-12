@@ -34,7 +34,7 @@
                 :version   tag
                 :basis     basis
                 :src-dirs  ["src"]})
-  (b/copy-dir {:src-dirs ["src" "resources"]
+  (b/copy-dir {:src-dirs ["src" "resources" "zrc"]
                :target-dir class-dir}))
 
 
