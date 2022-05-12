@@ -30,17 +30,17 @@ java -jar [JAR_PATH] [COMMAND] [OPTIONS]
 ```
   
   #### Commands
+  **`stndlp`**               Builds standalone Aidbox zen project. Result is a zip archive.
+  ###### Options:
+   `-i`, `--input` S   Path to node-modules-folder\
+   `-o`, `--output` S  Path to resulting zip archive
+   
   **`zenbnd`**               Builds zen project from provided IG. Result is a NPM package directory
   ###### Options:
    `-i`, `--input` S    Path to node-modules-folder\
    `-o`, `--output` S   Path to resulting directory\
    `-v`, `--version` S  Resulting package version\
    `-n`, `--name` S     Resulting package name (optional)
-   
-  **`stndlp`**               Builds standalone Aidbox zen project. Result is a zip archive.
-  ###### Options:
-   `-i`, `--input` S   Path to node-modules-folder\
-   `-o`, `--output` S  Path to resulting zip archive
    
   **`cmndj`**                Converts ConceptMap to .ndjson.gz bundle
   ###### Options:
