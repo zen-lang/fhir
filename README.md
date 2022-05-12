@@ -30,10 +30,10 @@ java -jar [JAR_PATH] [COMMAND] [OPTIONS]
 ```
   
   #### Commands
-  **`zenbnd`**               Builds zen project from provided IG. Result is a directory.
+  **`zenbnd`**               Builds zen project from provided IG. Result is a NPM package directory
   ###### Options:
    `-i`, `--input` S    Path to node-modules-folder\
-   `-o`, `--output` S   Path to resulting zip archive\
+   `-o`, `--output` S   Path to resulting directory\
    `-v`, `--version` S  Resulting package version\
    `-n`, `--name` S     Resulting package name (optional)
    
