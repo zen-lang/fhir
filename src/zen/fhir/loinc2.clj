@@ -5,17 +5,16 @@
             [cheshire.core :as json]
             [clojure.xml :as xml]
             [clojure.zip :as zip]
-            [clojure.data.csv :as csv]))
+            [clojure.data.csv :as csv]
+            [next.jdbc :as jdbc]
+            [next.jdbc.sql :as sql]
+            [next.jdbc.prepare :as prep]))
 
 
 (def login (System/getenv "LOINC_LOGIN"))
 (def pass (System/getenv "LOINC_PASSWORD"))
 
 (def loinc-codesystem-url "https://github.com/loinc/loinc-fhir-codesystem/archive/refs/tags/v0.10.zip")
-
-(def loinc-codesystem-zip @(http/get loinc-codesystem-url))
-
-(io/input-stream loinc-codesystem-url)
 
 (defn get-loinc-codesystem-xml-istream []
   (let [codesystem-zip-istream (-> (io/input-stream loinc-codesystem-url)
@@ -127,6 +126,58 @@
         data (csv/read-csv csv)]
     (mapv zipmap (repeat (first data)) (rest data))))
 
+(defn read-loinc-csv [path]
+  (let [csv (slurp path)
+        data (csv/read-csv csv)]
+    {:header (first data)
+     :data (vec (rest data))}))
+
+(defn prepare-loinc-table [db table data]
+  (let [column-spec (->> (:header data)
+                         (mapv #(format "%s TEXT" %))
+                         (str/join ",\n")
+                         (format "(%s)"))
+        insert-columns (->> (:header data)
+                            (str/join ", ")
+                            (format "(%s)"))
+        insert-spec (->> (repeat (count (:header data)) "?")
+                         (str/join ", ")
+                         (format "(%s)"))]
+    (jdbc/execute! db [(format "DROP TABLE IF EXISTS %s"  (name table))])
+    (jdbc/execute! db [(format "CREATE TABLE IF NOT EXISTS %s %s" (name table) column-spec)])
+    (jdbc/with-transaction [tx db]
+      (with-open [stmt (jdbc/prepare tx
+                                     [(format "INSERT INTO %s %s VALUES %s"
+                                              (name table) insert-columns insert-spec)])]
+        (doseq [row (:data data)]
+          (jdbc/execute! (prep/set-parameters stmt row)))))))
+
+(defn load-loinc-csv [db table path]
+  (let [data (read-loinc-csv path)]
+    (prepare-loinc-table db table data)))
+
+(defn create-idx [db table column]
+  (jdbc/execute! db [(format "CREATE INDEX %s_%s_idx ON %s (%s)"
+                             (name table) (name column) (name table) (name column))]))
+
+
+(defn load-loinc-data [db loinc-base-path]
+  (let [path (fn [relative] (str loinc-base-path "/" relative))
+        file->table {"LoincTable/Loinc.csv" "loinc"
+                     "AccessoryFiles/PartFile/Part.csv" "part"
+                     "AccessoryFiles/PartFile/LoincPartLink_Primary.csv" "partlink_primary"
+                     "AccessoryFiles/PartFile/LoincPartLink_Supplementary.csv" "partlink_supplementary"}
+        table->idx-col {"loinc" "LOINC_NUM"
+                        "part" "PartNumber"
+                        "partlink_primary" "LoincNumber"
+                        "partlink_supplementary" "LoincNumber"}]
+    (doseq [[file table] file->table
+            :let [filepath (path file)]]
+      (load-loinc-csv db table filepath)
+      (println ::debug table (get table->idx-col table))
+      (create-idx db table (get table->idx-col table)))))
+
+
 (defn read-loinc-parts []
   (let [csv (slurp (str loinc-path "/AccessoryFiles/PartFile/Part.csv"))
         data (csv/read-csv csv)]
@@ -219,7 +270,7 @@
                     :display method-type}}]))
 
 
-(defn make-codeable-concepts [codesystem codes]
+#_(defn make-codeable-concepts [codesystem codes]
   (mapv (fn [code]
           {:code (get code "LOINC_NUM")
            :system (:url codesystem)
@@ -230,5 +281,4 @@
            })
         codes))
 
-(distinct (mapv #(get % "SYSTEM") codes))
-
+#_(distinct (mapv #(get % "SYSTEM") codes))
