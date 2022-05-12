@@ -30,14 +30,14 @@ java -jar [JAR_PATH] [COMMAND] [OPTIONS]
 ```
   
   #### Commands
-  **`zenbnd`**               Builds zen project from provided IG
+  **`zenbnd`**               Builds zen project from provided IG. Result is a directory.
   ###### Options:
    `-i`, `--input` S    Path to node-modules-folder\
    `-o`, `--output` S   Path to resulting zip archive\
    `-v`, `--version` S  Resulting package version\
    `-n`, `--name` S     Resulting package name (optional)
    
-  **`stndlp`**               Builds standalone Aidbox zen project
+  **`stndlp`**               Builds standalone Aidbox zen project. Result is a zip archive.
   ###### Options:
    `-i`, `--input` S   Path to node-modules-folder\
    `-o`, `--output` S  Path to resulting zip archive
