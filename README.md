@@ -33,7 +33,8 @@ java -jar [JAR_PATH] [COMMAND] [OPTIONS]
   **`stndlp`**               Builds standalone Aidbox zen project. Result is a zip archive.
   ###### Options:
    `-i`, `--input` S   Path to node-modules-folder\
-   `-o`, `--output` S  Path to resulting zip archive
+   `-o`, `--output` S  Path to resulting zip archive\
+   `--omit-deps`  Remove deps from resulting project
    
   **`zenbnd`**               Builds zen project from provided IG. Result is a NPM package directory
   ###### Options:
