@@ -40,10 +40,13 @@
                            :type :string}
                           {:option "output" :short "o"
                            :as "Path to resulting zip archive"
-                           :type :string}]
-                   :runs (fn [{:keys [input output]}]
+                           :type :string}
+                          {:option "omit-deps"
+                           :as "Remove deps from resulting project"
+                           :type :with-flag}]
+                   :runs (fn [{:keys [input output omit-deps]}]
                            (cli-output (zen.fhir.tooling.aidbox-standalone/-main
-                                        input output)))}
+                                        input output omit-deps)))}
                   {:command     "cmndj"
                    :description "Converts ConceptMap to .ndjson.gz bundle"
                    :opts [{:option "input" :short "i"
