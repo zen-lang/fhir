@@ -11,7 +11,7 @@
             [zen.fhir.loinc.xml :as loinc.xml]))
 
 ;; CSV
-(def loinc-path "path")
+(def loinc-path "/Users/bodyblock/Downloads/loinc")
 
 (defn read-loinc-codes []
   (let [csv (slurp (str loinc-path "/LoincTable/Loinc.csv"))
@@ -49,6 +49,7 @@
     (prepare-loinc-table db table data)))
 
 (defn create-idx [db table column]
+  (jdbc/execute! db [(format "DROP INDEX %s_%s_idx" (name table) (name column))])
   (jdbc/execute! db [(format "CREATE INDEX %s_%s_idx ON %s (%s)"
                              (name table) (name column) (name table) (name column))]))
 
@@ -85,14 +86,16 @@
                  slurp
                  (str/replace "{{partlink_table}}" "partlink_primary")
                  (str/replace "{{partlink_json_table}}" "partlink_primary_json"))]
-    (jdbc/execute! db [sql])))
+    (jdbc/execute! db [sql])
+    (create-idxs db "partlink_primary" "LoincNumber")))
 
 (defn create-supplementary-link-table [db]
   (let [sql (-> (io/resource "loinc/part-link.sql")
                  slurp
                  (str/replace "{{partlink_table}}" "partlink_supplementary")
                  (str/replace "{{partlink_json_table}}" "partlink_supplementary_json"))]
-    (jdbc/execute! db [sql])))
+    (jdbc/execute! db [sql])
+    (create-idxs db "partlink_supplementary" "LoincNumber")))
 
 (defn get-base-properties [codesystem]
   (->> (:property codesystem)
@@ -109,22 +112,58 @@
        (str/join "\n")))
 
 (defn sql-json-base-property [base-property]
-  (format (multiline "json_object("
-                     "    'name', '%s',"
+  (format (multiline "'%s', json_object("
+                     "    'code', '%s',"
                      "    'valueString', %s)")
-          base-property base-property))
+          base-property base-property base-property))
 
 (defn generate-base-properties-sql [codesystem]
-  (let [base-properties (->> (get-base-properties cs)
+  (let [base-properties (->> (get-base-properties codesystem)
                              (mapv sql-json-base-property)
                              (str/join ",\n"))]
     (multiline "CREATE TABLE loinc_base_json AS"
                "SELECT LOINC_NUM AS id"
-               "     , json_array("
+               "     , json_object("
                (str (pad 11 base-properties) ")")
-               "       AS property"
+
+               "       as property"
                "FROM loinc")))
 
 (defn create-base-property-table [db cs]
   (let [sql (generate-base-properties-sql cs)]
     (jdbc/execute! db [sql])))
+
+(defn create-core-concepts [db]
+  (let [sql (-> (io/resource "loinc/part-concept.sql")
+                 slurp)]
+    (jdbc/execute! db [sql])))
+
+(defn create-part-concepts [db]
+  (let [sql (-> (io/resource "loinc/part-concept.sql")
+                slurp)]
+    (jdbc/execute! db [sql])))
+
+(comment
+  (def db "jdbc:sqlite:/Users/bodyblock/Downloads/loinc/db.sqlite")
+
+  (def cs (loinc.xml/get-loinc-codesystem-edn))
+
+  (create-core-concepts db)
+
+  (create-part-concepts db)
+
+  (generate-base-properties-sql cs)
+
+  (create-primary-link-table db)
+
+  (create-supplementary-link-table db)
+
+  (jdbc/execute! db ["DROP table partlink_supplementary_json"])
+
+  (jdbc/execute! db ["SELECt * from partlink_primary_json limit 10"])
+
+  (create-base-property-table db cs)
+
+
+
+  )
