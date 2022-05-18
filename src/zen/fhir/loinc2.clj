@@ -143,6 +143,11 @@
                 slurp)]
     (jdbc/execute! db [sql])))
 
+(defn get-answer-list-value-sets [db]
+  (let [sql (-> (io/resource "loinc/answers-value-set.sql")
+                slurp)]
+    (jdbc/execute! db [sql])))
+
 (comment
   (def db "jdbc:sqlite:/Users/bodyblock/Downloads/loinc/db.sqlite")
 
@@ -157,6 +162,8 @@
   (create-primary-link-table db)
 
   (create-supplementary-link-table db)
+
+  (get-answer-list-value-sets db)
 
   (jdbc/execute! db ["DROP table partlink_supplementary_json"])
 
