@@ -26,15 +26,18 @@
 
 (defn prepare-loinc-table [db table data]
   (let [column-spec (->> (:header data)
-                         (mapv #(format "%s TEXT" %))
+                         (mapv #(format "`%s` TEXT" %))
                          (str/join ",\n")
                          (format "(%s)"))
         insert-columns (->> (:header data)
+                            (mapv #(str "`" % "`"))
                             (str/join ", ")
                             (format "(%s)"))
         insert-spec (->> (repeat (count (:header data)) "?")
                          (str/join ", ")
                          (format "(%s)"))]
+    (println ::debug (format "DROP TABLE IF EXISTS %s"  (name table)))
+    (println ::debug (format "CREATE TABLE IF NOT EXISTS %s %s" (name table) column-spec))
     (jdbc/execute! db [(format "DROP TABLE IF EXISTS %s"  (name table))])
     (jdbc/execute! db [(format "CREATE TABLE IF NOT EXISTS %s %s" (name table) column-spec)])
     (jdbc/with-transaction [tx db]
@@ -49,7 +52,10 @@
     (prepare-loinc-table db table data)))
 
 (defn create-idx [db table column]
-  (jdbc/execute! db [(format "DROP INDEX %s_%s_idx" (name table) (name column))])
+  (println ::debug (format "DROP INDEX IF EXISTS %s_%s_idx" (name table) (name column)))
+  (println ::debug (format "CREATE INDEX %s_%s_idx ON %s (%s)"
+                             (name table) (name column) (name table) (name column)))
+  (jdbc/execute! db [(format "DROP INDEX IF EXISTS %s_%s_idx" (name table) (name column))])
   (jdbc/execute! db [(format "CREATE INDEX %s_%s_idx ON %s (%s)"
                              (name table) (name column) (name table) (name column))]))
 
@@ -67,14 +73,20 @@
                      "AccessoryFiles/PartFile/LoincPartLink_Supplementary.csv" "partlink_supplementary"
                      "AccessoryFiles/MultiAxialHierarchy/MultiAxialHierarchy.csv" "hierarchy"
                      "AccessoryFiles/AnswerFile/AnswerList.csv" "answerlist"
-                     "AccessoryFiles/AnswerFile/LoincAnswerListLink.csv" "answerlistlink"}
+                     "AccessoryFiles/AnswerFile/LoincAnswerListLink.csv" "answerlistlink"
+                     "AccessoryFiles/GroupFile/GroupLoincTerms.csv" "loinc_groups"
+                     "AccessoryFiles/GroupFile/Group.csv" "groups"
+                     "AccessoryFiles/GroupFile/ParentGroup.csv" "parent_groups"}
         table->idx-col {"loinc" "LOINC_NUM"
                         "part" "PartNumber"
                         "partlink_primary" "LoincNumber"
                         "partlink_supplementary" "LoincNumber"
                         "hierarchy" ["IMMEDIATE_PARENT" "CODE"]
                         "answerlist" ["AnswerListId" "AnswerStringId"]
-                        "answerlistlink" ["LoincNumber" "AnswerListId"]}]
+                        "answerlistlink" ["LoincNumber" "AnswerListId"]
+                        "loinc_groups" ["LoincNumber" "GroupId"]
+                        "groups" ["ParentGroupId" "GroupId"]
+                        "parent_groups" "ParentGroupId"}]
     (doseq [[file table] file->table
             :let [filepath (path file)]]
       (load-loinc-csv db table filepath)
@@ -148,10 +160,18 @@
                 slurp)]
     (jdbc/execute! db [sql])))
 
+(defn get-answers-concepts [db]
+  (let [sql (-> (io/resource "loinc/answers-concepts.sql")
+                slurp)]
+    (jdbc/execute! db [sql])))
+
+
 (comment
   (def db "jdbc:sqlite:/Users/bodyblock/Downloads/loinc/db.sqlite")
 
   (def cs (loinc.xml/get-loinc-codesystem-edn))
+
+  (load-loinc-data db loinc-path)
 
   (create-core-concepts db)
 
@@ -162,8 +182,6 @@
   (create-primary-link-table db)
 
   (create-supplementary-link-table db)
-
-  (get-answer-list-value-sets db)
 
   (jdbc/execute! db ["DROP table partlink_supplementary_json"])
 
