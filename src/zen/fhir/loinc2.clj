@@ -7,11 +7,38 @@
             [clojure.data.csv :as csv]
             [next.jdbc :as jdbc]
             [next.jdbc.sql :as sql]
+            [next.jdbc.result-set :as rs]
             [next.jdbc.prepare :as prep]
-            [zen.fhir.loinc.xml :as loinc.xml]))
+            [zen.fhir.loinc.xml :as loinc.xml])
+  (:import [java.sql ResultSet ResultSetMetaData]))
 
-;; CSV
+;; This file produces three types of resource:
+;; 1) CodeSystem
+;; 2) ValueSets
+;; 3) Concept
+
+;; To create core LOINC terms few preparation steps are needed
+;; 1) collect all properties
+;;    1. Collect primary properties (also known as parts) from PartPrimaryLink.csv
+;;    2. Collect non-primary properties from PartLinkSupplementary.csv
+;;    3. Collect `answers-list` property from AnswerListLink.csv
+;;    4. Collect `score` property from AnswerList.csv
+;;    5. Collect `panel-items` from PanelsAndForms.csv
+
+
 (def loinc-path "/Users/bodyblock/Downloads/loinc")
+
+(def json-builder-adapter
+  (rs/builder-adapter
+   rs/as-unqualified-lower-maps
+   (fn [builder ^ResultSet rs ^Integer i]
+     (let [rsm ^ResultSetMetaData (:rsmeta builder)]
+       (rs/read-column-by-index
+        (if (= i 2)
+          (cheshire.core/parse-string (.getObject rs i) true)
+          (.getObject rs i))
+        rsm
+        i)))))
 
 (defn read-loinc-codes []
   (let [csv (slurp (str loinc-path "/LoincTable/Loinc.csv"))
@@ -76,7 +103,8 @@
                      "AccessoryFiles/AnswerFile/LoincAnswerListLink.csv" "answerlistlink"
                      "AccessoryFiles/GroupFile/GroupLoincTerms.csv" "loinc_groups"
                      "AccessoryFiles/GroupFile/Group.csv" "groups"
-                     "AccessoryFiles/GroupFile/ParentGroup.csv" "parent_groups"}
+                     "AccessoryFiles/GroupFile/ParentGroup.csv" "parent_groups"
+                     "AccessoryFiles/PanelsAndForms/PanelsAndForms.csv", "panels_and_forms"}
         table->idx-col {"loinc" "LOINC_NUM"
                         "part" "PartNumber"
                         "partlink_primary" "LoincNumber"
@@ -86,7 +114,8 @@
                         "answerlistlink" ["LoincNumber" "AnswerListId"]
                         "loinc_groups" ["LoincNumber" "GroupId"]
                         "groups" ["ParentGroupId" "GroupId"]
-                        "parent_groups" "ParentGroupId"}]
+                        "parent_groups" "ParentGroupId"
+                        "panels_and_forms", ["ParentLoinc" "Loinc"]}]
     (doseq [[file table] file->table
             :let [filepath (path file)]]
       (load-loinc-csv db table filepath)
@@ -109,11 +138,14 @@
     (jdbc/execute! db [sql])
     (create-idxs db "partlink_supplementary" "LoincNumber")))
 
-(defn get-base-properties [codesystem]
-  (->> (:property codesystem)
-       (filter #(not= "Coding" (:type %)))
-       (filter #(not (get #{"parent" "child"} (:code %))))
-       (mapv :code)))
+(defn get-base-properties [db]
+  (let [columns (->> (jdbc/execute! db ["PRAGMA table_info(loinc)"])
+                     (mapv :name))
+        main-properties #{"LOINC_NUM" "COMPONENT" "PROPERTY" "TIME_ASPCT" "SYSTEM" "SCALE_TYP" "METHOD_TYP"}]
+    (->> columns
+         (filterv #(not (main-properties %))))))
+
+(get-base-properties db)
 
 (defn multiline [& strings]
   (str/join "\n" strings))
@@ -124,13 +156,11 @@
        (str/join "\n")))
 
 (defn sql-json-base-property [base-property]
-  (format (multiline "'%s', json_object("
-                     "    'code', '%s',"
-                     "    'valueString', %s)")
-          base-property base-property base-property))
+  (format "'%s', %s"
+          (str/lower-case base-property) base-property))
 
-(defn generate-base-properties-sql [codesystem]
-  (let [base-properties (->> (get-base-properties codesystem)
+(defn generate-base-properties-sql [db]
+  (let [base-properties (->> (get-base-properties db)
                              (mapv sql-json-base-property)
                              (str/join ",\n"))]
     (multiline "CREATE TABLE loinc_base_json AS"
@@ -142,52 +172,127 @@
                "FROM loinc")))
 
 (defn create-base-property-table [db cs]
-  (let [sql (generate-base-properties-sql cs)]
+  (let [sql (generate-base-properties-sql db)]
     (jdbc/execute! db [sql])))
+
+(defn execute-file-sql [db sql-file & [options]]
+  (let [sql (-> (io/resource sql-file)
+                slurp)]
+    (jdbc/execute! db [sql] options)))
 
 (defn create-core-concepts [db]
-  (let [sql (-> (io/resource "loinc/part-concept.sql")
-                 slurp)]
-    (jdbc/execute! db [sql])))
+  (execute-file-sql db "loinc/concept-base.sql")
+  (create-idx db "loinc_concept", "LoincNumber"))
 
-(defn create-part-concepts [db]
-  (let [sql (-> (io/resource "loinc/part-concept.sql")
-                slurp)]
-    (jdbc/execute! db [sql])))
+(defn get-part-concepts [db]
+  (execute-file-sql db "loinc/part-concept.sql" {:builder-fn json-builder-adapter}))
 
 (defn get-answer-list-value-sets [db]
-  (let [sql (-> (io/resource "loinc/answers-value-set.sql")
-                slurp)]
-    (jdbc/execute! db [sql])))
+  (execute-file-sql db "loinc/answers-value-set.sql" {:builder-fn json-builder-adapter}))
 
 (defn get-answers-concepts [db]
-  (let [sql (-> (io/resource "loinc/answers-concepts.sql")
-                slurp)]
-    (jdbc/execute! db [sql])))
+  (execute-file-sql db "loinc/answers-concepts.sql" {:builder-fn json-builder-adapter}))
+
+(defn get-groups-valuesets [db]
+  (execute-file-sql db "loinc/groups-valueset.sql" {:builder-fn json-builder-adapter}))
+
+(defn get-parent-groups-valuesets [db]
+  (execute-file-sql db "loinc/super-group-valueset.sql" {:builder-fn json-builder-adapter}))
+
+(def valueset {:resourceType "ValueSet"
+               :id "loinc"
+               :version "2.72"
+               :description "This value set includes all LOINC terms"
+               :compose {:include [{:system "http://loinc.org"}]}
+               :name "LOINC"
+               :status "active"
+               :_source "zen.fhir"})
+
+(defn write-line [w x]
+  (.write w (cheshire.core/generate-string x))
+  (.write w "\n"))
+
+(defn create-tables [cs db]
+  (jdbc/execute! db ["DROP TABLE IF EXISTS loinc_concept"])
+  (jdbc/execute! db ["DROP TABLE IF EXISTS partlink_primary_json"])
+  (jdbc/execute! db ["DROP TABLE IF EXISTS partlink_supplementary_json"])
+  (jdbc/execute! db ["DROP TABLE IF EXISTS loinc_base_json"])
+  (create-base-property-table db cs)
+  (create-primary-link-table db)
+  (create-supplementary-link-table db)
+  (create-core-concepts db))
+
+(defn get-concepts [db]
+  (let [core (->> (jdbc/execute! db ["select * from loinc_concept"]
+                                 {:builder-fn json-builder-adapter})
+                  (concat (get-answers-concepts db))
+                  (concat (get-part-concepts db))
+                  (map (juxt :loincnumber :concept))
+                  (into {}))
+        valuesets (->> (execute-file-sql db "loinc/concepts-valuesets.sql"
+                                         {:builder-fn json-builder-adapter})
+                       (map (juxt :loincnumber :valueset))
+                       (into {}))
+        answer-list (->> (execute-file-sql db "loinc/property-answer-list.sql" {:builder-fn json-builder-adapter})
+                         (map (juxt :loincnumber :property)))
+        panel-items (->> (execute-file-sql db "loinc/panel-items-property.sql" {:builder-fn json-builder-adapter})
+                         (map (juxt :parentloinc :property)))
+        core* (reduce (fn [acc [k v]]
+                        (update-in acc [k :property :loinc] merge v))
+                        core
+                        (concat answer-list panel-items))
+
+        core** (reduce (fn [acc [k v]]
+                         (update-in acc [k :valueset] (fn [vs] (concat vs [(:valueset v)]))))
+                       core*
+                       valuesets)]
+
+    (vals core**)))
+
+(defn get-value-sets [db]
+  (->> (get-answer-list-value-sets db)
+       (concat (get-groups-valuesets db))
+       (concat (get-parent-groups-valuesets db))
+       (map :valueset)))
+
+(defn write-ndjson-gz-zip-bundle [target cs db]
+  (let [valuesets (get-value-sets db)
+        concepts (get-concepts db)]
+    (with-open [zip (-> target
+                        clojure.java.io/file
+                        clojure.java.io/output-stream
+                        (java.util.zip.ZipOutputStream.))]
+      (let [entry (-> "loinc-terminology-bundle.ndjson.gz"
+                      (java.util.zip.ZipEntry.))]
+        (.putNextEntry zip entry)
+        (with-open [gzip (-> zip
+                             (java.util.zip.GZIPOutputStream. true)
+                             (java.io.OutputStreamWriter.)
+                             (java.io.BufferedWriter.))]
+
+          (write-line gzip cs)
+          (write-line gzip valueset)
+          (doseq [v valuesets]
+            (write-line gzip v))
+          (doseq [c concepts]
+            (write-line gzip c)))))))
+
 
 
 (comment
   (def db "jdbc:sqlite:/Users/bodyblock/Downloads/loinc/db.sqlite")
 
+  (write-ndjson-gz-zip-bundle "/Users/bodyblock/Downloads/loinc_output.zip" cs db)
+
   (def cs (loinc.xml/get-loinc-codesystem-edn))
 
-  (load-loinc-data db loinc-path)
+  cs
 
-  (create-core-concepts db)
+  (create-tables cs db)
 
-  (create-part-concepts db)
+  (get-concepts db)
 
-  (generate-base-properties-sql cs)
 
-  (create-primary-link-table db)
-
-  (create-supplementary-link-table db)
-
-  (jdbc/execute! db ["DROP table partlink_supplementary_json"])
-
-  (jdbc/execute! db ["SELECt * from partlink_primary_json limit 10"])
-
-  (create-base-property-table db cs)
 
 
 
