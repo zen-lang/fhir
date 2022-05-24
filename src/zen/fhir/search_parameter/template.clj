@@ -21,17 +21,56 @@
                    [:pg/sql "{{param}}"]]))
    :parameter-format "%\"?%"})
 
+(defmulti date-expr (fn [_jp type] (keyword type)))
+
+(defmethod date-expr :Period
+  [jsonpaths _]
+  (let [max-param [:pg/call :max_text_date_bound [:pg/sql "{{param}}"]]
+        min-param [:pg/call :min_text_date_bound [:pg/sql "{{param}}"]]
+        extract-max (fn [jp] [:pg/call :jsonpath_extract_max_timestamptz [:pg/sql "{{table}}.resource"] jp])
+        extract-min (fn [jp] [:pg/call :jsonpath_extract_min_timestamptz [:pg/sql "{{table}}.resource"] jp])]
+    (for [jp jsonpaths
+          :let [jp-start (str jp ".start")
+                jp-end (str jp ".end")]]
+      [:or
+       [:and
+        [:>= max-param (extract-max jp-start)]
+        [:<= min-param (extract-min jp-end)]]
+       [:and
+        [:>= max-param (extract-max jp-start)]
+        [:is (extract-max jp-end) nil]]
+       [:and
+        [:<= min-param (extract-min jp-end)]
+        [:is (extract-min jp-start) nil]]])))
+
+(defmethod date-expr :Timing
+  [jsonpaths _]
+  (let [max-param [:pg/call :max_text_date_bound [:pg/sql "{{param}}"]]
+        min-param [:pg/call :min_text_date_bound [:pg/sql "{{param}}"]]
+        extract-max (fn [jp] [:pg/call :jsonpath_extract_max_timestamptz [:pg/sql "{{table}}.resource"] jp])
+        extract-min (fn [jp] [:pg/call :jsonpath_extract_min_timestamptz [:pg/sql "{{table}}.resource"] jp])]
+    (for [jp jsonpaths
+          :let [jp (str jp ".event")]]
+      [:and
+       [:>= max-param (extract-max jp)]
+       [:<= min-param (extract-min jp)]])))
+
+(defmethod date-expr :default
+  [jsonpaths _]
+  (let [max-param [:pg/call :max_text_date_bound [:pg/sql "{{param}}"]]
+        min-param [:pg/call :min_text_date_bound [:pg/sql "{{param}}"]]
+        extract-max (fn [jp] [:pg/call :jsonpath_extract_max_timestamptz [:pg/sql "{{table}}.resource"] jp])
+        extract-min (fn [jp] [:pg/call :jsonpath_extract_min_timestamptz [:pg/sql "{{table}}.resource"] jp])]
+    (for [jp jsonpaths]
+      [:and
+       [:>= max-param (extract-max jp)]
+       [:<= min-param (extract-min jp)]])))
 
 (defmethod expand :date
-  [_type _types jsonpaths]
+  [_type types jsonpaths]
   {:where (into [:or]
-                (for [jp jsonpaths]
-                  [:and
-                   [:>= [:pg/call :max_text_date_bound [:pg/sql "{{param}}"]]
-                    [:pg/call :jsonpath_extract_max_timestamptz [:pg/sql "{{table}}.resource"] jp]]
-                   [:<= [:pg/call :min_text_date_bound [:pg/sql "{{param}}"]]
-                    [:pg/call :jsonpath_extract_min_timestamptz [:pg/sql "{{table}}.resource"] jp]]]))})
-
+                (mapcat (partial date-expr jsonpaths))
+                types)})
 
 (defmethod expand :number
   [_type _types jsonpaths]
