@@ -37,7 +37,7 @@
 (def loinc-login (System/getenv "LOING_LOGIN"))
 (def loinc-password (System/getenv "LOINC_PASSWORD"))
 
-(def tmp-dir (System/getenv "TEMP_DIR"))
+(def tmp-dir (System/getenv "RUNNER_TEMP"))
 
 (def download-path (str tmp-dir "/loinc_downloaded.zip"))
 (def loinc-path (str tmp-dir "/loinc"))
