@@ -34,7 +34,7 @@
 
 (def loinc-login-url "https://loinc.org/wp-login.php")
 (def loinc-download-url "https://loinc.org/download/loinc-complete/")
-(def loinc-login (System/getenv "LOING_LOGIN"))
+(def loinc-login (System/getenv "LOINC_LOGIN"))
 (def loinc-password (System/getenv "LOINC_PASSWORD"))
 
 (def tmp-dir (System/getenv "RUNNER_TEMP"))
