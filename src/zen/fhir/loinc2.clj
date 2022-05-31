@@ -1,6 +1,6 @@
 (ns zen.fhir.loinc2
   (:require [org.httpkit.client :as http]
-            [clojure.java.io :as io]
+   [clojure.java.io :as io]
             [clojure.string :as str]
             [cheshire.core :as json]
             [clojure.xml :as xml]
@@ -9,8 +9,13 @@
             [next.jdbc.sql :as sql]
             [next.jdbc.result-set :as rs]
             [next.jdbc.prepare :as prep]
-            [zen.fhir.loinc.xml :as loinc.xml])
-  (:import [java.sql ResultSet ResultSetMetaData]))
+            [zen.fhir.loinc.xml :as loinc.xml]
+            [clojure.walk]
+            [clj-http.client :as client]
+            [clj-http.cookies])
+  (:import [java.sql ResultSet ResultSetMetaData]
+           java.io.File
+           [java.util.zip ZipInputStream]))
 
 ;; This file produces three types of resource:
 ;; 1) CodeSystem
@@ -26,7 +31,45 @@
 ;;    5. Collect `panel-items` from PanelsAndForms.csv
 
 
-(def loinc-path "/Users/bodyblock/Downloads/loinc")
+(def loinc-login-url "https://loinc.org/wp-login.php")
+(def loinc-download-url "https://loinc.org/download/loinc-complete/")
+(def loinc-login (System/getenv "LOING_LOGIN"))
+(def loinc-password (System/getenv "LOINC_PASSWORD"))
+
+(def download-path "/tmp/loinc_downloaded.zip")
+(def loinc-path "/tmp/loinc")
+(def db "jdbc:sqlite:/tmp/loinc.db")
+
+(defn unzip-file
+  "uncompress zip archive.
+  `input` - name of zip archive to be uncompressed.
+  `output` - name of folder where to output."
+  [input output]
+  (with-open [stream (-> input io/input-stream ZipInputStream.)]
+    (loop [entry (.getNextEntry stream)]
+      (if entry
+        (let [save-path (str output File/separatorChar (.getName entry))
+              out-file (File. save-path)]
+          (if (.isDirectory entry)
+            (if-not (.exists out-file)
+              (.mkdirs out-file))
+            (let [parent-dir (File. (.substring save-path 0 (.lastIndexOf save-path (int File/separatorChar))))]
+              (if-not (.exists parent-dir) (.mkdirs parent-dir))
+              (clojure.java.io/copy stream out-file)))
+          (recur (.getNextEntry stream)))))))
+
+(defn get-loinc-bundle []
+  (let [loinc-package (-> (binding [clj-http.core/*cookie-store* (clj-http.cookies/cookie-store)]
+                            (client/post loinc-login-url {:form-params {"log" loinc-login
+                                                                        "pwd" loinc-password}})
+
+                            (client/post loinc-download-url {:form-params {"tc_accepted" "1"
+                                                                           "tc_submit" "Download"}
+                                                             :as :byte-array}))
+                          :body)]
+    (with-open [w (io/output-stream download-path)]
+      (.write w loinc-package)
+      (unzip-file download-path loinc-path))))
 
 (def json-builder-adapter
   (rs/builder-adapter
@@ -145,8 +188,6 @@
     (->> columns
          (filterv #(not (main-properties %))))))
 
-(get-base-properties db)
-
 (defn multiline [& strings]
   (str/join "\n" strings))
 
@@ -208,9 +249,18 @@
                :status "active"
                :_source "zen.fhir"})
 
+(defn remove-empty-vals [m]
+  (let [f (fn [x]
+            (if (map? x)
+              (let [kvs (filter (comp not #(or (nil? %) (= "" %)) second) x)]
+                (if (empty? kvs) nil (into {} kvs)))
+              x))]
+    (clojure.walk/postwalk f m)))
+
 (defn write-line [w x]
-  (.write w (cheshire.core/generate-string x))
-  (.write w "\n"))
+  (let [x' (remove-empty-vals x)]
+    (.write w (cheshire.core/generate-string x'))
+    (.write w "\n")))
 
 (defn create-tables [cs db]
   (jdbc/execute! db ["DROP TABLE IF EXISTS loinc_concept"])
@@ -243,10 +293,9 @@
                         (concat answer-list panel-items))
 
         core** (reduce (fn [acc [k v]]
-                         (update-in acc [k :valueset] (fn [vs] (concat vs [(:valueset v)]))))
+                         (update-in acc [k :valueset] (fn [vs] (set (concat vs v)))))
                        core*
                        valuesets)]
-
     (vals core**)))
 
 (defn get-value-sets [db]
@@ -255,8 +304,12 @@
        (concat (get-parent-groups-valuesets db))
        (map :valueset)))
 
-(defn write-ndjson-gz-zip-bundle [target cs db]
-  (let [valuesets (get-value-sets db)
+(defn write-ndjson-gz-zip-bundle [target]
+  (let [_ (get-loinc-bundle)
+        cs (loinc.xml/get-loinc-codesystem-edn loinc-path)
+        _ (load-loinc-data db loinc-path)
+        _ (create-tables cs db)
+        valuesets (get-value-sets db)
         concepts (get-concepts db)]
     (with-open [zip (-> target
                         clojure.java.io/file
@@ -277,12 +330,10 @@
           (doseq [c concepts]
             (write-line gzip c)))))))
 
-
-
 (comment
   (def db "jdbc:sqlite:/Users/bodyblock/Downloads/loinc/db.sqlite")
 
-  (write-ndjson-gz-zip-bundle "/Users/bodyblock/Downloads/loinc_output.zip" cs db)
+  (write-ndjson-gz-zip-bundle "/Users/bodyblock/Downloads/loinc_output.zip")
 
   (def cs (loinc.xml/get-loinc-codesystem-edn))
 
@@ -290,7 +341,9 @@
 
   (create-tables cs db)
 
-  (get-concepts db)
+  (filter  (fn [c]
+             (= (:code c) "12265-5")
+             ) (get-concepts db))
 
 
 

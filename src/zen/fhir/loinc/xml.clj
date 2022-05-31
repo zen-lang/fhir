@@ -6,10 +6,9 @@
   (:require [clojure.java.io :as io]
             [clojure.xml :as xml]))
 
-(def loinc-codesystem-url "https://loinc.org/fhir/loinc.xml/")
 
-(defn get-loinc-codesystem-xml []
-  (xml/parse (io/input-stream loinc-codesystem-url)))
+(defn get-loinc-codesystem-xml [loinc-path]
+  (xml/parse (io/input-stream (str loinc-path "/loinc.xml"))))
 
 (defn rename-value [attrs]
   (if (:value attrs)
@@ -97,5 +96,5 @@
       (dissoc :xmlns)
       (assoc :resourceType "CodeSystem")))
 
-(defn get-loinc-codesystem-edn []
-  (codesystem-xml->edn (get-loinc-codesystem-xml)))
+(defn get-loinc-codesystem-edn [loinc-path]
+  (codesystem-xml->edn (get-loinc-codesystem-xml loinc-path)))
