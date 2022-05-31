@@ -37,9 +37,11 @@
 (def loinc-login (System/getenv "LOING_LOGIN"))
 (def loinc-password (System/getenv "LOINC_PASSWORD"))
 
-(def download-path "/tmp/loinc_downloaded.zip")
-(def loinc-path "/tmp/loinc")
-(def db "jdbc:sqlite:/tmp/loinc.db")
+(def tmp-dir (System/getenv "TEMP_DIR"))
+
+(def download-path (str tmp-dir "/loinc_downloaded.zip"))
+(def loinc-path (str tmp-dir "/loinc"))
+(def db (str "jdbc:sqlite:" tmp-dir "/loinc.db"))
 
 (defn unzip-file
   "uncompress zip archive.
