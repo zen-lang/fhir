@@ -12,7 +12,8 @@
             [zen.fhir.loinc.xml :as loinc.xml]
             [clojure.walk]
             [clj-http.client :as client]
-            [clj-http.cookies])
+            [clj-http.cookies]
+            [clj-http.core])
   (:import [java.sql ResultSet ResultSetMetaData]
            java.io.File
            [java.util.zip ZipInputStream]))
@@ -315,7 +316,7 @@
                         clojure.java.io/file
                         clojure.java.io/output-stream
                         (java.util.zip.ZipOutputStream.))]
-      (let [entry (-> "loinc-terminology-bundle.ndjson.gz"
+      (let [entry (-> "sdc-loinc-terminology-bundle.ndjson.gz"
                       (java.util.zip.ZipEntry.))]
         (.putNextEntry zip entry)
         (with-open [gzip (-> zip
