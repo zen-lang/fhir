@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - "*"
-      
+
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
@@ -29,7 +29,7 @@ jobs:
 
       - run: make init
         name: Install npm FHIR packages
-          
+
       - name: Build jar
         run: make build
 
@@ -42,13 +42,14 @@ jobs:
       - name: Build standalone R3
         run: make build-stanadlone-projects node_modules="r3/node_modules/" zrc="zrc/standalone_projects/"
 
-#       - name: Build terminologies
-#         run: make build-terminology-bundles
-#         env:
-#           ICD_10_CLIENT_ID: ${{ secrets.ICD_10_CLIENT_ID }}
-#           ICD_10_CLIENT_SECRET: ${{ secrets.ICD_10_CLIENT_SECRET }}
-#           LOINC_LOGIN: ${{ secrets.LOINC_LOGIN }}
-#           LOINC_PASSWORD: ${{ secrets.LOINC_PASSWORD }}
+      - name: Build terminologies
+        run: make build-terminology-bundles
+        env:
+          ICD_10_CLIENT_ID: ${{ secrets.ICD_10_CLIENT_ID }}
+          ICD_10_CLIENT_SECRET: ${{ secrets.ICD_10_CLIENT_SECRET }}
+          LOINC_LOGIN: ${{ secrets.LOINC_LOGIN }}
+          LOINC_PASSWORD: ${{ secrets.LOINC_PASSWORD }}
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
