@@ -97,16 +97,19 @@
     {:header (first data)
      :data (vec (rest data))}))
 
-(defn prepare-loinc-table [db table data]
-  (let [column-spec (->> (:header data)
+(defn prepare-loinc-table [db table reader]
+  (let [data (csv/read-csv reader)
+        header (first data)
+        _ (println "Header:" header)
+        column-spec (->> header
                          (mapv #(format "`%s` TEXT" %))
                          (str/join ",\n")
                          (format "(%s)"))
-        insert-columns (->> (:header data)
+        insert-columns (->> header
                             (mapv #(str "`" % "`"))
                             (str/join ", ")
                             (format "(%s)"))
-        insert-spec (->> (repeat (count (:header data)) "?")
+        insert-spec (->> (repeat (count header) "?")
                          (str/join ", ")
                          (format "(%s)"))]
     (println ::debug (format "DROP TABLE IF EXISTS %s"  (name table)))
@@ -117,12 +120,12 @@
       (with-open [stmt (jdbc/prepare tx
                                      [(format "INSERT INTO %s %s VALUES %s"
                                               (name table) insert-columns insert-spec)])]
-        (doseq [row (:data data)]
+        (doseq [row (rest data)]
           (jdbc/execute! (prep/set-parameters stmt row)))))))
 
 (defn load-loinc-csv [db table path]
-  (let [data (read-loinc-csv path)]
-    (prepare-loinc-table db table data)))
+  (let [reader (io/reader path)]
+    (prepare-loinc-table db table reader)))
 
 (defn create-idx [db table column]
   (println ::debug (format "DROP INDEX IF EXISTS %s_%s_idx" (name table) (name column)))
@@ -224,6 +227,10 @@
                 slurp)]
     (jdbc/execute! db [sql] options)))
 
+(defn read-sql-file [sql-file]
+   (-> (io/resource sql-file)
+                slurp))
+
 (defn create-core-concepts [db]
   (execute-file-sql db "loinc/concept-base.sql")
   (create-idx db "loinc_concept", "LoincNumber"))
@@ -273,33 +280,25 @@
   (create-base-property-table db cs)
   (create-primary-link-table db)
   (create-supplementary-link-table db)
-  (create-core-concepts db))
+  (create-core-concepts db)
+  (execute-file-sql db "loinc/property-answer-list.sql")
+  (execute-file-sql db "loinc/panel-items-property.sql")
+  (execute-file-sql db "loinc/concepts-valuesets.sql"))
 
-(defn get-concepts [db]
-  (let [core (->> (jdbc/execute! db ["select * from loinc_concept"]
-                                 {:builder-fn json-builder-adapter})
-                  (concat (get-answers-concepts db))
-                  (concat (get-part-concepts db))
-                  (map (juxt :loincnumber :concept))
-                  (into {}))
-        valuesets (->> (execute-file-sql db "loinc/concepts-valuesets.sql"
-                                         {:builder-fn json-builder-adapter})
-                       (map (juxt :loincnumber :valueset))
-                       (into {}))
-        answer-list (->> (execute-file-sql db "loinc/property-answer-list.sql" {:builder-fn json-builder-adapter})
-                         (map (juxt :loincnumber :property)))
-        panel-items (->> (execute-file-sql db "loinc/panel-items-property.sql" {:builder-fn json-builder-adapter})
-                         (map (juxt :parentloinc :property)))
-        core* (reduce (fn [acc [k v]]
-                        (update-in acc [k :property :loinc] merge v))
-                        core
-                        (concat answer-list panel-items))
-
-        core** (reduce (fn [acc [k v]]
-                         (update-in acc [k :valueset] (fn [vs] (set (concat vs v)))))
-                       core*
-                       valuesets)]
-    (vals core**)))
+(defn write-concepts [db writer]
+  (reduce (fn [acc row]
+            (let [x (-> (cheshire.core/parse-string (:loinc_concept/concept row) true)
+                        (remove-empty-vals)
+                        (cheshire.core/generate-string))]
+              (.write writer x)
+              (.write writer "\n")))
+          []
+          (jdbc/plan db [(str "select * from loinc_concept"
+                              " union "
+                              (read-sql-file "loinc/part-concept.sql")
+                              " union "
+                              (read-sql-file "loinc/answers-concepts.sql")
+                              )])))
 
 (defn get-value-sets [db]
   (->> (get-answer-list-value-sets db)
@@ -312,8 +311,7 @@
         cs (loinc.xml/get-loinc-codesystem-edn loinc-path)
         _ (load-loinc-data db loinc-path)
         _ (create-tables cs db)
-        valuesets (get-value-sets db)
-        concepts (get-concepts db)]
+        valuesets (get-value-sets db)]
     (with-open [zip (-> target
                         clojure.java.io/file
                         clojure.java.io/output-stream
@@ -330,15 +328,18 @@
           (write-line gzip valueset)
           (doseq [v valuesets]
             (write-line gzip v))
-          (doseq [c concepts]
-            (write-line gzip c)))))))
+          (write-concepts db gzip))))))
 
 (comment
   (def db "jdbc:sqlite:/Users/bodyblock/Downloads/loinc/db.sqlite")
 
-  (write-ndjson-gz-zip-bundle "/Users/bodyblock/Downloads/loinc_output.zip")
+  (write-ndjson-gz-zip-bundle "/Users/bodyblock/Downloads/loinc_output_3.zip")
 
   (def cs (loinc.xml/get-loinc-codesystem-edn))
+
+  (get-concepts db)
+
+  (load-loinc-data db loinc-path)
 
   cs
 
