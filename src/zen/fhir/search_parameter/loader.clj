@@ -37,8 +37,11 @@
                           (str "http://hl7.org/fhir/StructureDefinition/" base-rt)])
         el (get-in rt-inter inter-path)]
     (if-let [tp (:type el)]
-      #{tp}
-      (:types el))))
+      #{{:type tp
+         :polymorphic? false}}
+      (into #{} (map (fn [tp] {:type tp
+                               :polymorphic? true}))
+            (:types el)))))
 
 
 (defn process-search-parameter [ztx inter]
