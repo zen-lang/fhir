@@ -6,7 +6,7 @@
   :zen.fhir/version "${ZEN_FHIR_VERSION}"
   :require #{:zen.fhir/version}
   :keys {:zen.fhir/version {:type zen/string
-                            :const {:value "${ZEN_FHIR_VERSION}"}}}}
+                            :regex "${ZEN_FHIR_REGEX}"}}}
 
  Resource
  {:zen/tags #{zen/tag zen/schema}

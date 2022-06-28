@@ -23,13 +23,17 @@
                               " " green-underline "finished in "
                               (- (System/currentTimeMillis) task-start-ts) " ms" clear-color \newline))
          set-zen-fhir-version {:doc "Setup zen.fhir/version regex"
-                               :task (let [current-git-repo-tag (-> "git describe --tag --abbrev=0"
-                                                                    sh
-                                                                    str/trim-newline)]
+                               :task (let [current-git-repo-tag (-> "git describe --tag --abbrev=0" sh str/trim-newline)
+                                           semantic-version-pattern (re-pattern "(\\d+)\\.(\\d+)\\.(\\d+)(-\\d+)?" )
+                                           [match major minor _patch _pre-release] (re-find semantic-version-pattern current-git-repo-tag)
+                                           zen-fhir-regex (if (= major "0")
+                                                            (format "0\\\\.%s\\\\.\\\\d+(?:-\\\\d+)?" minor)
+                                                            (format "%s\\\\.\\\\d+\\\\.\\\\d+(?:-\\\\d+)?" major))]
                                        (spit "resources/zen-fhir-version" current-git-repo-tag)
                                        (->> (-> "zrc/zen/fhir.edn.tpl"
                                                 slurp
-                                                (str/replace "${ZEN_FHIR_VERSION}" current-git-repo-tag))
+                                                (str/replace "${ZEN_FHIR_VERSION}" match)
+                                                (str/replace "${ZEN_FHIR_REGEX}" zen-fhir-regex))
                                             (spit "zrc/zen/fhir.edn")))}
          init {:depends [set-zen-fhir-version]
                :task (do
