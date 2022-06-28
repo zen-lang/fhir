@@ -29,6 +29,7 @@
                                            zen-fhir-regex (if (= major "0")
                                                             (format "0\\\\.%s\\\\.\\\\d+(?:-\\\\d+)?" minor)
                                                             (format "%s\\\\.\\\\d+\\\\.\\\\d+(?:-\\\\d+)?" major))]
+                                       (println (str "Version: " bold match bold-end))
                                        (spit "resources/zen-fhir-version" match)
                                        (->> (-> "zrc/zen/fhir.edn.tpl"
                                                 slurp
