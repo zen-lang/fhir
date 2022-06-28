@@ -1,0 +1,60 @@
+{:deps {}
+ :tasks {:requires ([clojure.string :as str]
+                    [clojure.java.shell])
+         :init (do
+                 (def green "\u001B[32m")
+                 (def purple "\u001B[35m")
+                 (def clear-color "\u001B[0m")
+                 (def bold "\033[0;1m")
+                 (def bold-end "\033[22m")
+                 (def green-underline "\033[32;4m")
+
+                 (defn sh
+                   "clojure.java.shell/sh wrapper-simplifier
+                    command - shell command represented as a single string"
+                   [command]
+                   (-> clojure.java.shell/sh
+                       (apply (str/split command (re-pattern "\\s")))
+                       :out)))
+         :enter (do
+                  (println (str purple  "Executing: " clear-color bold (:name (current-task)) bold-end))
+                  (def task-start-ts (System/currentTimeMillis)))
+         :leave (println (str green "Task: " bold  (:name (current-task)) bold-end
+                              " " green-underline "finished in "
+                              (- (System/currentTimeMillis) task-start-ts) " ms" clear-color \newline))
+         set-zen-fhir-version {:doc "Setup zen.fhir/version regex"
+                               :task (let [current-git-repo-tag (-> "git describe --tag --abbrev=0"
+                                                                    sh
+                                                                    str/trim-newline)]
+                                       (spit "resources/zen-fhir-version" current-git-repo-tag)
+                                       (->> (-> "zrc/zen/fhir.edn.tpl"
+                                                slurp
+                                                (str/replace "${ZEN_FHIR_VERSION}" current-git-repo-tag))
+                                            (spit "zrc/zen/fhir.edn")))}
+         init {:depends [set-zen-fhir-version]
+               :task (do
+                       (shell "npm --registry=https://packages.simplifier.net install")
+                       (shell "npm --registry=https://packages.simplifier.net install"))}
+
+         repl {:depends [set-zen-fhir-version]
+               :task (clojure "-M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]")}
+
+         test {:depends [set-zen-fhir-version]
+               :task (clojure "-M:test:kaocha")}
+
+         init-r3 {:depends [set-zen-fhir-version]
+                  :task (do
+                          (shell {:dir "r3"} "npm --registry=https://packages.simplifier.net install")
+                          (shell {:dir "r3"} "npm --registry=https://packages.simplifier.net install"))}
+
+         build (clojure "-X:build all")
+
+         zen-profiles (let [[node-modules zrc ver package] *command-line-args*]
+                        (clojure (format "-M -m zen.fhir.tooling %s %s %s %s" node-modules zrc ver package)))
+
+         build-stanadlone-projects (let [[node-modules zrc] *command-line-args*]
+                                     (clojure (format "-M -m zen.fhir.tooling.aidbox-standalone %s %s" node-modules zrc)))
+
+         build-terminology-bundles (clojure "-M -m zen.fhir.tooling.terminology")
+
+         }}
