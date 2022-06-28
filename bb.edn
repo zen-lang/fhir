@@ -57,7 +57,7 @@
          build (clojure "-X:build all")
 
          zen-profiles (let [[node-modules zrc ver package] *command-line-args*]
-                        (clojure (format "-M -m zen.fhir.tooling %s %s %s %s" node-modules zrc ver package)))
+                        (clojure (str "-M -m zen.fhir.tooling " node-modules " " zrc " " ver " " package)))
 
          build-stanadlone-projects (let [[node-modules zrc] *command-line-args*]
                                      (clojure (format "-M -m zen.fhir.tooling.aidbox-standalone %s %s" node-modules zrc)))
