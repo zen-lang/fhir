@@ -26,4 +26,4 @@ jobs:
       - uses: DeLaGuardo/setup-clojure@3.5
         with:
           cli: 1.10.1.693
-      - run: bb init && bb test
+      - run: bb ci-test 0.1.0-test

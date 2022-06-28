@@ -23,8 +23,7 @@
                               " " green-underline "finished in "
                               (- (System/currentTimeMillis) task-start-ts) " ms" clear-color \newline))
          set-zen-fhir-version {:doc "Setup zen.fhir/version regex"
-                               :task (let [current-git-repo-tag (-> "git describe --tag --abbrev=0" sh str/trim-newline)
-                                           _ (println "Git repo tag: " current-git-repo-tag)
+                               :task (let [current-git-repo-tag (or (first *command-line-args*) (-> "shell git describe --tag --abbrev=0" sh str/trim-newline))
                                            semantic-version-pattern (re-pattern "(\\d+)\\.(\\d+)\\.(\\d+)(-\\d+)?" )
                                            [match major minor _patch _pre-release] (re-find semantic-version-pattern current-git-repo-tag)
                                            zen-fhir-regex (if (= major "0")
@@ -46,6 +45,8 @@
 
          test {:depends [set-zen-fhir-version]
                :task (clojure "-M:test:kaocha")}
+
+         ci-test {:depends [set-zen-fhir-version init test]}
 
          init-r3 {:depends [set-zen-fhir-version]
                   :task (do
