@@ -41,11 +41,11 @@ jobs:
       - run: bb init-r3
         name: Install npm R3 packages
 
-      - run: bb zen-profiles node_modules="node_modules/" zrc="zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
+      - run: bb zen-profiles "node_modules/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
         name: Generate npm Zen packages
 
       - name: Genrate npm R3 Zen packages
-        run: bb zen-profiles node_modules="r3/node_modules/" zrc="zrc/node_modules/" ver="${{ env.RELEASE_VERSION }}"
+        run: bb zen-profiles "r3/node_modules/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
 
       - run:
           for folder in $(ls -d zrc/node_modules/*); do npm publish $folder --access=public; done

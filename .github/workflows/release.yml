@@ -42,10 +42,10 @@ jobs:
         name: Install npm R3 packages
 
       - name: Build standalone projects
-        run: bb build-stanadlone-projects node_modules="node_modules/" zrc="zrc/standalone_projects/"
+        run: bb build-stanadlone-projects "node_modules/" "zrc/standalone_projects/"
 
       - name: Build standalone R3
-        run: bb build-stanadlone-projects node_modules="r3/node_modules/" zrc="zrc/standalone_projects/"
+        run: bb build-stanadlone-projects "r3/node_modules/" "zrc/standalone_projects/"
 
       - name: Build terminologies
         run: |
