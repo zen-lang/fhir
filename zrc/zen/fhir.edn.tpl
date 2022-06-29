@@ -57,6 +57,8 @@
                                                        {:value :extensible}
                                                        {:value :preferred}
                                                        {:value :example}]}}}
+         :zen.fhir/nested {:type zen/map
+                           :validation-type :open}
          :keys {:type zen/map
                 :values {:confirms #{nested-schema}}}
          :every {:confirms #{nested-schema}}

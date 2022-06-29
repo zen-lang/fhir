@@ -270,6 +270,10 @@
         (cond->
             (not (empty? flags)) (assoc :fhir/flags flags)))))
 
+(defn normalize-nested [x]
+  (if (= "Resource" (:type x))
+    (assoc x :nested true)
+    x))
 
 (defn normalize-element [x & [stu3?]]
   (-> (dissoc x
@@ -279,6 +283,7 @@
       (normalize-require)
       (normalize-arity)
       (normalize-polymorphic stu3?)
+      (normalize-nested)
       (normalize-content-ref)
       (normalize-flags)))
 
@@ -695,6 +700,17 @@
                                       :zen.fhir/package-ns (or (:zen.fhir/package-ns params)
                                                                (some-> package :name (str/replace #"\." "-") symbol)))))))
 
+(comment
+  (def b (init-ztx))
+
+  (def a (do-load-file b {} {:name "abc"} (clojure.java.io/file "/tmp/aaa.json")))
+
+  (zen.fhir.generator/generate-zen-schemas b)
+ (:fhir.zen/ns @b)
+
+  (def aaa (get-in a [:fhir/inter "StructureDefinition" ]))
+
+  )
 
 (defn init-ztx
   ([]

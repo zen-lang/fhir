@@ -107,44 +107,47 @@
 
 (defn el-schema [fhir-inter [url el]]
   (let [sch (merge-with
-              into
-              {}
-              (when-let [type-sym (when-let [tp (and (:type el))]
-                                    (let [tp-url (str "http://hl7.org/fhir/StructureDefinition/" tp)]
-                                      (when (not= url tp-url)
-                                        (url->symbol fhir-inter
-                                                     (str "http://hl7.org/fhir/StructureDefinition/" tp)
-                                                     {:type :element-type :e el :url url}))))]
-                {:confirms #{type-sym}})
-              (when-let [ext-sym (when-let [ext (:fhir/extension el)]
-                                   (url->symbol fhir-inter ext {:type :extension :el el :url url}))]
-                {:confirms #{ext-sym}})
-              (when-let [ext-uri (and (or (nil? (:type el)) (= "Extension" (:type el)))
-                                      (:fhir/extension el))]
-                {:fhir/extensionUri ext-uri})
-              (when (:polymorphic el)
-                (let [types (into #{} (map keyword) (:types el))]
-                  (utils/strip-nils
-                    {:fhir/polymorphic true
-                     :exclusive-keys (when (<= 2 (count types))
-                                       #{types})})))
-              (when (seq (:| el))
-                (els-schema fhir-inter [url el]))
-              (when (seq (:fhir/flags el))
-                (select-keys el #{:fhir/flags}))
-              (when-let [value-set-sym (some->> (get-in el [:binding :valueSet])
-                                                (value-set->symbol fhir-inter))]
-                {:zen.fhir/value-set {:symbol value-set-sym
-                                    :strength (keyword (get-in el [:binding :strength]))}})
-              (when (= "Reference" (:type el))
-                {:confirms #{'zen.fhir/Reference}
-                 :zen.fhir/reference
-                 {:refers (->> (:profiles el)
-                               (remove #(= % "http://hl7.org/fhir/StructureDefinition/Resource"))
-                               (keep (fn [x] (url->symbol fhir-inter x {:type :reference :el el :url url})))
-                               (into #{}))}})
-              (when-let [text (or (:short el) (:definiton el))]
-                {:zen/desc text}))
+             into
+             {}
+             (when-let [type-sym (when-let [tp (and (:type el))]
+                                   (let [tp-url (str "http://hl7.org/fhir/StructureDefinition/" tp)]
+                                     (when (not= url tp-url)
+                                       (url->symbol fhir-inter
+                                                    (str "http://hl7.org/fhir/StructureDefinition/" tp)
+                                                    {:type :element-type :e el :url url}))))]
+               {:confirms #{type-sym}})
+             (when-let [ext-sym (when-let [ext (:fhir/extension el)]
+                                  (url->symbol fhir-inter ext {:type :extension :el el :url url}))]
+               {:confirms #{ext-sym}})
+             (when-let [ext-uri (and (or (nil? (:type el)) (= "Extension" (:type el)))
+                                     (:fhir/extension el))]
+               {:fhir/extensionUri ext-uri})
+             (when (:polymorphic el)
+               (let [types (into #{} (map keyword) (:types el))]
+                 (utils/strip-nils
+                  {:fhir/polymorphic true
+                   :exclusive-keys (when (<= 2 (count types))
+                                     #{types})})))
+             (when (seq (:| el))
+               (els-schema fhir-inter [url el]))
+             (when (seq (:fhir/flags el))
+               (select-keys el #{:fhir/flags}))
+             (when-let [value-set-sym (some->> (get-in el [:binding :valueSet])
+                                               (value-set->symbol fhir-inter))]
+               {:zen.fhir/value-set {:symbol value-set-sym
+                                     :strength (keyword (get-in el [:binding :strength]))}})
+             (when (= "Reference" (:type el))
+               {:confirms #{'zen.fhir/Reference}
+                :zen.fhir/reference
+                {:refers (->> (:profiles el)
+                              (remove #(= % "http://hl7.org/fhir/StructureDefinition/Resource"))
+                              (keep (fn [x] (url->symbol fhir-inter x {:type :reference :el el :url url})))
+                              (into #{}))}})
+             (when (:nested el)
+               {:zen.fhir/nested {}})
+
+             (when-let [text (or (:short el) (:definiton el))]
+               {:zen/desc text}))
         slicing (when (seq (:fhir/slicing el))
                   (slicing-schema fhir-inter [url el]))]
     (merge slicing
