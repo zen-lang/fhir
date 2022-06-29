@@ -1,0 +1,9 @@
+{:dependencies ["hl7.fhir.us.core"
+                "hl7.fhir.us.Davinci-drug-formulary"
+                "hl7.fhir.uv.sdc"
+                "hl7.fhir.r4.core"
+                "hl7.fhir.us.davinci-pdex"
+                "hl7.fhir.us.davinci-pdex-plan-net"
+                "hl7.fhir.us.dme-orders"
+                "hl7.fhir.us.carin-bb"
+                "hl7.fhir.us.mcode"]}

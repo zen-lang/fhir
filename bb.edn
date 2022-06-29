@@ -1,6 +1,10 @@
 {:deps {}
  :tasks {:requires ([clojure.string :as str]
-                    [clojure.java.shell])
+                    [clojure.java.io :as io]
+                    [clojure.java.shell]
+                    [babashka.fs :as fs]
+                    [cheshire.core :as json]
+                    [clojure.pprint])
          :init (do
                  (def green "\u001B[32m")
                  (def purple "\u001B[35m")
@@ -8,6 +12,10 @@
                  (def bold "\033[0;1m")
                  (def bold-end "\033[22m")
                  (def green-underline "\033[32;4m")
+
+                 (defn colored-printer [map & [ks]]
+                   (doseq [[k v] (if ks (select-keys map ks) map)]
+                     (println (str bold (str/capitalize (name k)) ": " bold-end (str v)))))
 
                  (defn sh
                    "clojure.java.shell/sh wrapper-simplifier
@@ -36,6 +44,7 @@
                                                 (str/replace "${ZEN_FHIR_VERSION}" match)
                                                 (str/replace "${ZEN_FHIR_REGEX}" zen-fhir-regex))
                                             (spit "zrc/zen/fhir.edn")))}
+
          init {:depends [set-zen-fhir-version]
                :task (do
                        (shell "npm --registry=https://packages.simplifier.net install")
@@ -59,8 +68,30 @@
          zen-profiles (let [[node-modules zrc ver package] *command-line-args*]
                         (clojure (str "-M -m zen.fhir.tooling " node-modules " " zrc " " ver " " package)))
 
-         build-stanadlone-projects (let [[node-modules zrc] *command-line-args*]
-                                     (clojure (format "-M -m zen.fhir.tooling.aidbox-standalone %s %s" node-modules zrc)))
+         build-stanadlone-projects (let [[node-modules zrc preserve-package alt-package-name] *command-line-args*
+                                         opts (cond-> {}
+                                                preserve-package
+                                                (assoc "preserve-package" preserve-package)
+                                                alt-package-name
+                                                (assoc "alt-package-name" alt-package-name))]
+                                     (clojure (str "-M -m zen.fhir.tooling.aidbox-standalone-v2 " node-modules " " zrc " " (str/join " " (flatten (seq opts))))))
+
+         build-standalone-zen-profiles-all-versions
+         (let [get-dependency-meta (fn [dependency] (-> (sh (str "npm --registry https://packages.simplifier.net --json view " dependency))
+                                                        (json/parse-string keyword)))
+               {:as top-level-deps, :keys [dependencies]} (read-string (slurp "resources/package.edn"))]
+           (doseq [dependency dependencies
+                   :let [{:as npm-view-obj, :keys [versions]} (get-dependency-meta dependency)]]
+             (doseq [v versions
+                     :let [dependency-meta (get-dependency-meta (str dependency "@" v))
+                           dep-folder (str dependency "-" v "/")]
+                     :when (= "R4" (:fhirVersion dependency-meta))]
+               (println "\nProcessing dependency...")
+               (colored-printer dependency-meta [:fhirVersion :name :version])
+               (sh (str "npm --prefix " dep-folder " --registry https://packages.simplifier.net install " (:url dependency-meta)))
+               (binding [*command-line-args* (list (str dep-folder "node_modules/") "zrc/standalone_projects/" dependency (str dependency "-" v))]
+                 (run 'build-stanadlone-projects))
+               (sh (str "rm -rf " dep-folder)))))
 
          build-terminology-bundles (clojure "-M -m zen.fhir.tooling.terminology")
 

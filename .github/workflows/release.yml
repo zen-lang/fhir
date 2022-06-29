@@ -42,7 +42,7 @@ jobs:
         name: Install npm R3 packages
 
       - name: Build standalone projects
-        run: bb build-stanadlone-projects "node_modules/" "zrc/standalone_projects/"
+        run: bb build-standalone-zen-profiles-all-versions "node_modules/" "zrc/standalone_projects/"
 
       - name: Build standalone R3
         run: bb build-stanadlone-projects "r3/node_modules/" "zrc/standalone_projects/"

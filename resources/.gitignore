@@ -6,3 +6,4 @@
 !loinc/*
 !rxnorm
 !rxnorm/*
+!package.edn
