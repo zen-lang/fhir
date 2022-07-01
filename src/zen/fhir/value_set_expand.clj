@@ -112,44 +112,72 @@
                              (vs-compose-system-fn ztx value-set
                                                    (:system compose-el)
                                                    (:version compose-el)))
-        value-set-pred (vs-compose-value-set-fn ztx value-set (:valueSet compose-el))]
-    (some->> [code-system-pred value-set-pred]
-             (remove nil?)
-             not-empty
-             (apply every-pred))))
+        value-set-pred (vs-compose-value-set-fn ztx value-set (:valueSet compose-el))
+        check-fn (some->> [code-system-pred value-set-pred]
+                          (remove nil?)
+                          not-empty
+                          (apply every-pred))]
+    (when check-fn
+      {:system    (:system compose-el)
+       :value-set (:valueSet compose-el)
+       :check-fn  check-fn})))
 
 
 (defn compose [ztx vs]
-  (let [include-fn (some->> (get-in vs [:compose :include])
+  (let [includes   (some->> (get-in vs [:compose :include])
                             (keep (partial check-if-concept-is-in-this-compose-el-fn ztx vs))
-                            not-empty
+                            not-empty)
+        include-fn (some->> includes
+                            (map :check-fn)
                             (apply some-fn))
-        exclude-fn (some->> (get-in vs [:compose :exclude])
+
+        excludes   (some->> (get-in vs [:compose :exclude])
                             (keep (partial check-if-concept-is-in-this-compose-el-fn ztx vs))
-                            not-empty
+                            not-empty)
+        exclude-fn (some->> excludes
+                            (map :check-fn)
                             (apply some-fn)
-                            complement)]
-    (or (some->> [include-fn exclude-fn]
-                 (remove nil?)
-                 not-empty
-                 (apply every-pred))
-        #_(assert (some? include-fn) (str "ValueSet.compose.include is required. Value set url is " (:url vs)))
-        (constantly false))))
+                            complement)
+
+        includes-and-excludes (concat includes excludes)
+
+        systems    (into #{}
+                         (keep :system)
+                         includes-and-excludes)
+        value-sets (into #{}
+                         (keep :value-set)
+                         includes-and-excludes)]
+    {:systems    (not-empty systems)
+     :value-sets (not-empty value-sets)
+     :compose-fn
+     (or (some->> [include-fn exclude-fn]
+                  (remove nil?)
+                  not-empty
+                  (apply every-pred))
+         #_(assert (some? include-fn) (str "ValueSet.compose.include is required. Value set url is " (:url vs)))
+         (constantly false))}))
 
 
 (defn denormalize-into-concepts [ztx valuesets concepts-map]
   (reduce
     (fn [concepts-acc vs]
-      (let [concept-in-vs? (compose ztx vs)]
+      (let [{systems        :systems
+             value-sets     :value-sets
+             concept-in-vs? :compose-fn}
+            (compose ztx vs)]
         (reduce
-          (fn [acc [concept-id concept]]
-            (if (concept-in-vs? concept)
-              (update-in acc [concept-id :valueset]
-                         (fnil conj #{})
-                         (:url vs))
-              acc))
+          (fn [acc [system concepts]]
+            (reduce
+              (fn [acc [concept-id concept]]
+                (if (concept-in-vs? concept)
+                  (update-in acc [system concept-id :valueset]
+                             (fnil conj #{})
+                             (:url vs))
+                  acc))
+              acc
+              concepts))
           concepts-acc
-          concepts-acc)))
+          (select-keys concepts-acc systems))))
     concepts-map
     valuesets))
 

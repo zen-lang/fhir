@@ -572,25 +572,21 @@
                              vals
                              (apply concat)
                              (filter :concept)
-                             (map (fn [{:keys [system concept]}]
-                                    (into {}
-                                          (map (juxt :id identity))
-                                          (extract-concepts inter-part
-                                                            (fn [{:keys [code]}] (str/replace (str system \/ code) \/ \-))
-                                                            system
-                                                            concept))))
-                             (apply utils/safe-merge-with map? merge)))})))
+                             (mapcat (fn [{:keys [system concept]}]
+                                       (extract-concepts inter-part
+                                                         (fn [{:keys [code]}] (str/replace (str system \/ code) \/ \-))
+                                                         system
+                                                         concept)))))})))
 
 
 (defmethod process-on-load :CodeSystem
   [res]
   (merge
    (dissoc res :concept)
-   {:fhir/concepts (into {} (map (juxt :id identity))
-                         (extract-concepts (select-keys res loader-keys)
-                                           (fn [{:keys [code]}] (str/replace (str (:url res) \/ code) \/ \-))
-                                           (:url res)
-                                           (:concept res)))}
+   {:fhir/concepts (extract-concepts (select-keys res loader-keys)
+                                     (fn [{:keys [code]}] (str/replace (str (:url res) \/ code) \/ \-))
+                                     (:url res)
+                                     (:concept res))}
    {:zen.fhir/resource (apply dissoc res :concept loader-keys)}))
 
 
@@ -619,7 +615,16 @@
 (defn collect-concepts [ztx]
   (let [code-systems (vals (get-in @ztx [:fhir/inter "CodeSystem"]))
         value-sets (vals (get-in @ztx [:fhir/inter "ValueSet"]))
-        concepts (into {} (mapcat :fhir/concepts) (concat value-sets code-systems))]
+        concepts (transduce (comp (mapcat :fhir/concepts)
+                                  (map (fn [concept]
+                                         {:path [(:system concept)
+                                                 (:id concept)]
+                                          :value concept})))
+                            (completing
+                              (fn [acc {:keys [path value]}]
+                                (update-in acc path merge value)))
+                            {}
+                            (concat value-sets code-systems))]
     (swap! ztx assoc-in [:fhir/inter "Concept"] concepts)))
 
 
@@ -635,7 +640,7 @@
   (swap! ztx update-in [:fhir/inter "Concept"]
          #(sp/transform [sp/MAP-VALS]
                         (partial process-concept ztx)
-                        %)))
+                        (reduce merge (vals %)))))
 
 (defn process-resources
   "this is processing of resources with context"
