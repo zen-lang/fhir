@@ -91,13 +91,18 @@
 
 
 (defn vs-compose-value-set-fn [ztx value-set value-set-urls]
-  (when (seq value-set-urls)
-    (or (some->> value-set-urls
-                 (keep #(when-let [vs (get-in @ztx [:fhir/inter "ValueSet" %])]
-                          (compose ztx vs)))
-                 not-empty
-                 (apply every-pred))
-        (constantly false))))
+  (when-let [composes
+             (some->> value-set-urls
+                      (keep #(when-let [vs (get-in @ztx [:fhir/inter "ValueSet" %])]
+                               (compose ztx vs)))
+                      not-empty)]
+    (when-let [check-fn
+               (some->> composes
+                        (keep :compose-fn)
+                        not-empty
+                        (apply every-pred))]
+      {:systems (mapcat :systems composes)
+       :check-fn check-fn})))
 
 
 (defn check-if-concept-is-in-this-compose-el-fn [ztx value-set compose-el]
@@ -112,14 +117,16 @@
                              (vs-compose-system-fn ztx value-set
                                                    (:system compose-el)
                                                    (:version compose-el)))
-        value-set-pred (vs-compose-value-set-fn ztx value-set (:valueSet compose-el))
+
+        {value-set-systems :systems, value-set-pred :check-fn}
+        (vs-compose-value-set-fn ztx value-set (:valueSet compose-el))
+
         check-fn (some->> [code-system-pred value-set-pred]
                           (remove nil?)
                           not-empty
                           (apply every-pred))]
     (when check-fn
-      {:system    (:system compose-el)
-       :value-set (:valueSet compose-el)
+      {:systems   (conj value-set-systems (:system compose-el))
        :check-fn  check-fn})))
 
 
@@ -142,13 +149,9 @@
         includes-and-excludes (concat includes excludes)
 
         systems    (into #{}
-                         (keep :system)
-                         includes-and-excludes)
-        value-sets (into #{}
-                         (keep :value-set)
+                         (mapcat (comp not-empty :systems))
                          includes-and-excludes)]
     {:systems    (not-empty systems)
-     :value-sets (not-empty value-sets)
      :compose-fn
      (or (some->> [include-fn exclude-fn]
                   (remove nil?)
@@ -162,7 +165,6 @@
   (reduce
     (fn [concepts-acc vs]
       (let [{systems        :systems
-             value-sets     :value-sets
              concept-in-vs? :compose-fn}
             (compose ztx vs)]
         (reduce

@@ -254,7 +254,7 @@
      :baseDefinition "http://hl7.org/fhir/StructureDefinition/Reference"}))
 
 
-(t/deftest ^:kaocha/pending value-sets
+(t/deftest value-sets
   (t/testing "value set processing"
     (match-inter ztx "ValueSet" "http://hl7.org/fhir/ValueSet/administrative-gender"
       {:url "http://hl7.org/fhir/ValueSet/administrative-gender"
