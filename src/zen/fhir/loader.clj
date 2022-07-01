@@ -684,7 +684,9 @@
   (let [file-name (.getName f)
         content (cond
                   (str/ends-with? file-name ".json")
-                  (cheshire.core/parse-string (str/replace (slurp f) \ufeff \space) keyword)
+                  (try (cheshire.core/parse-string (str/replace (slurp f) \ufeff \space) keyword)
+                       (catch Exception e
+                         (println :WARN :invalid-json (.getName f) (.getMessage e))))
 
                   (str/ends-with? file-name ".edn")
                   (edamame/parse-string (slurp f)))
