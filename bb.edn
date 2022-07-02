@@ -98,7 +98,8 @@
                    (nil? fhir-dep)
                    (println (str purple "WARNING:" clear-color " package doesn't contain FHIR core dependency"))
 
-                   (str/starts-with? (str fhir-dep) "4")
+                   #_(str/starts-with? (str fhir-dep) "4")
+                   (= "4.0.1" fhir-dep) #_"NOTE: simplifier hosts onle 4.0.1 currently"
                    (binding [*command-line-args* (list (str dep-folder "node_modules/")
                                                        "zrc/standalone_projects/"
                                                        dependency
