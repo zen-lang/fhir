@@ -21,6 +21,7 @@
                    "clojure.java.shell/sh wrapper-simplifier
                     command - shell command represented as a single string"
                    [command]
+                   (println "$" command)
                    (-> clojure.java.shell/sh
                        (apply (str/split command (re-pattern "\\s")))
                        :out)))
