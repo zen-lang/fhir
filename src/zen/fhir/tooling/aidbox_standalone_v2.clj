@@ -20,7 +20,8 @@
     (generate-zen-schemas ztx)
     (let [packages-deps (packages-deps-nses (:fhir/inter @ztx))]
       (doseq [[package-name deps] packages-deps
-              :when (= package-name (symbol (replace-dots preserve-package)))]
+              :when (or (nil? preserve-package)
+                        (= package-name (symbol (replace-dots preserve-package))))]
         (let [package-name package-name
               standalone-dir (str zrc-dir "/" package-name "/")
               alt-package-name (or alt-package-name package-name)]
