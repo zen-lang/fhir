@@ -87,28 +87,33 @@
                      :let [dependency-meta (get-dependency-meta (str dependency "@" v))
                            dep-folder (str dependency "-" v "/")]
                      :when (= "R4" (:fhirVersion dependency-meta))]
-               (println "\nProcessing dependency...")
-               (colored-printer dependency-meta [:fhirVersion :name :version])
-               (sh (str "npm --prefix " dep-folder " --registry https://packages.simplifier.net install " (:url dependency-meta)))
-               (let [package-json-path (str/join "/" [dep-folder "node_modules" dependency "package.json"])
-                     package-json      (slurp package-json-path)
-                     package-info      (json/parse-string package-json keyword)
-                     fhir-dep          (get-in package-info [:dependencies :hl7.fhir.r4.core])]
-                 (cond
-                   (nil? fhir-dep)
-                   (println (str purple "WARNING:" clear-color " package doesn't contain FHIR core dependency"))
+               (try
+                 (println "\nProcessing dependency...")
+                 (colored-printer dependency-meta [:fhirVersion :name :version])
+                 (sh (str "npm --prefix " dep-folder " --registry https://packages.simplifier.net install " (:url dependency-meta)))
+                 (let [package-json-path (str/join "/" [dep-folder "node_modules" dependency "package.json"])
+                       package-json      (slurp package-json-path)
+                       package-info      (json/parse-string package-json keyword)
+                       fhir-dep          (get-in package-info [:dependencies :hl7.fhir.r4.core])]
+                   (cond
+                     (nil? fhir-dep)
+                     (println (str purple "WARNING:" clear-color " package doesn't contain FHIR core dependency"))
 
-                   #_(str/starts-with? (str fhir-dep) "4")
-                   (= "4.0.1" fhir-dep) #_"NOTE: simplifier hosts onle 4.0.1 currently"
-                   (binding [*command-line-args* (list (str dep-folder "node_modules/")
-                                                       "zrc/standalone_projects/"
-                                                       dependency
-                                                       (str dependency "-" v))]
-                     (run 'build-stanadlone-projects))
+                     #_(str/starts-with? (str fhir-dep) "4")
+                     (= "4.0.1" fhir-dep) #_"NOTE: simplifier hosts onle 4.0.1 currently"
+                     (binding [*command-line-args* (list (str dep-folder "node_modules/")
+                                                         "zrc/standalone_projects/"
+                                                         dependency
+                                                         (str dependency "-" v))]
+                       (run 'build-stanadlone-projects))
 
-                   :else
-                   (println (str purple "WARNING:" clear-color " package FHIR core version is not r4"))))
-               (sh (str "rm -rf " dep-folder)))))
+                     :else
+                     (println (str purple "WARNING:" clear-color " package FHIR core version is not r4"))))
+                 (catch Exception e
+                   (println (str purple "ERROR:" clear-color " " (.getMessage e))))
+                 (finally
+                   (try (sh (str "rm -rf " dep-folder))
+                        (catch Exception _)))))))
 
          build-terminology-bundles (clojure "-M -m zen.fhir.tooling.terminology")
 
