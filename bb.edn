@@ -83,7 +83,7 @@
                {:as top-level-deps, :keys [dependencies]} (read-string (slurp "resources/package.edn"))]
            (doseq [dependency dependencies
                    :let [{:as npm-view-obj, versions :versions dependency-name :name} (get-dependency-meta dependency)]]
-             (doseq [v (filter (fn [ver] (= ver "1.1.0")) versions)
+             (doseq [v versions
                      :let [dependency-meta (get-dependency-meta (str dependency "@" v))
                            dep-folder (str dependency "-" v "/")]
                      :when (= "R4" (:fhirVersion dependency-meta))]
