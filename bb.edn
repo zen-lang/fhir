@@ -82,8 +82,8 @@
                                                         (json/parse-string keyword)))
                {:as top-level-deps, :keys [dependencies]} (read-string (slurp "resources/package.edn"))]
            (doseq [dependency dependencies
-                   :let [{:as npm-view-obj, :keys [versions]} (get-dependency-meta dependency)]]
-             (doseq [v versions
+                   :let [{:as npm-view-obj, versions :versions dependency-name :name} (get-dependency-meta dependency)]]
+             (doseq [v (filter (fn [ver] (= ver "1.1.0")) versions)
                      :let [dependency-meta (get-dependency-meta (str dependency "@" v))
                            dep-folder (str dependency "-" v "/")]
                      :when (= "R4" (:fhirVersion dependency-meta))]
@@ -91,7 +91,7 @@
                  (println "\nProcessing dependency...")
                  (colored-printer dependency-meta [:fhirVersion :name :version])
                  (sh (str "npm --prefix " dep-folder " --registry https://packages.simplifier.net install " (:url dependency-meta)))
-                 (let [package-json-path (str/join "/" [dep-folder "node_modules" dependency "package.json"])
+                 (let [package-json-path (str/join "/" [dep-folder "node_modules" dependency-name "package.json"])
                        package-json      (slurp package-json-path)
                        package-info      (json/parse-string package-json keyword)
                        fhir-dep          (get-in package-info [:dependencies :hl7.fhir.r4.core])]
@@ -103,7 +103,7 @@
                      (= "4.0.1" fhir-dep) #_"NOTE: simplifier hosts onle 4.0.1 currently"
                      (binding [*command-line-args* (list (str dep-folder "node_modules/")
                                                          "zrc/standalone_projects/"
-                                                         dependency
+                                                         dependency-name
                                                          (str dependency "-" v))]
                        (run 'build-stanadlone-projects))
 

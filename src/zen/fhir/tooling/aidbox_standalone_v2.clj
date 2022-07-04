@@ -9,8 +9,10 @@
             [clojure.string :as str]))
 
 
-(defn replace-dots [s]
-  (str/replace s "." "-"))
+(defn coerce-to-internal-package-name [s]
+  (-> s
+      (str/replace "." "-")
+      (str/lower-case)))
 
 
 (defn -main [node-modules-folder zrc-dir & {:as opts}]
@@ -21,7 +23,7 @@
     (let [packages-deps (packages-deps-nses (:fhir/inter @ztx))]
       (doseq [[package-name deps] packages-deps
               :when (or (nil? preserve-package)
-                        (= package-name (symbol (replace-dots preserve-package))))]
+                        (= package-name (symbol (coerce-to-internal-package-name preserve-package))))]
         (let [package-name package-name
               standalone-dir (str zrc-dir "/" package-name "/")
               alt-package-name (or alt-package-name package-name)]
