@@ -26,6 +26,8 @@ vsname = df_info['Value Set Name']
 vsname_letters = [word[0].lower() for word in vsname.split()]
 vsname_short = ''.join(vsname_letters)
 
+oid = df_info.loc[['OID']][0]
+
 vs = {
     'resourceType': 'ValueSet',
     'id': 'rxnorm-vs-' + vsname_short,
@@ -33,9 +35,12 @@ vs = {
     'version': df_info['Definition Version'],
     'identifier': [{
             'system': 'urn:ietf:rfc:3986',
-            'value': df_info['OID'][0],
+            'value': oid
         }
-    ]
+    ],
+    'url': f"http://cts.nlm.nih.gov/fhir/ValueSet/{oid}",
+    'publisher': df_info[['Steward']][0].strip(),
+    'purpose': df_info[['Purpose: Clinical Focus']][0].strip(),
 }
 
 assert df_expansion.iloc[11,0] == 'Code', 'Unexpected file structure'
