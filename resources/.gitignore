@@ -6,4 +6,6 @@
 !loinc/*
 !rxnorm
 !rxnorm/*
+!snomed
+!snomed/*
 !package.edn
