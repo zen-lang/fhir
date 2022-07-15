@@ -6,7 +6,7 @@ CREATE TABLE concept
 (
     id TEXT PRIMARY KEY,
     effectiveTime TEXT,
-    active INTEGER,
+    active CHAR(1),
     moduleId TEXT,
     definitionStatusId TEXT
 );
@@ -19,7 +19,7 @@ CREATE TABLE description
 (
     id TEXT PRIMARY KEY,
     effectiveTime TEXT,
-    active INTEGER,
+    active CHAR(1),
     moduleId TEXT,
     conceptId TEXT,
     languageCode TEXT,
@@ -35,7 +35,7 @@ CREATE TABLE textdefinition
 (
     id TEXT PRIMARY KEY,
     effectiveTime TEXT,
-    active INTEGER,
+    active CHAR(1),
     moduleId TEXT,
     conceptId TEXT,
     languageCode TEXT,
@@ -52,11 +52,11 @@ CREATE TABLE relationship
 (
     id TEXT PRIMARY KEY,
     effectiveTime TEXT,
-    active INTEGER,
+    active CHAR(1),
     moduleId TEXT,
     sourceId TEXT,
     destinationId TEXT,
-    relationshipGroup INTEGER,
+    relationshipGroup TEXT,
     typeId TEXT,
     characteristicTypeId TEXT,
     modifierId TEXT
