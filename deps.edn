@@ -1,6 +1,6 @@
 {:paths ["src" "zrc" "test-zrc" "test-temp-zrc" "resources"]
 
- :deps {org.clojure/clojure  {:mvn/version "1.10.3"}
+ :deps {org.clojure/clojure  {:mvn/version "1.11.1"}
         org.clojure/data.csv {:mvn/version "1.0.1"}
         cheshire/cheshire    {:mvn/version "5.10.0"}
         zen-lang/zen         {:git/url "https://github.com/zen-lang/zen"
