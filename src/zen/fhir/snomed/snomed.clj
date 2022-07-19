@@ -89,6 +89,9 @@
   (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS path jsonb"])
   (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS display text"])
   (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS definition text"])
+  (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS children text"])
+  (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS parents text"])
+  (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS root text"])
 
   ;;Description table indexes
   (jdbc/execute! db ["DROP INDEX IF EXISTS description_conceptid; CREATE INDEX description_conceptid ON description (conceptid);"])
@@ -137,8 +140,26 @@ with aggs as (select conceptid cid, string_agg(term, '; ') saggs from textdefini
 UPDATE concept c
 SET definition = a.saggs
 FROM aggs a
-WHERE a.cid = c.id"]))
-  )
+WHERE a.cid = c.id"])))
+
+(defn build-parents&children-props [db]
+  (jdbc/execute! db ["
+    UPDATE concept c
+    SET parents =
+     (SELECT json_agg(child)
+      FROM
+        (rel.destinationid AS child
+         FROM relationship rel
+         WHERE rel.sourceid = c.id) AS children);"])
+
+  (jdbc/execute! db ["
+    UPDATE concept c
+    SET children =
+     (SELECT json_agg(parent)
+      FROM
+        (rel.sourceid AS parent
+         FROM relationship rel
+         WHERE rel.destinationid = c.id) AS parents);"]))
 
 
 (def source "snomed")
@@ -188,12 +209,31 @@ TO PROGRAM 'cat >> %s' csv delimiter e'\\x02' quote e'\\x01'"
                                  (:url vs)
                                  out-path)]))))
 
+(def green "\u001B[32m")
+(def clear-color "\u001B[0m")
+
+(defn print-wrapper [bodies]
+  (doseq [b bodies]
+    (printf "Executing step: `%s`" (first b))
+    (printf "%sStep `%s` finished.%s\nOutput: %s" green (first b) clear-color (with-out-str (time (eval b))))))
+
+(defn pack-snomed-terminology-bundle [db]
+  (def sf (snomed-files))
+
+  (print-wrapper '((init-db db)
+                   (load-files db sf)
+                   (prepare-tables db)
+                   (build-hierarchies db)
+                   (join-displays db)
+                   (join-textdefinitions db)
+                   (build-parents&children-props db))))
+
 (comment
   (def sf (snomed-files))
 
   (init-db db)
 
-  (time (load-files db sf))
+  (load-files db sf)
 
   (prepare-tables db)
 
