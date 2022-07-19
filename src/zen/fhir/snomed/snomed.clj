@@ -91,7 +91,6 @@
   (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS definition text"])
   (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS children text"])
   (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS parents text"])
-  (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS root text"])
 
   ;;Description table indexes
   (jdbc/execute! db ["DROP INDEX IF EXISTS description_conceptid; CREATE INDEX description_conceptid ON description (conceptid);"])
@@ -148,7 +147,7 @@ WHERE a.cid = c.id"])))
     SET parents =
      (SELECT json_agg(child)
       FROM
-        (rel.destinationid AS child
+        (select distinct rel.destinationid AS child
          FROM relationship rel
          WHERE rel.sourceid = c.id) AS children);"])
 
@@ -157,9 +156,10 @@ WHERE a.cid = c.id"])))
     SET children =
      (SELECT json_agg(parent)
       FROM
-        (rel.sourceid AS parent
+        (select distinct rel.sourceid AS parent
          FROM relationship rel
-         WHERE rel.destinationid = c.id) AS parents);"]))
+         WHERE rel.destinationid = c.id) AS parents);
+"]))
 
 
 (def source "snomed")
@@ -220,13 +220,21 @@ TO PROGRAM 'cat >> %s' csv delimiter e'\\x02' quote e'\\x01'"
 (defn pack-snomed-terminology-bundle [db]
   (def sf (snomed-files))
 
-  (print-wrapper '((init-db db)
-                   (load-files db sf)
-                   (prepare-tables db)
-                   (build-hierarchies db)
-                   (join-displays db)
-                   (join-textdefinitions db)
-                   (build-parents&children-props db))))
+  (init-db db)
+
+  (time (load-files db sf))
+
+  (time (prepare-tables db))
+
+  (build-hierarchies db)
+
+  (join-displays db)
+
+  (join-textdefinitions db)
+
+  (build-parents&children-props db)
+
+  )
 
 (comment
   (def sf (snomed-files))
