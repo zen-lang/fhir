@@ -89,7 +89,8 @@
   (jdbc/execute! db ["DROP INDEX IF EXISTS sdl_src_dst; CREATE UNIQUE INDEX sdl_src_dst ON sdl USING btree (src, dst);"]))
 
 (defn populate-sdl-table
-  "according to http://people.apache.org/~dongsheng/horak/100309_dag_structures_sql.pdf"
+  "For each concept find every ancestor and calculate distance between concept and this ancestor
+  according to http://people.apache.org/~dongsheng/horak/100309_dag_structures_sql.pdf"
   [db]
   (jdbc/execute! db [
 "WITH RECURSIVE bfs AS
