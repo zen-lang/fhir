@@ -61,3 +61,14 @@ CREATE TABLE relationship
     characteristicTypeId TEXT,
     modifierId TEXT
 );
+--;--
+-- SDL table
+-- http://people.apache.org/~dongsheng/horak/100309_dag_structures_sql.pdf
+DROP TABLE IF EXISTS sdl;
+--;--
+CREATE TABLE sdl
+(
+    src  text,
+    dst  text,
+    dist integer
+);
