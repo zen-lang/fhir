@@ -71,6 +71,7 @@
   (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS display text"])
   (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS definition text"])
   (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS ancestors jsonb"])
+  (jdbc/execute! db ["ALTER TABLE concept ADD COLUMN IF NOT EXISTS root jsonb"])
 
   ;;Description table indexes
   (jdbc/execute! db ["DROP INDEX IF EXISTS description_conceptid; CREATE INDEX description_conceptid ON description (conceptid);"])
@@ -119,6 +120,22 @@ GROUP BY src,
  SET    ancestors = (SELECT jsonb_object_agg(src, dist)
                      FROM   sdl m
                      WHERE  m.dst = c.id);"]))
+
+(defn calculate-concept-roots [db]
+  (jdbc/execute! db ["DROP INDEX IF EXISTS concept_ancestors; CREATE INDEX concept_ancestors ON concept USING gin(ancestors);"])
+
+  (jdbc/execute! db [
+                     "WITH roots AS
+  (SELECT c.id cid,
+          jsonb_agg(t.id) rids
+   FROM concept t
+   LEFT JOIN concept c ON c.ancestors @?? ('$.\"' || t.id || '\"')::jsonpath
+   WHERE t.ancestors @> '{\"138875005\": 1}'::JSONB
+   GROUP BY c.id)
+UPDATE concept c
+SET root = rids
+FROM roots r
+WHERE c.id = r.cid;"]))
 
 (defn join-displays [db]
   (jdbc/execute! db ["
@@ -174,7 +191,8 @@ COPY
                            'valueset', jsonb_build_array('%s'),
                            'code', id,
                            'display', display,
-                           'property', jsonb_build_object('ancestors', ancestors),
+                           'ancestors', ancestors,
+                           'property', jsonb_build_object('roots', root),
                            'definition', definition)) FROM concept)
 TO PROGRAM 'cat >> %s' csv delimiter e'\\x02' quote e'\\x01'"
                                (str (str/replace (:url cs) "/" "-") "-")
@@ -227,6 +245,7 @@ TO PROGRAM 'cat >> %s' csv delimiter e'\\x02' quote e'\\x01'"
     (prepare-tables&build-indexes db)
     (populate-sdl-table db)
     (populate-concept-table-with-ancestors db)
+    (calculate-concept-roots db)
     (join-displays db)
     (join-textdefinitions db)
     (build-terminology-bundle db "/tmp/snomed" code-system value-set)
