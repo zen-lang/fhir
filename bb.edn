@@ -82,7 +82,8 @@
                                                         (json/parse-string keyword)))
                {:as top-level-deps, :keys [dependencies]} (read-string (slurp "resources/package.edn"))]
            (doseq [dependency dependencies
-                   :let [{:as npm-view-obj, versions :versions dependency-name :name} (get-dependency-meta dependency)]]
+                   :let [{:as npm-view-obj, versions :versions dependency-name :name {latest-dep-version :latest} :dist-tags}
+                         (get-dependency-meta dependency)]]
              (doseq [v versions
                      :let [dependency-meta (get-dependency-meta (str dependency "@" v))
                            dep-folder (str dependency "-" v "/")]
@@ -94,17 +95,19 @@
                  (let [package-json-path (str/join "/" [dep-folder "node_modules" dependency-name "package.json"])
                        package-json      (slurp package-json-path)
                        package-info      (json/parse-string package-json keyword)
-                       fhir-dep          (get-in package-info [:dependencies :hl7.fhir.r4.core])]
+                       fhir-dep          (get-in package-info [:dependencies :hl7.fhir.r4.core])
+                       fhir-4.0.1-core-iself?  (and (= (:name package-info) "hl7.fhir.r4.core")
+                                                    (= (:version package-info) "4.0.1"))]
                    (cond
-                     (nil? fhir-dep)
+                     (and (nil? fhir-dep) (not fhir-4.0.1-core-iself?))
                      (println (str purple "WARNING:" clear-color " package doesn't contain FHIR core dependency"))
 
                      #_(str/starts-with? (str fhir-dep) "4")
-                     (= "4.0.1" fhir-dep) #_"NOTE: simplifier hosts onle 4.0.1 currently"
+                     (or fhir-4.0.1-core-iself? (= "4.0.1" fhir-dep)) #_"NOTE: simplifier hosts onle 4.0.1 currently"
                      (binding [*command-line-args* (list (str dep-folder "node_modules/")
                                                          "zrc/standalone_projects/"
                                                          dependency-name
-                                                         (str dependency "-" v))]
+                                                         (if (= v latest-dep-version) dependency (str dependency "-" v)))]
                        (run 'build-stanadlone-projects))
 
                      :else
