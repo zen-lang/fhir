@@ -255,6 +255,6 @@ TO PROGRAM 'cat >> %s' csv delimiter e'\\x02' quote e'\\x01'"
 (comment
   (pack-snomed-terminology-bundle db
                                   (snomed-files "/Users/ghrp/Downloads/SnomedCT_USEditionRF2_PRODUCTION_20220301T120000Z")
-                                  "/tmp/snomed.zip")
+                                  "/tmp/SnomedCT_USEditionRF2_PRODUCTION_20220301.zip")
 
   )
