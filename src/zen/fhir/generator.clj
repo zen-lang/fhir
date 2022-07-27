@@ -35,8 +35,8 @@
     "xhtml"        zen/string
 
     "instant"  zen/string
-    "dateTime" zen/datetime
-    "date"     zen/date
+    "dateTime" zen/string
+    "date"     zen/string
     "time"     zen/string})
 
 
