@@ -72,3 +72,11 @@ CREATE TABLE sdl
     dst  text,
     dist integer
 );
+--;--
+create or replace function jsonb_object_nullif(
+    _data jsonb
+)
+returns jsonb
+as $$
+    select nullif(jsonb_strip_nulls(_data)::text, '{}')::json
+$$ language sql;

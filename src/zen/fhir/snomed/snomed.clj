@@ -3,7 +3,9 @@
             [clojure.string :as str]
             [cheshire.core :as json]
             [next.jdbc :as jdbc]
-            [next.jdbc.prepare :as prep]))
+            [next.jdbc.prepare :as prep]
+            [clojure.java.shell :as sh])
+  (:import org.postgresql.copy.CopyManager))
 
 (def db
   "JDBC connection string for postgres database
@@ -48,11 +50,20 @@
     (doseq [migration migrations]
       (jdbc/execute! db [migration]))))
 
+(defn get-copy-manager
+  [conn]
+  (org.postgresql.copy.CopyManager. (.unwrap ^java.sql.Connection conn org.postgresql.PGConnection)))
+
 (defn load-file
   "Load SNOMED CT tsv file.
   Table must exist before."
-  [db table path]
-  (jdbc/execute! db [(format "COPY %s FROM '%s' csv header DELIMITER e'\\t'" table path)]))
+  [db table-name path]
+  (let [connection (jdbc/get-connection db)
+        reader (java.io.BufferedReader. (clojure.java.io/reader path))
+        _ommitted_first-line (.readLine reader)]
+    (.copyIn
+      ^org.postgresql.copy.CopyManager
+      (get-copy-manager connection) (format "COPY %s FROM STDIN" table-name) reader)))
 
 (defn load-files
   "Load needed snomed files
@@ -152,7 +163,7 @@ SET definition = a.saggs
 FROM aggs a
 WHERE a.cid = c.id"]))
 
-(def source "snomed")
+(def source "snomedct")
 (def system "http://snomed.info/sct")
 
 (def code-system
@@ -160,9 +171,11 @@ WHERE a.cid = c.id"]))
    :id source
    :url system
    :date "2022-03-01"
-   :description "SNOMED"
+   :description "SNOMEDCT US edition snapshot US1000124"
    :content "complete"
-   :name "SNOMED-CT"
+   :version "20220301US1000124"
+   :name "SNOMEDCT"
+   :publisher "National Library of Medicine (NLM)"
    :status "active"
    :caseSensitive true})
 
@@ -171,9 +184,10 @@ WHERE a.cid = c.id"]))
    :resourceType "ValueSet"
    :compose { :include [{:system system}]}
    :date "2022-03-01"
+   :version "20220301US1000124"
    :status "active"
-   :name "SNOMED-CT"
-   :description "SNOMED-CT"
+   :name "SNOMEDCT"
+   :description "Includes all concepts from SNOMEDCT US edition snapshot US1000124. Both active and inactive concepts included, but is-a relationships only stored for active concepts"
    :url system})
 
 
@@ -192,10 +206,10 @@ COPY
                            'code', id,
                            'display', display,
                            'ancestors', ancestors,
-                           'property', jsonb_build_object('roots', root),
+                           'property', jsonb_object_nullif(jsonb_build_object('roots', root)),
                            'definition', definition)) FROM concept)
 TO PROGRAM 'cat >> %s' csv delimiter e'\\x02' quote e'\\x01'"
-                               (str (str/replace (:url cs) "/" "-") "-")
+                               "snomedct-"
                                (:url cs)
                                (:url vs)
                                out-path)])))
@@ -234,6 +248,7 @@ TO PROGRAM 'cat >> %s' csv delimiter e'\\x02' quote e'\\x01'"
               (.write gzip (str ndjson-line \newline))
               (recur (.readLine ndjson-reader)))))))))
 
+
 (defn pack-snomed-terminology-bundle
   "`db` - JDBC Connection string
    `sf` - result of (snomed-files path-to-unzipped-snomed)
@@ -250,7 +265,6 @@ TO PROGRAM 'cat >> %s' csv delimiter e'\\x02' quote e'\\x01'"
     (join-textdefinitions db)
     (build-terminology-bundle db "/tmp/snomed" code-system value-set)
     (write-snomed-ndjson-gz-zip-bundle "/tmp/snomed" out-path)))
-
 
 (comment
   (pack-snomed-terminology-bundle db
