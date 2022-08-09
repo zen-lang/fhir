@@ -32,20 +32,20 @@ java -jar [JAR_PATH] [COMMAND] [OPTIONS]
   #### Commands
   **`stndlp`**               Builds standalone Aidbox zen project. Result is a zip archive.
   ###### Options:
-   `-i`, `--input` S   Path to node-modules-folder\
+   `-i`, `--input` S   Path to node-modules-folder (including node-modules)\
    `-o`, `--output` S  Path to resulting zip archive\
    `--omit-deps`  Remove deps from resulting project
    
   **`zenbnd`**               Builds zen project from provided IG. Result is a NPM package directory
   ###### Options:
-   `-i`, `--input` S    Path to node-modules-folder\
+   `-i`, `--input` S    Path to node-modules-folder (including node-modules)\
    `-o`, `--output` S   Path to resulting directory\
    `-v`, `--version` S  Resulting package version\
    `-n`, `--name` S     Resulting package name (optional)
    
   **`cmndj`**                Converts ConceptMap to .ndjson.gz bundle
   ###### Options:
-   `-i`, `--input` S   Path to node-modules-folder\
+   `-i`, `--input` S   Path to node-modules-folder (including node-modules)\
    `-o`, `--output` S  Path to resulting zip archive
 
 #### Example
