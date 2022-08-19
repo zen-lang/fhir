@@ -275,6 +275,19 @@
     (assoc x :nested true)
     x))
 
+
+(defn normalize-fixed [res]
+  (if-let [fixed (utils/poly-get res :fixed)]
+    (assoc res :fixed fixed)
+    res))
+
+
+(defn normalize-pattern [res]
+  (if-let [pattern (utils/poly-get res :pattern)]
+    (assoc res :pattern pattern)
+    res))
+
+
 (defn normalize-element [x & [stu3?]]
   (-> (dissoc x
               :mapping :constraint :extension :comment :comments :requirements :definition :alias
@@ -285,7 +298,9 @@
       (normalize-polymorphic stu3?)
       (normalize-nested)
       (normalize-content-ref)
-      (normalize-flags)))
+      (normalize-flags)
+      (normalize-fixed)
+      (normalize-pattern)))
 
 
 (defn normalize-description [res]

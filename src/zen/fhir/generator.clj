@@ -105,10 +105,26 @@
                              (:slices slicing))}}))
 
 
+(defn fixed-schema [fhir-inter [url el]]
+  (when-let [fixed (:fixed el)]
+    {:const {:value fixed}}))
+
+
+(defn pattern-schema [fhir-inter [url el]]
+  (when-let [pattern (:pattern el)]
+    {:match (clojure.walk/postwalk #(cond-> %
+                                      (and (sequential? %)
+                                           (not (map-entry? %)))
+                                      set)
+                                   pattern)}))
+
+
 (defn el-schema [fhir-inter [url el]]
   (let [sch (merge-with
              into
              {}
+             (fixed-schema fhir-inter [url el])
+             (pattern-schema fhir-inter [url el])
              (when-let [type-sym (when-let [tp (and (:type el))]
                                    (let [tp-url (str "http://hl7.org/fhir/StructureDefinition/" tp)]
                                      (when (not= url tp-url)
