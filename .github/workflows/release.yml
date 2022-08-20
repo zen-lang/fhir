@@ -47,6 +47,16 @@ jobs:
       - name: Build standalone projects
         run: bb build-standalone-zen-profiles-all-versions "node_modules/" "zrc/standalone_projects/"
 
+      - name: Build terminologies
+        run: |
+          echo "TEMP_DIR=$(mktemp -d)" >> $GITHUB_ENV
+          bb build-terminology-bundles
+        env:
+          ICD_10_CLIENT_ID: ${{ secrets.ICD_10_CLIENT_ID }}
+          ICD_10_CLIENT_SECRET: ${{ secrets.ICD_10_CLIENT_SECRET }}
+          LOINC_LOGIN: ${{ secrets.LOINC_LOGIN }}
+          LOINC_PASSWORD: ${{ secrets.LOINC_PASSWORD }}
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
