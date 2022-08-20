@@ -53,10 +53,3 @@ jobs:
           files: target/zen-fhir-${{ env.RELEASE_VERSION }}-standalone.jar, zrc/standalone_projects/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload private terminologies
-        uses: google-github-actions/upload-cloud-storage@main
-        with:
-          credentials: ${{ secrets.GCP_CREDENTIALS }}
-          path: './'
-          glob: '*.zip'
-          destination: hs-zen-terminologies/
