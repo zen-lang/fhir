@@ -1,0 +1,51 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Babashka
+        uses: turtlequeue/setup-babashka@v1.3.0
+        with:
+          babashka-version: 0.8.156
+
+      - name: Install jq
+        run: sudo apt-get install jq -y
+
+      - name: Set tag env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '18'
+
+      - uses: DeLaGuardo/setup-clojure@3.5
+        with:
+          cli: 1.10.1.693
+
+      - name: Build terminologies
+        run: |
+          echo "TEMP_DIR=$(mktemp -d)" >> $GITHUB_ENV
+          bb build-terminology-bundles
+        env:
+          ICD_10_CLIENT_ID: ${{ secrets.ICD_10_CLIENT_ID }}
+          ICD_10_CLIENT_SECRET: ${{ secrets.ICD_10_CLIENT_SECRET }}
+          LOINC_LOGIN: ${{ secrets.LOINC_LOGIN }}
+          LOINC_PASSWORD: ${{ secrets.LOINC_PASSWORD }}
+          
+      - name: Upload private terminologies
+        uses: google-github-actions/upload-cloud-storage@main
+        with:
+          credentials: ${{ secrets.GCP_CREDENTIALS }}
+          path: './'
+          glob: '*.zip'
+          destination: hs-zen-terminologies/
