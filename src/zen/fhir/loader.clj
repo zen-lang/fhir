@@ -241,15 +241,13 @@
 
 (defn normalize-binding [el]
   (if-let [bn (:binding el)]
-    (cond-> (dissoc el :binding)
-      (contains? #{"required" "preferred"} (:strength bn))
-      (assoc :binding (-> bn
-                          (dissoc :extension)
-                          (dissoc :valueSet :valueSetUri :valueSetReference)
-                          (assoc :valueSet (parse-canonical-url
-                                             (or (get-in bn [:valueSet])
-                                                 (get-in bn [:valueSetUri])
-                                                 (get-in bn [:valueSetReference :reference])))))))
+    (assoc el :binding (-> bn
+                           (dissoc :extension)
+                           (dissoc :valueSet :valueSetUri :valueSetReference)
+                           (assoc :valueSet (parse-canonical-url
+                                              (or (get-in bn [:valueSet])
+                                                  (get-in bn [:valueSetUri])
+                                                  (get-in bn [:valueSetReference :reference]))))))
     el))
 
 
