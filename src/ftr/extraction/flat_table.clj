@@ -111,11 +111,11 @@
                          not-empty)})))
 
 (defn process-row [params row {:keys [mapping header system valueset]}]
-  (-> (parse-flat-table-row params (java.io.StringReader. row))
-      (prepare-row :header header)
-      (extract-mapping mapping)
-      (format-concept-resource {:system system :valueset valueset})
-      cheshire.core/generate-string))
+  (->> (-> (parse-flat-table-row params (java.io.StringReader. row))
+           (prepare-row :header header)
+           (extract-mapping mapping)
+           (format-concept-resource {:system system :valueset valueset}))
+       (into (sorted-map))))
 
 (defn process-reader-rows [reader {:as params :keys [mapping header system valueset]}]
   (let [br (java.io.BufferedReader. reader)]
