@@ -22,3 +22,5 @@ yarn.lock
 
 /zrc/zen/fhir.edn
 tmp
+
+/.clj-kondo/
