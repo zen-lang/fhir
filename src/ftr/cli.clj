@@ -1,8 +1,11 @@
 (ns ftr.cli
-  (:require [ftr.extraction.core]
-            [cli-matic.core]
-            [cli-matic.utils]
-            [clojure.java.io :as io]))
+  (:gen-class)
+  (:require [ftr.core]
+            [cli-matic.core]))
+
+(defn parse-ftr-cfg [path]
+  (try (read-string (slurp path))
+       (catch Exception e {::error (.getMessage e)})))
 
 (def cli-cfg
   {:command "ftr"
@@ -15,11 +18,12 @@
                           :as "Path to config file"
                           :type :string}]
                   :runs (fn [{:keys [cfg]}]
-                          (prn (ftr.extraction.core/extract cfg)))}]})
+                          (let [{:as parsed-cfg, ::keys [error]}
+                                (parse-ftr-cfg cfg)]
+                            (if-not error
+                              (ftr.core/spit-ftr parsed-cfg)
+                              (println (str "\u001B[31m" error "\u001B[0m")))))}]})
 
-(comment
-  (do
-    (when-not (.exists (io/file "/tmp/ftr"))
-      (.mkdir (io/file "/tmp/ftr/")))
-    (spit "/tmp/ftr/abc"  "content"))
-  nil)
+(defn -main
+  [& args]
+  (cli-matic.core/run-cmd args cli-cfg))
