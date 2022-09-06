@@ -1,4 +1,5 @@
-(ns ftr.utils.core)
+(ns ftr.utils.core
+  (:require [clojure.java.io :as io]))
 
 (defn dissoc-when-kv
   ([pred m k]
@@ -60,3 +61,11 @@
 
 (defn strip-nils [m]
   (strip-when nil? m))
+
+(defn calculate-sha256 [source]
+  (let [digest (java.security.MessageDigest/getInstance "SHA-256")]
+    (with-open [input-stream  (io/input-stream source)
+                digest-stream (java.security.DigestInputStream. input-stream digest)
+                output-stream (io/output-stream "/dev/null")]
+      (io/copy digest-stream output-stream))
+    (format "%032x" (BigInteger. 1 (.digest digest)))))
