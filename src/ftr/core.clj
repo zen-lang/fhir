@@ -5,6 +5,7 @@
             [cheshire.core]
             [cheshire.core :as json]))
 
+
 (defn create-ftr-dir-if-not-exists!
   [path]
   (let [file (io/file path)]
@@ -13,22 +14,39 @@
       (do (.mkdirs file)
           file))))
 
-(defn spit-ftr [cfg]
+
+(defn generate-ndjson-row [obj]
+  (format "%s\n" (cheshire.core/generate-string (into (sorted-map) obj))))
+
+
+(defn spit-terminology-file [cfg]
   (let [{:keys [value-set code-system concepts]}
         (ftr.extraction.core/extract cfg)
-        ftr-dir (create-ftr-dir-if-not-exists! (:ftr-path cfg))
-        ftr-dir-abs-path (.getAbsolutePath ftr-dir)
-        sorted-concepts (sort-by #(format "%s-%s" (:system :%) (:code %)) concepts)
-        terminology-file (io/file (str ftr-dir-abs-path '/ "tf.ndjson"))]
-    (.delete terminology-file)
-    (with-open [fw (io/writer terminology-file :append true)]
-      (.write fw (str (cheshire.core/generate-string (into (sorted-map) code-system)) \newline))
-      (.write fw (str (cheshire.core/generate-string (into (sorted-map) value-set)) \newline))
+
+        ftr-dir
+        (create-ftr-dir-if-not-exists! (:ftr-path cfg))
+
+        ftr-dir-abs-path
+        (.getAbsolutePath ftr-dir)
+
+        sorted-concepts
+        (sort-by #(format "%s-%s" (:system :%) (:code %)) concepts)
+
+        output-tf-file-path
+        (str ftr-dir-abs-path \/ (ftr.utils.core/gen-uuid))
+
+        {:keys [writer file digest]}
+        (ftr.utils.core/make-sha256-gzip-writer output-tf-file-path)]
+
+    (with-open [w writer]
+      (.write w (generate-ndjson-row code-system))
+      (.write w (generate-ndjson-row value-set))
       (doseq [c sorted-concepts]
-        (.write fw (str (cheshire.core/generate-string c) \newline))))
-    (let [sha256 (ftr.utils.core/calculate-sha256 (.getAbsolutePath terminology-file))]
-      (.renameTo terminology-file
-                 (io/file (str ftr-dir-abs-path '/ "tf." sha256 ".ndjson"))))))
+        (.write w (generate-ndjson-row c))))
+
+    (let [sha256 (digest)]
+      (.renameTo file
+                 (io/file (format "%s/tf.%s.ndjson.gz" (.getParent file) sha256))))))
 
 (comment
   (def config {:source-url "https://storage.googleapis.com/aidbox-public/documentation/icd10_example_no_header.csv"
@@ -47,6 +65,6 @@
                :code-system {:id "icd10", :url "http://hl7.org/fhir/sid/icd-10"}
                :value-set   {:id "icd10", :url "http://hl7.org/fhir/ValueSet/icd-10"}})
 
-  (spit-ftr config)
+  (spit-terminology-file config)
 
   )
