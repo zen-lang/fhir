@@ -40,17 +40,8 @@
                                                                       {:value :not-present}]}}}}
          :version {:type zen/string}}}
 
-extension-uri-restriction
-{:zen/tags #{zen/schema}
-  :type zen/case
-  :case [{:when {:match {:fhir/extensionUri (:zen.match/present?)}}
-          :then {:type zen/map
-                 :require #{:confirms}}}
-         {:when {}}]}
-
  nested-schema
  {:zen/tags #{zen/schema}
-  :confirms #{extension-uri-restriction}
   :type zen/map
   :keys {:fhir/flags {:type zen/set}
          :fhir/extensionUri {:type zen/string}
