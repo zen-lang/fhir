@@ -48,6 +48,7 @@
       (.renameTo file
                  (io/file (format "%s/tf.%s.ndjson.gz" (.getParent file) sha256))))))
 
+
 (comment
   (def config {:source-url "https://storage.googleapis.com/aidbox-public/documentation/icd10_example_no_header.csv"
                :ftr-path "/tmp/myftr"
