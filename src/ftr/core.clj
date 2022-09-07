@@ -6,25 +6,17 @@
             [cheshire.core :as json]))
 
 
-(defn create-ftr-dir-if-not-exists!
-  [path]
-  (let [file (io/file path)]
-    (if (.exists file)
-      file
-      (do (.mkdirs file)
-          file))))
-
-
 (defn generate-ndjson-row [obj]
   (format "%s\n" (cheshire.core/generate-string (into (sorted-map) obj))))
 
 
+;; TODO:
 (defn spit-terminology-file [cfg]
   (let [{:keys [value-set code-system concepts]}
         (ftr.extraction.core/extract cfg)
 
         ftr-dir
-        (create-ftr-dir-if-not-exists! (:ftr-path cfg))
+        (ftr.utils.core/create-dir-if-not-exists! (:ftr-path cfg))
 
         ftr-dir-abs-path
         (.getAbsolutePath ftr-dir)
@@ -47,6 +39,26 @@
     (let [sha256 (digest)]
       (.renameTo file
                  (io/file (format "%s/tf.%s.ndjson.gz" (.getParent file) sha256))))))
+
+;; TODO
+;; this is raw draft
+(defn create-ftr-module-layout [cfg]
+  (let [module-path (format "%s/%s" (:ftr-path cfg) (:module cfg))
+        tags-path (format "%s/tags" module-path)
+        vs-dir-path (format "%s/vs" module-path)]
+  (ftr.utils.core/create-dir-if-not-exists! tags-path)
+  (ftr.utils.core/create-dir-if-not-exists! vs-dir-path)))
+
+;; TODO
+;; ftr pipeline:
+;; - check repository layout or create
+;; - create tf main file
+;; - create tf patch file
+;; - create or update tag file
+;; - create or update tag index file
+(defn spit-ftr [cfg]
+  (create-ftr-module-layout cfg)
+  (spit-terminology-file cfg))
 
 
 (comment

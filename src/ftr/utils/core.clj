@@ -25,6 +25,15 @@
   (strip-when nil? m))
 
 
+(defn create-dir-if-not-exists!
+  [path]
+  (let [file (io/file path)]
+    (if (.exists file)
+      file
+      (do (.mkdirs file)
+          file))))
+
+
 (defn make-sha256-gzip-writer [output]
   (let [digest (java.security.MessageDigest/getInstance "SHA-256")
         file   (io/file output)]

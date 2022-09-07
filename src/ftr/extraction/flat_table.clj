@@ -111,11 +111,10 @@
                          not-empty)})))
 
 (defn process-row [params row {:keys [mapping header system valueset]}]
-  (->> (-> (parse-flat-table-row params (java.io.StringReader. row))
-           (prepare-row :header header)
-           (extract-mapping mapping)
-           (format-concept-resource {:system system :valueset valueset}))
-       (into (sorted-map))))
+  (-> (parse-flat-table-row params (java.io.StringReader. row))
+      (prepare-row :header header)
+      (extract-mapping mapping)
+      (format-concept-resource {:system system :valueset valueset})))
 
 (defn process-reader-rows [reader {:as params :keys [mapping header system valueset]}]
   (let [br (java.io.BufferedReader. reader)]
@@ -163,6 +162,7 @@
        ::error {:message    "Header row must be before data"
                 :header-row header-row
                 :data-row   data-row}})))
+
 
 (defn import-from-cfg [cfg]
   (::result (u/*apply [::check-header&data-rows-params
