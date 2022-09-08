@@ -65,7 +65,7 @@
           (format "tag.%s.ndjson.gz" tag)
 
           _
-          (sut/spit-ftr user-cfg)
+          (sut/apply-cfg user-cfg)
 
           ftr-tree
           (get-in (fs-tree->tree-map ftr-path) (str/split (subs ftr-path 1) #"/"))]
@@ -73,13 +73,13 @@
       (t/testing "sees generated repository layout, tf sha is correct"
         (matcho/match
          ftr-tree
-          {module
-           {"tags"
-            {(format "%s.ndjson.gz" tag) {}}
-            "vs"
-            {value-set-name
-             {(:expected-tf-filename test-env-cfg) {}
-              tf-tag-file-name                     {}}}}}))
+         {module
+          {"tags"
+           {(format "%s.ndjson.gz" tag) {}}
+           "vs"
+           {value-set-name
+            {(:expected-tf-filename test-env-cfg) {}
+             tf-tag-file-name                     {}}}}}))
 
       (t/testing "sees tag ingex content"
         (matcho/match

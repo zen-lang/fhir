@@ -1,0 +1,75 @@
+(ns ftr.ingestion-coordinator.core
+  (:require [ftr.utils.unifn.core :as u]
+            [clojure.java.io :as io]
+            [ftr.utils.core]))
+
+
+(defn update-tf-tag! [tf-tag-path new-sha256]
+  (let [tf-tag (ftr.utils.core/parse-ndjson-gz tf-tag-path)
+        current-sha256 (get-in tf-tag [0 :hash])]
+    (->> (-> tf-tag
+             (update 0 assoc :hash new-sha256)
+             (conj {:from current-sha256 :to new-sha256}))
+         (ftr.utils.core/spit-ndjson-gz! tf-tag-path))))
+
+
+(defn create-tf-tag! [tf-tag-path tag sha256]
+  (ftr.utils.core/spit-ndjson-gz! tf-tag-path [{:tag tag :hash sha256}]))
+
+
+(defmethod u/*fn ::tf-tag-upsert [{:as _ctx,
+                                   {:keys [tag]} :cfg
+                                   {:keys [tf-sha256]} :write-result
+                                   {:keys [tf-tag-path]} :ftr-layout}]
+  (if (ftr.utils.core/file-exists? tf-tag-path)
+    (update-tf-tag! tf-tag-path tf-sha256)
+    (create-tf-tag! tf-tag-path tag tf-sha256)))
+
+
+(defn update-tag-index! [tag-index-path vs-name module new-sha256]
+  (let [tag-index (ftr.utils.core/parse-ndjson-gz tag-index-path)]
+    (->> (map (fn [{:as tag-index-entry, :keys [name]}]
+                (if (= name (format "%s.%s" module vs-name))
+                  (assoc tag-index-entry :hash new-sha256)
+                  tag-index-entry))
+              tag-index)
+         (ftr.utils.core/spit-ndjson-gz! tag-index-path))))
+
+
+(defn create-tag-index! [tag-index-path vs-name module sha256]
+  (->>
+    [{:name (format "%s.%s" module vs-name) :hash sha256}]
+    (ftr.utils.core/spit-ndjson-gz! tag-index-path)))
+
+
+(defmethod u/*fn ::tag-index-upsert [{:as _ctx,
+                                      {:keys [module tag]} :cfg
+                                      {:keys [tf-sha256 value-set]} :write-result
+                                      {:keys [tag-index-path]} :ftr-layout}]
+  (if (ftr.utils.core/file-exists? tag-index-path)
+    (update-tag-index! tag-index-path (:name value-set) module tf-sha256)
+    (create-tag-index! tag-index-path (:name value-set) module tf-sha256)))
+
+
+(defmethod u/*fn ::move-terminology-file [{:as _ctx,
+                                           {:keys [tf-path temp-tf-path]} :ftr-layout
+                                           {:keys [terminology-file]} :write-result}]
+  (do
+    (io/copy terminology-file (io/file tf-path))
+    (io/delete-file terminology-file)))
+
+
+(defmethod u/*fn ::coordinate-tf-ingestion [ctx]
+  (u/*apply [::tf-tag-upsert
+             ::tag-index-upsert
+             ::move-terminology-file] ctx))
+
+
+(defmethod u/*fn ::ingest-terminology-file
+  [{:as ctx,
+    {:keys [terminology-file]} :write-result
+    {:keys [tf-path]} :ftr-layout}]
+  (if (ftr.utils.core/file-exists? tf-path)
+    (do (io/delete-file terminology-file)
+        {::u/status :stop})
+    (u/*apply ::coordinate-tf-ingestion ctx)))

@@ -52,7 +52,9 @@
 
 
 (defn rmrf [path]
-  (run! io/delete-file (reverse (file-seq (io/file path)))))
+  (let [file (io/file path)]
+    (when (.exists file)
+      (run! io/delete-file (reverse (file-seq file))))))
 
 
 (defn parse-ndjson-gz [path]
@@ -68,3 +70,18 @@
 
 (defn generate-ndjson-row [obj]
   (format "%s\n" (cheshire.core/generate-string (into (sorted-map) obj))))
+
+
+(defn file-exists? [path]
+  (.exists (io/file path)))
+
+
+(defn spit-ndjson-gz! [output-path coll]
+  (with-open [w (-> output-path
+                    (io/file)
+                    (java.io.FileOutputStream. true)
+                    (java.util.zip.GZIPOutputStream. true)
+                    (java.io.OutputStreamWriter.)
+                    (java.io.BufferedWriter.))]
+    (doseq [c coll]
+      (.write w (generate-ndjson-row c)))))

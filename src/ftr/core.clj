@@ -2,46 +2,9 @@
   (:require [clojure.java.io :as io]
             [ftr.extraction.core]
             [ftr.writer.core]
+            [ftr.ingestion-coordinator.core]
             [ftr.utils.core]
             [ftr.utils.unifn.core :as u]))
-
-
-(defmethod u/*fn ::create-ftr-module-layout [{:as _ctx, :keys [cfg]}]
-  (let [module-path (format "%s/%s" (:ftr-path cfg) (:module cfg))
-        tags-path (format "%s/tags" module-path)
-        vs-dir-path (format "%s/vs" module-path)]
-    (ftr.utils.core/create-dir-if-not-exists! tags-path)
-    (ftr.utils.core/create-dir-if-not-exists! vs-dir-path)))
-
-
-(defmethod u/*fn ::spit-terminology-file [{:as _ctx, :keys [cfg]}]
-  (let [{:keys [value-set code-system concepts]}
-        (ftr.extraction.core/extract cfg)
-
-        ftr-dir
-        (ftr.utils.core/create-dir-if-not-exists! (:ftr-path cfg))
-
-        ftr-dir-abs-path
-        (.getAbsolutePath ftr-dir)
-
-        sorted-concepts
-        (sort-by #(format "%s-%s" (:system :%) (:code %)) concepts)
-
-        output-tf-file-path
-        (str ftr-dir-abs-path \/ (ftr.utils.core/gen-uuid))
-
-        {:keys [writer file digest]}
-        (ftr.utils.core/make-sha256-gzip-writer output-tf-file-path)]
-
-    (with-open [w writer]
-      (.write w (ftr.utils.core/generate-ndjson-row code-system))
-      (.write w (ftr.utils.core/generate-ndjson-row value-set))
-      (doseq [c sorted-concepts]
-        (.write w (ftr.utils.core/generate-ndjson-row c))))
-
-    (let [sha256 (digest)]
-      (.renameTo file
-                 (io/file (format "%s/tf.%s.ndjson.gz" (.getParent file) sha256))))))
 
 
 (defmethod u/*fn ::extract-terminology [{:as _ctx, :keys [cfg]}]
@@ -52,5 +15,34 @@
   {:write-result (ftr.writer.core/write-terminology-file ctx)})
 
 
+
+(defmethod u/*fn ::shape-ftr-layout [{:as _ctx, :keys [cfg write-result]}]
+  (let [tag (:tag cfg)
+        module-path (format "%s/%s" (:ftr-path cfg) (:module cfg))
+        tags-path (format "%s/tags" module-path)
+        vs-dir-path (format "%s/vs" module-path)
+        value-set-name (get-in write-result [:value-set :name])
+        temp-tf-file (:terminology-file write-result)
+        tf-name (.getName temp-tf-file)
+        temp-tf-path (.getAbsolutePath temp-tf-file)
+        vs-name-path (format "%s/%s" vs-dir-path value-set-name)]
+
+    (doseq [p [tags-path vs-dir-path vs-dir-path vs-name-path]]
+      (ftr.utils.core/create-dir-if-not-exists! p))
+
+    {:ftr-layout
+     {:module-path module-path
+      :tags-path tags-path
+      :vs-dir-path vs-dir-path
+      :vs-name-path vs-name-path
+      :temp-tf-path temp-tf-path
+      :tf-path (format "%s/%s" vs-name-path tf-name)
+      :tf-tag-path (format "%s/tag.%s.ndjson.gz" vs-name-path tag)
+      :tag-index-path (format "%s/%s.ndjson.gz" tags-path tag)}}))
+
+
 (defn apply-cfg [cfg]
-  (u/*apply [] cfg))
+  (u/*apply [::extract-terminology
+             ::write-terminology-file
+             ::shape-ftr-layout
+             :ftr.ingestion-coordinator.core/ingest-terminology-file] {:cfg cfg}))
