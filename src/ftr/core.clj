@@ -1,8 +1,8 @@
 (ns ftr.core
-  (:require [ftr.extraction.core]
+  (:require [clojure.java.io :as io]
+            [ftr.extraction.core]
+            [ftr.writer.core]
             [ftr.utils.core]
-            [clojure.java.io :as io]
-            [cheshire.core :as json]
             [ftr.utils.unifn.core :as u]))
 
 
@@ -42,6 +42,14 @@
     (let [sha256 (digest)]
       (.renameTo file
                  (io/file (format "%s/tf.%s.ndjson.gz" (.getParent file) sha256))))))
+
+
+(defmethod u/*fn ::extract-terminology [{:as _ctx, :keys [cfg]}]
+  {:extraction-result (ftr.extraction.core/extract cfg)})
+
+
+(defmethod u/*fn ::write-terminology-file [ctx]
+  {:write-result (ftr.writer.core/write-terminology-file ctx)})
 
 
 (defn apply-cfg [cfg]
