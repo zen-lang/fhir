@@ -64,3 +64,7 @@
          line-seq
          (mapv (fn [json-row]
                  (cheshire.core/parse-string json-row keyword))))))
+
+
+(defn generate-ndjson-row [obj]
+  (format "%s\n" (cheshire.core/generate-string (into (sorted-map) obj))))

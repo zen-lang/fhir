@@ -169,24 +169,3 @@
                        ::create-value-set
                        ::create-code-system
                        ::import] cfg)))
-
-
-(comment
-  (def config
-    {:source-url "https://storage.googleapis.com/aidbox-public/documentation/icd10_example_no_header.csv"
-     :format      "csv"
-     :csv-format  {:delimiter ";"
-                   :quote "'"}
-
-     :header   false
-     :data-row 0
-     :mapping  {:concept {:code    {:column 2}
-                          :display {:column 3}}}
-
-     :code-system {:id "icd10", :url "http://hl7.org/fhir/sid/icd-10"}
-     :value-set   {:id "icd10", :url "http://hl7.org/fhir/ValueSet/icd-10"}})
-
-  (import-from-cfg config)
-
-
-  )
