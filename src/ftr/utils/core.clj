@@ -85,3 +85,11 @@
                     (java.io.BufferedWriter.))]
     (doseq [c coll]
       (.write w (generate-ndjson-row c)))))
+
+
+(defn move-file! [src dest]
+  (java.nio.file.Files/move (.toPath (io/file src))
+                            (.toPath (io/file dest))
+                            (into-array java.nio.file.CopyOption
+                                        [(java.nio.file.StandardCopyOption/ATOMIC_MOVE)
+                                         (java.nio.file.StandardCopyOption/REPLACE_EXISTING)])))

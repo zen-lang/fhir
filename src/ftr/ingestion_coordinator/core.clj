@@ -10,7 +10,9 @@
     (->> (-> tf-tag
              (update 0 assoc :hash new-sha256)
              (conj {:from current-sha256 :to new-sha256}))
-         (ftr.utils.core/spit-ndjson-gz! tf-tag-path))))
+         (ftr.utils.core/spit-ndjson-gz! tf-tag-path))
+    {:ingestion-coordinator {:generate-patches? true
+                             :old-sha256 current-sha256}}))
 
 
 (defn create-tf-tag! [tf-tag-path tag sha256]
@@ -42,8 +44,8 @@
     (ftr.utils.core/spit-ndjson-gz! tag-index-path)))
 
 
-(defmethod u/*fn ::tag-index-upsert [{:as _ctx,
-                                      {:keys [module tag]} :cfg
+(defmethod u/*fn ::tag-index-upsert [{:as _ctx, ;;TODO
+                                      {:keys [module]} :cfg
                                       {:keys [tf-sha256 value-set]} :write-result
                                       {:keys [tag-index-path]} :ftr-layout}]
   (if (ftr.utils.core/file-exists? tag-index-path)
@@ -52,11 +54,22 @@
 
 
 (defmethod u/*fn ::move-terminology-file [{:as _ctx,
-                                           {:keys [tf-path temp-tf-path]} :ftr-layout
+                                           {:keys [tf-path]} :ftr-layout
                                            {:keys [terminology-file]} :write-result}]
-  (do
-    (io/copy terminology-file (io/file tf-path))
-    (io/delete-file terminology-file)))
+  {:ingestion-coordinator {:tf-file (ftr.utils.core/move-file! terminology-file tf-path)}})
+
+
+(defn format-tf-path [sha256]
+  (format "tf.%s.ndjson.gz" sha256))
+
+
+(defn generate-tf-patch! [new-tf old-tf])
+
+
+(defmethod u/*fn ::generate-tf-patch [{:as _ctx,
+                                       {:keys [generate-patches? old-sha256 tf-file]} :ingestion-coordinator}]
+  (when generate-patches?
+    (generate-tf-patch! tf-file (io/file (format-tf-path old-sha256)))))
 
 
 (defmethod u/*fn ::coordinate-tf-ingestion [ctx]
