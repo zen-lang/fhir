@@ -79,7 +79,7 @@
 (defn spit-ndjson-gz! [output-path coll]
   (with-open [w (-> output-path
                     (io/file)
-                    (java.io.FileOutputStream. true)
+                    (java.io.FileOutputStream.)
                     (java.util.zip.GZIPOutputStream. true)
                     (java.io.OutputStreamWriter.)
                     (java.io.BufferedWriter.))]
