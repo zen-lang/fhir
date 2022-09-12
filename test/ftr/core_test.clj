@@ -25,9 +25,9 @@
                    :ftr-path "/tmp/ftr"
                    :expected-tf-sha256 "70c1225a2ddd108c869a18a87a405c029f48a30c0401268869f19959a4723976"
                    :expected-tf-filename "tf.70c1225a2ddd108c869a18a87a405c029f48a30c0401268869f19959a4723976.ndjson.gz"
-                   :expected-updated-tf-sha256 "4ba913de626bb2f4d3f34eb6c77679b95b4b9348db797e4c6b1f99672f3ffa0a"
-                   :expected-updated-tf-filename "tf.4ba913de626bb2f4d3f34eb6c77679b95b4b9348db797e4c6b1f99672f3ffa0a.ndjson.gz"
-                   :expected-patch-filename "patch.3da7d3b590373ea920efeec1d79ab33c17d6cb3d3a2eead521ce5a4239e7c850.4ba913de626bb2f4d3f34eb6c77679b95b4b9348db797e4c6b1f99672f3ffa0a.ndjson.gz"})
+                   :expected-updated-tf-sha256 "476b3dbcdab7fe4e8522451f7495c185317acb3530178b31c91a888e173f94f5"
+                   :expected-updated-tf-filename "tf.476b3dbcdab7fe4e8522451f7495c185317acb3530178b31c91a888e173f94f5.ndjson.gz"
+                   :expected-patch-filename "patch.70c1225a2ddd108c869a18a87a405c029f48a30c0401268869f19959a4723976.476b3dbcdab7fe4e8522451f7495c185317acb3530178b31c91a888e173f94f5.ndjson.gz"})
 
 
 (def user-cfg {:module            "icd10"
@@ -65,9 +65,10 @@
     (io/make-parents fixture-file-2)
     (spit
       fixture-file-2
-      "10344;20;XX;External causes of morbidity and mortality;;;1;
-10345;20;XX;New External causes of morbidity and mortality;;;1;
-15062;20012;W00-X59;Updated other external causes of accidental injury;16003;;1;10/07/2020")
+      "10343;766;AA;loh and mortality;;;1;
+10343;666;X;morbidity and mortality;;;1;
+10344;20;XX;External causes of morbidity and mortality;;;1;
+16003;2001;V01-X59;Updated accidents;10344;;1;")
 
     (ftr.utils.core/rmrf ftr-path)))
 
@@ -166,14 +167,12 @@
 
       (t/testing "sees terminology patch file"
         (matcho/match
-          (ftr.utils.core/parse-ndjson-gz (format "%s/icd10/vs/%s/%s" ftr-path value-set-name (:expected-patch-filenmae test-env-cfg)))
+          (sort-by :code (ftr.utils.core/parse-ndjson-gz (format "%s/icd10/vs/%s/%s" ftr-path value-set-name (:expected-patch-filename test-env-cfg))))
           [{:name value-set-name}
-           {:op "remove" :code "16003"}
-           {:op "update" :code "15062" :display "Updated other external causes of accidental injury"}
-           {:op "add" :code "10345" :display "New External causes of morbidity and mortality"}
-           nil?]))
-      )
-    )
+           {:code "AA" :op "add"}
+           {:code "V01-X59" :op "update"}
+           {:code "W00-X59" :op "remove"}
+           {:code "X" :op "add"}
+           nil?]))))
 
-  (clean-up-test-env! test-env-cfg)
-  )
+  (clean-up-test-env! test-env-cfg))

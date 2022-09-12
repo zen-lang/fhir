@@ -10,8 +10,28 @@
             (ftr.utils.core/gen-uuid))))
 
 
+(defn custom-compare [s1 s2]
+  (let [len1 (count s1)
+        len2 (count s2)
+        minlen (min len1 len2)
+        cmp' (compare (subs s1 0 minlen)
+                      (subs s2 0 minlen))]
+    (if (not= cmp' 0)
+      cmp'
+      (cond
+        (< len1 len2)
+        1
+
+        (> len1 len2)
+        -1
+
+        :else
+        0))))
+
+
 (defn spit-tf-file! [writer cs vs c]
-  (let [sorted-concepts (sort-by #(format "%s-%s" (:system :%) (:code %)) c)]
+  (let [sorted-concepts (sort-by #(format "%s-%s" (:system %) (:code %))
+                                 c)]
     (with-open [w writer]
       (.write w (ftr.utils.core/generate-ndjson-row cs))
       (.write w (ftr.utils.core/generate-ndjson-row vs))
