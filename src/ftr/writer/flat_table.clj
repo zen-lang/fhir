@@ -1,6 +1,5 @@
 (ns ftr.writer.flat-table
   (:require [clojure.java.io :as io]
-            [ftr.writer.core]
             [ftr.utils.core]))
 
 
@@ -20,7 +19,7 @@
         (.write w (ftr.utils.core/generate-ndjson-row c))))))
 
 
-(defmethod ftr.writer.core/write-terminology-file :flat-table
+(defn write-terminology-file
   [{:as _ctx,
     {:keys [ftr-path]} :cfg
     {:keys [value-set code-system concepts]} :extraction-result}]
