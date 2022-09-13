@@ -175,4 +175,4 @@
            {:code "X" :op "add"}
            nil?]))))
 
-  (clean-up-test-env! test-env-cfg))
+  #_(clean-up-test-env! test-env-cfg))

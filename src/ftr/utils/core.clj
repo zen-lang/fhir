@@ -1,6 +1,7 @@
 (ns ftr.utils.core
   (:require [clojure.java.io :as io]
-            [cheshire.core :as json])
+            [cheshire.core :as json]
+            [clojure.string :as str])
   (:import org.apache.commons.io.input.ReversedLinesFileReader))
 
 
@@ -94,6 +95,7 @@
                             (into-array java.nio.file.CopyOption
                                         [(java.nio.file.StandardCopyOption/ATOMIC_MOVE)
                                          (java.nio.file.StandardCopyOption/REPLACE_EXISTING)])))
+
 
 (defprotocol NdjsonReader
   (readLine [this] "Reads and parse json line from reader"))

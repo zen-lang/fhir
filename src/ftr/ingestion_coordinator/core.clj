@@ -30,12 +30,16 @@
 
 
 (defn update-tag-index! [tag-index-path vs-name module new-sha256]
-  (let [tag-index (ftr.utils.core/parse-ndjson-gz tag-index-path)]
-    (->> (map (fn [{:as tag-index-entry, :keys [name]}]
-                (if (= name (format "%s.%s" module vs-name))
-                  (assoc tag-index-entry :hash new-sha256)
-                  tag-index-entry))
-              tag-index)
+  (let [tag-index (ftr.utils.core/parse-ndjson-gz tag-index-path)
+        {:as tag-index-entry, :keys [idx entry]}
+        (keep-indexed (fn [idx {:as v, :keys [name]}]
+                        (when (= name (format "%s.%s" module vs-name))
+                          {:idx idx
+                           :entry v}))
+                      tag-index)]
+    (->> (if (seq tag-index-entry)
+           (update tag-index idx assoc :hash new-sha256)
+           (conj tag-index {:name (format "%s.%s" module vs-name) :hash new-sha256}))
          (ftr.utils.core/spit-ndjson-gz! tag-index-path))))
 
 

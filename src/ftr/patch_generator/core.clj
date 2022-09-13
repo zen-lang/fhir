@@ -9,8 +9,7 @@
 
 (defn generate-patch! [old-tf new-tf]
   (let [o (ftr.utils.core/open-ndjson-gz-reader old-tf)
-        n (ftr.utils.core/open-ndjson-gz-reader new-tf)
-        rend (last (ftr.utils.core/parse-ndjson-gz new-tf))]
+        n (ftr.utils.core/open-ndjson-gz-reader new-tf)]
 
     ;;Skip header lines
     (doto o (.readLine) (.readLine))
@@ -56,9 +55,3 @@
       (generate-patch! (str old-tf-file) (str tf-file))
       (into [{:name (:name value-set)}])
       (ftr.utils.core/spit-ndjson-gz! tf-patch-path))))
-
-
-(comment
-  (compare "V01-X59" "XX")
-
-  )

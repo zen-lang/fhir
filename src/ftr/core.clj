@@ -15,7 +15,6 @@
   {:write-result (ftr.writer.core/write-terminology-file ctx)})
 
 
-
 (defmethod u/*fn ::shape-ftr-layout [{:as _ctx, :keys [cfg write-result]}]
   (let [tag (:tag cfg)
         module-path (format "%s/%s" (:ftr-path cfg) (:module cfg))
@@ -41,8 +40,23 @@
       :tag-index-path (format "%s/%s.ndjson.gz" tags-path tag)}}))
 
 
-(defn apply-cfg [cfg]
-  (u/*apply [::extract-terminology
-             ::write-terminology-file
-             ::shape-ftr-layout
-             :ftr.ingestion-coordinator.core/ingest-terminology-file] {:cfg cfg}))
+(defmethod u/*fn ::feeder [{:as ctx, :keys [extraction-result]}]
+  extraction-result
+  (doseq [[_vs-url tf] extraction-result]
+    (u/*apply [::write-terminology-file
+               ::shape-ftr-layout
+               :ftr.ingestion-coordinator.core/ingest-terminology-file]
+              (assoc ctx :extraction-result tf))))
+
+
+(defn apply-cfg [{:as cfg, :keys [source-type]}]
+  (condp = source-type
+    :flat-table
+    (u/*apply [::extract-terminology
+               ::write-terminology-file
+               ::shape-ftr-layout
+               :ftr.ingestion-coordinator.core/ingest-terminology-file] {:cfg cfg})
+
+    :ig
+    (u/*apply [::extract-terminology
+               ::feeder] {:cfg cfg})))
