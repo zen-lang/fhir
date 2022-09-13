@@ -76,15 +76,43 @@
                 (mapcat (partial date-expr jsonpaths))
                 types)})
 
+(defmulti number-expr (fn [_jp type] (keyword (:type type))))
+
+(defmethod number-expr :decimal [jsonpaths {polymorhic? :polymorphic? type :type}]
+  (for [jp jsonpaths
+        :let [jp (cond-> jp polymorhic? (str "." (name type)))]]
+    [:and
+     [:>= [:pg/call :jsonpath_extract_max_numeric [:pg/sql "{{table}}.resource"] jp]
+      [:pg/cast [:pg/sql "{{param}}"] :numeric]]
+     [:<= [:pg/call :jsonpath_extract_min_numeric [:pg/sql "{{table}}.resource"] jp]
+      [:pg/cast [:pg/sql "{{param}}"] :numeric]]]))
+
+(defmethod number-expr :default [jsonpaths {polymorhic? :polymorphic? type :type}]
+  (for [jp jsonpaths
+        :let [jp (cond-> jp polymorhic? (str "." (name type)))]]
+    [:and
+     [:>= [:pg/call :jsonpath_extract_max_numeric [:pg/sql "{{table}}.resource"] jp]
+      [:pg/cast [:pg/sql "{{param}}"] :numeric]]
+     [:<= [:pg/call :jsonpath_extract_min_numeric [:pg/sql "{{table}}.resource"] jp]
+      [:pg/cast [:pg/sql "{{param}}"] :numeric]]]))
+
+(defmethod number-expr :Range [jsonpaths {polymorhic? :polymorphic? type :type}]
+  (for [jp jsonpaths
+        :let [jp (cond-> jp polymorhic? (str "." (name type)))
+              jp-low (str jp ".low.value")
+              jp-high (str jp ".high.value")]]
+    [:and
+     [:<= [:pg/call :jsonpath_extract_max_numeric [:pg/sql "{{table}}.resource"] jp-high]
+      [:pg/cast [:pg/sql "{{param}}"] :numeric]]
+     [:>= [:pg/call :jsonpath_extract_min_numeric [:pg/sql "{{table}}.resource"] jp-low]
+      [:pg/cast [:pg/sql "{{param}}"] :numeric]]]))
+
+
 (defmethod expand :number
-  [_type _types jsonpaths]
+  [_type types jsonpaths]
   {:where (into [:or]
-                (for [jp jsonpaths]
-                  [:and
-                   [:>= [:pg/call :jsonpath_extract_max_numeric [:pg/sql "{{table}}.resource"] jp]
-                    [:pg/cast [:pg/sql "{{param}}"] :numeric]]
-                   [:<= [:pg/call :jsonpath_extract_min_numeric [:pg/sql "{{table}}.resource"] jp]
-                    [:pg/cast [:pg/sql "{{param}}"] :numeric]]]))})
+                (mapcat (partial number-expr jsonpaths))
+                types)})
 
 
 (defmethod expand :quantity
