@@ -1,7 +1,8 @@
 (ns ftr.writer.core
   (:require [clojure.java.io :as io]
             [ftr.utils.core]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [ftr.utils.core]))
 
 
 (defn create-temp-tf-path! [ftr-path]
@@ -21,17 +22,11 @@
         (.write w (ftr.utils.core/generate-ndjson-row c))))))
 
 
-(defn escape-url [url]
-  (-> url
-      (str/replace #"/" "-")
-      (str/replace #" " "-")))
-
-
 (defn write-terminology-file!
   [{:as _ctx,
     {:keys [ftr-path]} :cfg
     {:keys [value-set code-system concepts]} :extraction-result}]
-  (let [value-set (update value-set :name escape-url)
+  (let [value-set (update value-set :name ftr.utils.core/escape-url)
         {:keys [writer file digest]}
         (-> ftr-path
             create-temp-tf-path!

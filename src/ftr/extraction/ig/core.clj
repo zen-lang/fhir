@@ -1,11 +1,13 @@
-(ns ftr.extraction.ig
+(ns ftr.extraction.ig.core
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
             [cheshire.core]
             [edamame.core :as edamame]
             [com.rpl.specter :as sp]
             [zen.core :as zen-core]
-            [ftr.utils.unifn.core :as u]))
+            [ftr.utils.unifn.core :as u]
+            [ftr.utils.core]
+            [ftr.extraction.ig.value-set-expand]))
 
 
 
@@ -231,7 +233,7 @@
 
 (defn process-concepts [ztx]
   (collect-concepts ztx)
-  (zen.fhir.value-set-expand/denormalize-value-sets-into-concepts ztx)
+  (ftr.extraction.ig.value-set-expand/denormalize-value-sets-into-concepts ztx)
   (swap! ztx update-in [:fhir/inter "Concept"]
          #(sp/transform [sp/MAP-VALS]
                         (partial process-concept ztx)
@@ -248,7 +250,7 @@
   (if-let [cs (get-in code-systems [system :zen.fhir/resource])]
     cs
     {:url system
-     :name (escape-url system)
+     :name (ftr.utils.core/escape-url system)
      :content "not-present"
      :status "unknown"}))
 

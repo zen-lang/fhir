@@ -110,3 +110,9 @@
       (readLine [this] (-> ndjson-gz-reader
                            .readLine
                            (cheshire.core/parse-string keyword))))))
+
+
+(defn escape-url [url]
+  (-> url
+      (str/replace #"/" "-")
+      (str/replace #" " "-")))
