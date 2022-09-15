@@ -6,6 +6,7 @@
             [clojure.java.io]
             [clojure.pprint]
             [clojure.walk]
+            [zen.package]
             [com.rpl.specter :as sp]))
 
 
@@ -468,6 +469,38 @@
       (spit-zen-schemas ztx package-dir {:package package})
       (spit-terminology-bundle ztx package-dir {:package package})
       (spit package-file-path (json/generate-string package-file {:pretty true})))
+    :done))
+
+
+(defn spit-zen-packages [ztx {:keys [out-dir package git-url-format]}]
+  (let [packages (cond->> (collect-packages ztx)
+                   (some? package)
+                   (filter #{(name package)}))
+        packages-deps (packages-deps-nses (:fhir/inter @ztx))]
+    (doseq [package packages
+            :let [package-dir (str out-dir \/ package \/)
+                  package-git-url (format git-url-format package)
+                  package-file-path (str package-dir "/zen-package.edn")
+                  package-deps (into {'zen.fhir (str out-dir "/zen.fhir")}
+                                     (map (fn [dep] [(symbol dep) (format git-url-format dep)]))
+                                     (get packages-deps (symbol package)))
+                  package-file {:deps package-deps}]]
+
+      (if (zero? (:exit (zen.package/sh! "git" "clone" package-git-url package-dir)))
+        :clone
+        (do
+          (zen.package/mkdir! out-dir package)
+          (zen.package/zen-init! package-git-url)
+          (zen.package/sh! "git" "add" "--all" :dir package-dir)
+          (zen.package/sh! "git" "commit" "-m" "'Init commit'" :dir package-dir)
+          :init))
+
+      (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
+      (spit-terminology-bundle ztx package-dir {:package package})
+      (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
+
+      (zen.package/sh! "git" "add" "--all" :dir package-dir)
+      (zen.package/sh! "git" "commit" "-m" "'Update zen package'" :dir package-dir))
     :done))
 
 ;; * resources, types
