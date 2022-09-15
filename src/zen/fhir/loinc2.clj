@@ -1,19 +1,19 @@
 (ns zen.fhir.loinc2
-  (:require [org.httpkit.client :as http]
+  (:require
    [clojure.java.io :as io]
-            [clojure.string :as str]
-            [cheshire.core :as json]
-            [clojure.xml :as xml]
-            [clojure.data.csv :as csv]
-            [next.jdbc :as jdbc]
-            [next.jdbc.sql :as sql]
-            [next.jdbc.result-set :as rs]
-            [next.jdbc.prepare :as prep]
-            [zen.fhir.loinc.xml :as loinc.xml]
-            [clojure.walk]
-            [clj-http.client :as client]
-            [clj-http.cookies]
-            [clj-http.core])
+   [clojure.string :as str]
+   [cheshire.core :as json]
+   [clojure.xml :as xml]
+   [clojure.data.csv :as csv]
+   [next.jdbc :as jdbc]
+   [next.jdbc.sql :as sql]
+   [next.jdbc.result-set :as rs]
+   [next.jdbc.prepare :as prep]
+   [zen.fhir.loinc.xml :as loinc.xml]
+   [clojure.walk]
+   [clj-http.client :as client]
+   [clj-http.cookies]
+   [clj-http.core])
   (:import [java.sql ResultSet ResultSetMetaData]
            java.io.File
            [java.util.zip ZipInputStream]))
@@ -130,7 +130,7 @@
 (defn create-idx [db table column]
   (println ::debug (format "DROP INDEX IF EXISTS %s_%s_idx" (name table) (name column)))
   (println ::debug (format "CREATE INDEX %s_%s_idx ON %s (%s)"
-                             (name table) (name column) (name table) (name column)))
+                           (name table) (name column) (name table) (name column)))
   (jdbc/execute! db [(format "DROP INDEX IF EXISTS %s_%s_idx" (name table) (name column))])
   (jdbc/execute! db [(format "CREATE INDEX %s_%s_idx ON %s (%s)"
                              (name table) (name column) (name table) (name column))]))
@@ -173,17 +173,17 @@
 
 (defn create-primary-link-table [db]
   (let [sql (-> (io/resource "loinc/part-link.sql")
-                 slurp
-                 (str/replace "{{partlink_table}}" "partlink_primary")
-                 (str/replace "{{partlink_json_table}}" "partlink_primary_json"))]
+                slurp
+                (str/replace "{{partlink_table}}" "partlink_primary")
+                (str/replace "{{partlink_json_table}}" "partlink_primary_json"))]
     (jdbc/execute! db [sql])
     (create-idxs db "partlink_primary" "LoincNumber")))
 
 (defn create-supplementary-link-table [db]
   (let [sql (-> (io/resource "loinc/part-link.sql")
-                 slurp
-                 (str/replace "{{partlink_table}}" "partlink_supplementary")
-                 (str/replace "{{partlink_json_table}}" "partlink_supplementary_json"))]
+                slurp
+                (str/replace "{{partlink_table}}" "partlink_supplementary")
+                (str/replace "{{partlink_json_table}}" "partlink_supplementary_json"))]
     (jdbc/execute! db [sql])
     (create-idxs db "partlink_supplementary" "LoincNumber")))
 
@@ -228,8 +228,8 @@
     (jdbc/execute! db [sql] options)))
 
 (defn read-sql-file [sql-file]
-   (-> (io/resource sql-file)
-                slurp))
+  (-> (io/resource sql-file)
+      slurp))
 
 (defn create-core-concepts [db]
   (execute-file-sql db "loinc/concept-base.sql")
@@ -297,8 +297,7 @@
                               " union "
                               (read-sql-file "loinc/part-concept.sql")
                               " union "
-                              (read-sql-file "loinc/answers-concepts.sql")
-                              )])))
+                              (read-sql-file "loinc/answers-concepts.sql"))])))
 
 (defn get-value-sets [db]
   (->> (get-answer-list-value-sets db)
@@ -346,11 +345,4 @@
   (create-tables cs db)
 
   (filter  (fn [c]
-             (= (:code c) "12265-5")
-             ) (get-concepts db))
-
-
-
-
-
-  )
+             (= (:code c) "12265-5")) (get-concepts db)))
