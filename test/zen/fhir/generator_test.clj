@@ -671,19 +671,21 @@
                  :fhir/flags        #{:MS}}}}))
 
   (t/testing "Generated zen schemas are correct"
-    (swap! ztx assoc :memory-store (merge (:fhir.zen/ns @ztx) memory-store))
+    (def zctx (zen.core/new-context {:memory-store (merge (:fhir.zen/ns @ztx) memory-store)}))
 
-    (zen.core/load-ns ztx (get (:fhir.zen/ns @ztx) 'plannet.plannet-PractitionerRole))
+    (zen.core/load-ns zctx (get (:memory-store @zctx) 'plannet.plannet-PractitionerRole))
 
-    (t/is (empty? (:errors @ztx)))
+    (t/is (empty? (:errors @zctx)))
+
+    (zen.core/get-symbol zctx 'zen.fhir/version)
 
     (matcho/match
-     (zen.core/validate ztx '#{plannet.plannet-PractitionerRole/schema} {})
-      {:errors empty?})
+     (zen.core/validate zctx '#{plannet.plannet-PractitionerRole/schema} {})
+     {:errors empty?})
 
     (matcho/match
      (zen.core/validate
-      ztx '#{plannet.plannet-PractitionerRole/schema}
+      zctx '#{plannet.plannet-PractitionerRole/schema}
       {:newpatients
        [{:acceptingPatients {:coding [{:code "foo"}]
                              :text "foo"}
@@ -693,13 +695,12 @@
 
     (matcho/match
      (zen.core/validate
-      ztx '#{plannet.plannet-PractitionerRole/schema}
+      zctx '#{plannet.plannet-PractitionerRole/schema}
       {:newpatients
        {:acceptingPatients {:coding [{:code "foo"}]
                             :text "foo"}
         :fromnetwork {:resourceType "Network"
                       :id "some-plannet-network"}}})
-      {:errors [{:type "type"
-                 :path [:newpatients]
-                 :schema ['plannet.plannet-PractitionerRole/schema :newpatients]}
-                nil]})))
+     {:errors [{:path [:newpatients]
+                :schema ['plannet.plannet-PractitionerRole/schema :newpatients]}
+               nil]})))
