@@ -7,7 +7,6 @@
    [clojure.test :as t]
    [clojure.java.io :as io]
    [cheshire.core :as json]
-   [clojure.string :as str]
    [clojure.set]))
 
 
@@ -199,7 +198,7 @@
                                              :zen.fhir/reference {:refers #{'fhir-r4.Organization/schema}}}
                       :gender {:confirms #{'fhir-r4.code/schema}
                                :zen.fhir/value-set {:symbol 'fhir-r4.value-set.administrative-gender/value-set
-                                                  :strength :required}}
+                                                    :strength :required}}
                       :link {:type 'zen/vector
                              :every {:require #{:other :type}}}}}}
 
@@ -229,7 +228,7 @@
       'import #(contains? % 'fhir-r4.value-set.administrative-gender)
       'schema {:keys {:gender {:confirms #{'fhir-r4.code/schema}
                                :zen.fhir/value-set {:symbol 'fhir-r4.value-set.administrative-gender/value-set
-                                                  :strength :required}}}}}
+                                                    :strength :required}}}}}
 
      'us-core-v3.us-core-patient
      {'ns     'us-core-v3.us-core-patient
@@ -277,7 +276,7 @@
       'schema
       {:zen.fhir/version zen-fhir-version
        :zen.fhir/value-set {:symbol 'us-core-v3.value-set.birthsex/value-set
-                          :strength :required}}}
+                            :strength :required}}}
 
      'fhir-r4.MolecularSequence
      {'schema
@@ -292,8 +291,7 @@
        :zen/desc "An extension to provide a human-readable description of an organization."
        :confirms #{'fhir-r4.string/schema}
        :zen.fhir/type "string"
-       :zen.fhir/profileUri "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/org-description"
-       }}
+       :zen.fhir/profileUri "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/org-description"}}
 
      'fhir-r4.condition-dueTo
      {'schema
@@ -352,7 +350,7 @@
                         :strength :required}}}}}}})
 
   (matcho/match
-    (select-keys (:fhir.zen/ns @ztx) (keys schemas-match))
+   (select-keys (:fhir.zen/ns @ztx) (keys schemas-match))
     schemas-match))
 
 
@@ -517,8 +515,8 @@
                                    slurp
                                    (json/parse-string keyword))]
                    (matcho/match package
-                                 {:name "@zen-lang/fhir-r4"
-                                  :version "0.0.1-test"}))))
+                     {:name "@zen-lang/fhir-r4"
+                      :version "0.0.1-test"}))))
 
       (t/is (not (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn")))))
 
@@ -535,54 +533,54 @@
                                    slurp
                                    (json/parse-string))]
                    (matcho/match package
-                                 {"name" "@zen-lang/us-core-v3"
-                                  "version" "0.0.1-test"
-                                  "dependencies" {"@zen-lang/fhir-r4" "0.0.1-test"}}))))
+                     {"name" "@zen-lang/us-core-v3"
+                      "version" "0.0.1-test"
+                      "dependencies" {"@zen-lang/fhir-r4" "0.0.1-test"}}))))
 
       (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz"))
                  (let [bundle (->> "test-temp-zrc/node_modules/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz"
                                    (read-ndjson-bundle)
                                    (group-by (juxt :resourceType :id)))]
                    (matcho/match bundle
-                                 {["ValueSet" "administrative-gender"]
-                                  [{:url "http://hl7.org/fhir/ValueSet/administrative-gender"
-                                    :_source "zen.fhir"
-                                    :zen.fhir/header nil?
-                                    :zen.fhir/package nil?
-                                    :zen.fhir/package-ns nil?
-                                    :zen.fhir/schema-ns nil?}]
+                     {["ValueSet" "administrative-gender"]
+                      [{:url "http://hl7.org/fhir/ValueSet/administrative-gender"
+                        :_source "zen.fhir"
+                        :zen.fhir/header nil?
+                        :zen.fhir/package nil?
+                        :zen.fhir/package-ns nil?
+                        :zen.fhir/schema-ns nil?}]
 
-                                  ["CodeSystem" "administrative-gender"]
-                                  [{:url "http://hl7.org/fhir/administrative-gender"
-                                    :concept nil?
-                                    :_source "zen.fhir"
+                      ["CodeSystem" "administrative-gender"]
+                      [{:url "http://hl7.org/fhir/administrative-gender"
+                        :concept nil?
+                        :_source "zen.fhir"
 
-                                    :zen.fhir/header nil?
-                                    :zen.fhir/package nil?
-                                    :zen.fhir/package-ns nil?
-                                    :zen.fhir/schema-ns nil?}]
+                        :zen.fhir/header nil?
+                        :zen.fhir/package nil?
+                        :zen.fhir/package-ns nil?
+                        :zen.fhir/schema-ns nil?}]
 
-                                  ["Concept" "http:--hl7.org-fhir-administrative-gender-other"]
-                                  [{:code       "other"
-                                    :display    "Other"
-                                    :definition "Other."
-                                    :system     "http://hl7.org/fhir/administrative-gender"
-                                    :valueset   ["http://hl7.org/fhir/ValueSet/administrative-gender"]
-                                    :_source "zen.fhir"
-                                    :zen.fhir/header nil?
-                                    :zen.fhir/package nil?
-                                    :zen.fhir/package-ns nil?
-                                    :zen.fhir/schema-ns nil?}]}))))))
+                      ["Concept" "http:--hl7.org-fhir-administrative-gender-other"]
+                      [{:code       "other"
+                        :display    "Other"
+                        :definition "Other."
+                        :system     "http://hl7.org/fhir/administrative-gender"
+                        :valueset   ["http://hl7.org/fhir/ValueSet/administrative-gender"]
+                        :_source "zen.fhir"
+                        :zen.fhir/header nil?
+                        :zen.fhir/package nil?
+                        :zen.fhir/package-ns nil?
+                        :zen.fhir/schema-ns nil?}]}))))))
 
   (t/testing "read zen npm modules"
     (def zctx (zen.core/new-context
-                {:paths ["test-temp-zrc/"]
-                 :memory-store memory-store}))
+               {:paths ["test-temp-zrc/"]
+                :memory-store memory-store}))
 
     (def _ (zen.core/read-ns zctx 'us-core-v3.us-core-patient))
 
     (t/is (empty? (:errors @zctx)))
-    #_(sort (distinct (map :missing-ns (filter (comp #(clojure.string/starts-with? % "No file for ns") :message)(:errors @zctx)))))
+    #_(sort (distinct (map :missing-ns (filter (comp #(clojure.string/starts-with? % "No file for ns") :message) (:errors @zctx)))))
 
     (t/is (every? #(contains? (:ns @zctx) %)
                   ['us-core-v3.us-core-patient
@@ -595,9 +593,9 @@
 
 (t/deftest zen-schemas-validation
   (def zctx (zen.core/new-context
-              {:memory-store
-               (merge (:fhir.zen/ns @ztx)
-                      memory-store)}))
+             {:memory-store
+              (merge (:fhir.zen/ns @ztx)
+                     memory-store)}))
 
   (run! (fn [zen-ns]
           (zen.core/load-ns zctx (get-in @zctx [:memory-store zen-ns])))
@@ -613,9 +611,9 @@
 
   (t/is (empty? (->> (:errors @zctx)
                      (remove ;; FIXME
-                       #{{:message "Invalid token: :",
-                          :file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/familymemberhistory-genetic.edn",
-                          :ns 'fhir-r4.familymemberhistory-genetic}}))))
+                      #{{:message "Invalid token: :",
+                         :file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/familymemberhistory-genetic.edn",
+                         :ns 'fhir-r4.familymemberhistory-genetic}}))))
 
   (t/is (every? #(contains? (:ns @zctx) %)
                 ['us-core-v3.us-core-patient
@@ -628,7 +626,7 @@
   (t/is (empty? (:errors (zen.core/validate zctx '#{fhir-r4.Patient/schema} fhir-pat))))
 
   (matcho/match
-    (:errors (zen.core/validate zctx '#{us-core-v3.us-core-patient/schema} {}))
+   (:errors (zen.core/validate zctx '#{us-core-v3.us-core-patient/schema} {}))
     [{:path [:name], :type "require"}
      {:path [:identifier], :type "require"}
      {:path [:gender], :type "require"}
@@ -644,33 +642,33 @@
          (select-keys '[plannet.plannet-PractitionerRole
                         plannet.newpatients
                         plannet.plannet-FromNetwork-extension]))
-     {'plannet.plannet-PractitionerRole
-      {'ns 'plannet.plannet-PractitionerRole
-       'import #(contains? % 'plannet.newpatients)
+      {'plannet.plannet-PractitionerRole
+       {'ns 'plannet.plannet-PractitionerRole
+        'import #(contains? % 'plannet.newpatients)
 
-       'schema {:zen.fhir/version zen-fhir-version
-                :keys {:newpatients {:every {:confirms #{'plannet.newpatients/schema}}}}}}
+        'schema {:zen.fhir/version zen-fhir-version
+                 :keys {:newpatients {:every {:confirms #{'plannet.newpatients/schema}}}}}}
 
-      'plannet.newpatients
-      {'ns 'plannet.newpatients
-       'import #(contains? % 'plannet.plannet-FromNetwork-extension)
+       'plannet.newpatients
+       {'ns 'plannet.newpatients
+        'import #(contains? % 'plannet.plannet-FromNetwork-extension)
 
-       'schema {:require #{:acceptingPatients}
-                :zen.fhir/version zen-fhir-version
-                :keys {:acceptingPatients {:confirms #{'fhir-r4.CodeableConcept/schema}
-                                           :fhir/flags #{:MS}}
-                       :fromnetwork {:confirms #{'plannet.plannet-FromNetwork-extension/schema}}}}}
+        'schema {:require #{:acceptingPatients}
+                 :zen.fhir/version zen-fhir-version
+                 :keys {:acceptingPatients {:confirms #{'fhir-r4.CodeableConcept/schema}
+                                            :fhir/flags #{:MS}}
+                        :fromnetwork {:confirms #{'plannet.plannet-FromNetwork-extension/schema}}}}}
 
-      'plannet.plannet-FromNetwork-extension
-      {'ns 'plannet.plannet-FromNetwork-extension
+       'plannet.plannet-FromNetwork-extension
+       {'ns 'plannet.plannet-FromNetwork-extension
 
-       'schema {:zen/tags          #{'zen/schema 'zen.fhir/structure-schema}
-                :zen/desc          "A reference to a healthcare provider insurance network (plannet-Network) for which the entity is/isn’t accepting new patients. This is a component of the NewPatients extension."
-                :confirms          #{'fhir-r4.Reference/schema 'zen.fhir/Reference}
-                :zen.fhir/version zen-fhir-version
-                :zen.fhir/type       "Reference"
-                :zen.fhir/profileUri "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"
-                :fhir/flags        #{:MS}}}}))
+        'schema {:zen/tags          #{'zen/schema 'zen.fhir/structure-schema}
+                 :zen/desc          "A reference to a healthcare provider insurance network (plannet-Network) for which the entity is/isn’t accepting new patients. This is a component of the NewPatients extension."
+                 :confirms          #{'fhir-r4.Reference/schema 'zen.fhir/Reference}
+                 :zen.fhir/version zen-fhir-version
+                 :zen.fhir/type       "Reference"
+                 :zen.fhir/profileUri "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"
+                 :fhir/flags        #{:MS}}}}))
 
   (t/testing "Generated zen schemas are correct"
     (swap! ztx assoc :memory-store (merge (:fhir.zen/ns @ztx) memory-store))
@@ -681,7 +679,7 @@
 
     (matcho/match
      (zen.core/validate ztx '#{plannet.plannet-PractitionerRole/schema} {})
-     {:errors empty?})
+      {:errors empty?})
 
     (matcho/match
      (zen.core/validate
@@ -691,7 +689,7 @@
                              :text "foo"}
          :fromnetwork {:resourceType "Network"
                        :id "some-plannet-network"}}]})
-     {:errors empty?})
+      {:errors empty?})
 
     (matcho/match
      (zen.core/validate
@@ -701,7 +699,7 @@
                             :text "foo"}
         :fromnetwork {:resourceType "Network"
                       :id "some-plannet-network"}}})
-     {:errors [{:type "type"
-                :path [:newpatients]
-                :schema ['plannet.plannet-PractitionerRole/schema :newpatients]}
-               nil]})))
+      {:errors [{:type "type"
+                 :path [:newpatients]
+                 :schema ['plannet.plannet-PractitionerRole/schema :newpatients]}
+                nil]})))

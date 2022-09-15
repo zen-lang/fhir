@@ -2,8 +2,7 @@
   (:require [zen.fhir.search-parameter.fhirpath :as sut]
             [clojure.test :as t]
             [zen.core]
-            [clojure.pprint]
-            [matcho.core :as matcho]))
+            [clojure.pprint]))
 
 
 #_"TODO: test these paths parsing:
@@ -92,7 +91,7 @@ Bundle.entry[0].resource
            (sut/fhirpath->knife "name | alias")))
 
   (t/is (= #_{"Organization" [["extension" {:url "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/location-reference"}]]}
-           nil
+         nil
            (sut/fhirpath->knife "Organization.extension.where(url='http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/location-reference')")))
 
 
@@ -100,7 +99,7 @@ Bundle.entry[0].resource
                           "extension"
                           "value"
                           "code"]]}
-           nil
+         nil
            (sut/fhirpath->knife "Patient.extension.where(url = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race').extension.value.code")))
 
   (t/is (= #_{"QuestionnaireResponse" [["item"
@@ -108,12 +107,12 @@ Bundle.entry[0].resource
                                         "answer"
                                         "value"
                                         "Reference"]]}
-           nil
+         nil
            (sut/fhirpath->knife "QuestionnaireResponse.item.where(hasExtension('http://hl7.org/fhir/StructureDefinition/questionnaireresponse-isSubject')).answer.value.ofType(Reference)")))
 
 
   (t/is (= #_{"Bundle" [["entry" 0 "resource"]]}
-           nil
+         nil
            (sut/fhirpath->knife "Bundle.entry[0].resource"))))
 
 
