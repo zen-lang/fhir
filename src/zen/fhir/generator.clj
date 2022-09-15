@@ -400,7 +400,7 @@
 (defn spit-zen-schemas [ztx zrc-dir & [{:keys [package]}]]
   (doseq [[zen-ns ns-content] (get-in @ztx [:fhir.zen/ns])
           :let [nss  (name zen-ns)
-                file (str zrc-dir (str/replace nss #"\." "/") ".edn")
+                file (str zrc-dir "/" (str/replace nss #"\." "/") ".edn")
                 package-name (first (str/split nss #"\." 2))]
           :when (or (nil? package) (= package package-name))]
     (clojure.java.io/make-parents file)
