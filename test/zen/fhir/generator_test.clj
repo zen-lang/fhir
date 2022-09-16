@@ -3,6 +3,7 @@
    [zen.fhir.generator :as sut]
    [zen.fhir.core]
    [zen.core]
+   [zen.package]
    [matcho.core :as matcho]
    [clojure.test :as t]
    [clojure.java.io :as io]
@@ -816,11 +817,15 @@
                                     :zen.fhir/package-ns nil?
                                     :zen.fhir/schema-ns nil?}]}))))))
 
-  #_(t/testing "read zen npm modules"
-    #_(install)
-    (def zctx (zen.core/new-context
-                {:package-paths ["test-zen-modules/us-core-v3"]
-                :memory-store memory-store}))
+  
+  (t/testing "read zen package with deps"
+
+   (def package-dir (str test-dir "/us-core-v3"))
+
+   (zen.package/zen-init-deps! package-dir)
+   (def zctx (zen.core/new-context
+              {:package-paths [package-dir]
+               :memory-store memory-store})) 
 
     (def _ (zen.core/read-ns zctx 'us-core-v3.us-core-patient))
 
