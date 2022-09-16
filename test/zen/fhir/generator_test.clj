@@ -593,7 +593,7 @@
   :done)
 
 
-(t/deftest zen-package-project-write
+(t/deftest :^kaocha/pending zen-package-project-write
 
   (def test-dir "/tmp/zen-fhir-package-write-test/test-zen-modules")
 
