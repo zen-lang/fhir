@@ -37,34 +37,31 @@
 
 (t/use-fixtures :once
   (fn generate&spit-project [t]
-    (try
-      (reset! ztx @(zen.core/new-context {}))
+    (reset! ztx @(zen.core/new-context {}))
 
-      (zen.fhir.loader/init-ztx ztx)
+    (zen.fhir.loader/init-ztx ztx)
 
-      (do ;; 'nested-extension test fixtures
-        (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
-        (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
-        (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
-        (zen.fhir.loader/load-definiton ztx {:url (:url practitioner-role-profile)} (assoc practitioner-role-profile :zen.fhir/package-ns "plannet"))
-        (zen.fhir.loader/load-definiton ztx {:url (:url new-patients-extension)} (assoc new-patients-extension :zen.fhir/package-ns "plannet"))
-        (zen.fhir.loader/load-definiton ztx {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet")))
+    (do ;; 'nested-extension test fixtures
+      (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
+      (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
+      (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
+      (zen.fhir.loader/load-definiton ztx {:url (:url practitioner-role-profile)} (assoc practitioner-role-profile :zen.fhir/package-ns "plannet"))
+      (zen.fhir.loader/load-definiton ztx {:url (:url new-patients-extension)} (assoc new-patients-extension :zen.fhir/package-ns "plannet"))
+      (zen.fhir.loader/load-definiton ztx {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet")))
 
-      (zen.fhir.loader/load-all ztx nil
-                                {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
-                                          "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}}
-                                 :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
-                                                          "http://hl7.org/fhir/us/core/ValueSet/birthsex"
-                                                          "http://hl7.org/fhir/ValueSet/c80-practice-codes"
-                                                          "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
-                                                          "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualAndGroupSpecialtiesVS"
-                                                          "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/NonIndividualSpecialtiesVS"}}})
+    (zen.fhir.loader/load-all ztx nil
+                              {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
+                                        "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}}
+                               :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
+                                                        "http://hl7.org/fhir/us/core/ValueSet/birthsex"
+                                                        "http://hl7.org/fhir/ValueSet/c80-practice-codes"
+                                                        "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
+                                                        "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualAndGroupSpecialtiesVS"
+                                                        "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/NonIndividualSpecialtiesVS"}}})
 
-      (zen.fhir.generator/generate-zen-schemas ztx)
+    (zen.fhir.generator/generate-zen-schemas ztx)
 
-      (catch Exception e
-        (throw e))
-      (finally (t)))))
+    (t)))
 
 
 
