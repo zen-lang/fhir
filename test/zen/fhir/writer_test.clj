@@ -220,7 +220,7 @@
     (t/testing "spit single module"
       (delete-directory-recursive (io/file "test-temp-zrc"))
 
-      (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test" "fhir-r4")))
+      (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" zen-fhir-version "fhir-r4")))
 
       (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
       (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/package.json"))
@@ -230,14 +230,14 @@
                                    (json/parse-string keyword))]
                    (matcho/match package
                      {:name "@zen-lang/fhir-r4"
-                      :version "0.0.1-test"}))))
+                      :version zen-fhir-version}))))
 
       (t/is (not (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn")))))
 
     (t/testing "spit all modules"
       (delete-directory-recursive (io/file "test-temp-zrc"))
 
-      (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" "0.0.1-test")))
+      (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" zen-fhir-version)))
 
       (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
       (t/is (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn")))
@@ -248,8 +248,8 @@
                                    (json/parse-string))]
                    (matcho/match package
                      {"name" "@zen-lang/us-core-v3"
-                      "version" "0.0.1-test"
-                      "dependencies" {"@zen-lang/fhir-r4" "0.0.1-test"}}))))
+                      "version" zen-fhir-version
+                      "dependencies" {"@zen-lang/fhir-r4" zen-fhir-version}}))))
 
       (t/is (and (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz"))
                  (let [bundle (->> "test-temp-zrc/node_modules/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz"
