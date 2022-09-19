@@ -24,8 +24,6 @@
 
     (zen.fhir.core/init-ztx ztx)
 
-    (prn '>>>VERSION>>>>>>> (:zen.fhir/version @ztx))
-
     (do ;; 'nested-extension test fixtures
       (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
       (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
