@@ -1,13 +1,21 @@
 (ns zen.fhir.generator
   (:require [zen.fhir.utils :as utils]
+            [zen.fhir.inter-utils]
+            [zen.fhir.writer]
             [com.rpl.specter :as sp]
-            [clojure.string :as str]
-            [cheshire.core :as json]
-            [clojure.java.io]
-            [clojure.pprint]
-            [clojure.walk]
-            [zen.package]
-            [com.rpl.specter :as sp]))
+            [clojure.walk]))
+
+
+(def order-zen-ns            zen.fhir.writer/order-zen-ns)
+(def format-zen-ns           zen.fhir.writer/format-zen-ns)
+(def spit-zen-schemas        zen.fhir.writer/spit-zen-schemas)
+(def spit-ndjson-gz-bundle!  zen.fhir.writer/spit-ndjson-gz-bundle!)
+(def spit-terminology-bundle zen.fhir.writer/spit-terminology-bundle)
+(def collect-packages        zen.fhir.writer/collect-packages)
+(def spit-zen-modules        zen.fhir.writer/spit-zen-modules)
+(def spit-zen-npm-modules    zen.fhir.writer/spit-zen-npm-modules)
+(def spit-zen-packages       zen.fhir.writer/spit-zen-packages)
+(def packages-deps-nses      zen.fhir.inter-utils/packages-deps-nses)
 
 
 (defmulti generate-kind-schema
@@ -322,36 +330,12 @@
                   inter-by-package)))
 
 
-(defn packages-deps-nses [fhir-inter]
-  (let [inter-by-package
-        (->> fhir-inter
-             (sp/select [sp/MAP-VALS sp/MAP-VALS #(contains? % :zen.fhir/schema-ns)])
-             (group-by :zen.fhir/package-ns))
-        packages
-        (sp/transform [sp/MAP-VALS]
-                      (fn find-first-package-info-data [package-inter]
-                        (->> package-inter
-                             (keep #(not-empty (select-keys % [:zen.fhir/package :zen.fhir/package-ns])))
-                             first))
-                      inter-by-package)]
-    (into {}
-          (map (fn package-deps [[package-ns inter-package]]
-                 {package-ns
-                  (keep (fn find-package-deps [[dep-kw _dep-ver]]
-                          (->> (vals packages)
-                               (filter #(= (name dep-kw) (get-in % [:zen.fhir/package :name])))
-                               first
-                               :zen.fhir/package-ns))
-                        (get-in inter-package [:zen.fhir/package :dependencies]))}))
-          packages)))
-
-
 (defn generate-root-package-nses [fhir-inter]
   (into {}
         (for [[package-ns package-nses] (ns-by-package fhir-inter)]
           {package-ns
            {'ns     package-ns
-            'import (set (concat (get (packages-deps-nses fhir-inter) package-ns)
+            'import (set (concat (get (zen.fhir.inter-utils/packages-deps-nses fhir-inter) package-ns)
                                  package-nses))}})))
 
 
@@ -381,127 +365,6 @@
   (swap! ztx assoc :fhir.zen/ns (generate-zen-schemas* (:fhir/inter @ztx)))
   :done)
 
-
-(defn order-zen-ns [zen-ns-map]
-  (let [zen-ns             (get zen-ns-map 'ns)
-        zen-import         (get zen-ns-map 'import)
-        rest-zen-ns-map    (dissoc zen-ns-map 'ns 'import)
-        ordered-zen-ns-map (cond->> (sort-by key rest-zen-ns-map)
-                             (some? zen-import) (cons ['import zen-import])
-                             (some? zen-ns)     (cons ['ns zen-ns])
-                             :always            flatten
-                             :always            (apply array-map))]
-    ordered-zen-ns-map))
-
-
-(defn format-zen-ns [zen-ns-map]
-  (clojure.pprint/write (order-zen-ns zen-ns-map) :stream nil))
-
-
-(defn spit-zen-schemas [ztx zrc-dir & [{:keys [package]}]]
-  (doseq [[zen-ns ns-content] (get-in @ztx [:fhir.zen/ns])
-          :let [nss  (name zen-ns)
-                file (str zrc-dir "/" (str/replace nss #"\." "/") ".edn")
-                package-name (first (str/split nss #"\." 2))]
-          :when (or (nil? package) (= package package-name))]
-    (clojure.java.io/make-parents file)
-    (spit file (format-zen-ns ns-content)))
-  :done)
-
-
-(defn spit-ndjson-gz-bundle! [dir filename resources]
-  (let [f    (clojure.java.io/file (str dir \/ filename ".ndjson.gz"))
-        outs (java.util.zip.GZIPOutputStream. (clojure.java.io/output-stream f) true)]
-    (with-open [w (java.io.BufferedWriter. (java.io.OutputStreamWriter. outs))]
-      (doseq [resource resources]
-        (.write w (cheshire.core/generate-string resource))
-        (.write w "\n")
-        (.flush w)))))
-
-
-(defn spit-terminology-bundle [ztx package-dir {package-ns :package}]
-  (let [fhir-inter (:fhir/inter @ztx)
-        resources (->> (select-keys fhir-inter ["ValueSet" "Concept" "CodeSystem"])
-                       vals
-                       (mapcat vals))
-        package-resources (map :zen.fhir/resource (filter #(= package-ns (name (:zen.fhir/package-ns %))) resources))
-        filename (str package-ns "-terminology-bundle")]
-    (clojure.java.io/make-parents (str package-dir \/ filename))
-    (spit-ndjson-gz-bundle! package-dir filename package-resources)))
-
-
-(defn collect-packages ;; TODO: Shouldn't be a function, result should be stored in ztx
-  "Finds all zen packages in ztx"
-  [ztx]
-  (->> (vals (:fhir/inter @ztx))
-       (mapcat vals)
-       (keep #(some-> % :zen.fhir/package-ns name))
-       set))
-
-
-(defn spit-zen-modules [ztx zrc-dir & [package-name]]
-  (let [packages (-> (cond->> (collect-packages ztx)
-                       (some? package-name)
-                       (filter #{(name package-name)})))]
-    (doseq [package packages]
-      (spit-zen-schemas ztx zrc-dir {:package package})
-      (spit-terminology-bundle ztx zrc-dir {:package package}))
-    :done))
-
-
-(defn spit-zen-npm-modules [ztx zrc-node-modules-dir ver & [package-name]]
-  (let [packages (cond->> (collect-packages ztx)
-                   (some? package-name)
-                   (filter #{(name package-name)}))
-        packages-deps (packages-deps-nses (:fhir/inter @ztx))]
-    (doseq [package packages
-            :let [package-dir (str zrc-node-modules-dir \/ package \/)
-                  package-file-path (str package-dir "/package.json")
-                  package-deps (into {}
-                                     (map #(-> {(str "@zen-lang/" %) ver}))
-                                     (get packages-deps (symbol package)))
-                  package-file {:name    (str "@zen-lang/" package)
-                                :version ver
-                                :author  "Health-Samurai" ;; TODO: parameterize this
-                                :license "MIT"
-                                :dependencies package-deps}]]
-
-      (spit-zen-schemas ztx package-dir {:package package})
-      (spit-terminology-bundle ztx package-dir {:package package})
-      (spit package-file-path (json/generate-string package-file {:pretty true})))
-    :done))
-
-
-(defn spit-zen-packages [ztx {:keys [out-dir package git-url-format]}]
-  (let [packages (cond->> (collect-packages ztx)
-                   (some? package)
-                   (filter #{(name package)}))
-        packages-deps (packages-deps-nses (:fhir/inter @ztx))]
-    (doseq [package packages
-            :let [package-dir (str out-dir \/ package \/)
-                  package-git-url (format git-url-format package)
-                  package-file-path (str package-dir "/zen-package.edn")
-                  package-deps (into {'zen.fhir (str out-dir "/zen.fhir")}
-                                     (map (fn [dep] [(symbol dep) (format git-url-format dep)]))
-                                     (get packages-deps (symbol package)))
-                  package-file {:deps package-deps}]]
-
-      (if (zero? (:exit (zen.package/sh! "git" "clone" package-git-url package-dir)))
-        :clone
-        (do
-          (zen.package/mkdir! out-dir package)
-          (zen.package/zen-init! package-git-url)
-          (zen.package/sh! "git" "add" "--all" :dir package-dir)
-          (zen.package/sh! "git" "commit" "-m" "'Init commit'" :dir package-dir)
-          :init))
-
-      (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
-      (spit-terminology-bundle ztx package-dir {:package package})
-      (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
-
-      (zen.package/sh! "git" "add" "--all" :dir package-dir)
-      (zen.package/sh! "git" "commit" "-m" "'Update zen package'" :dir package-dir))
-    :done))
 
 ;; * resources, types
 ;;  -> sd (+deps => ctx)
