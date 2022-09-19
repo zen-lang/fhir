@@ -98,7 +98,8 @@
     :done))
 
 
-(defn spit-zen-packages [ztx {:keys [out-dir package git-url-format]}]
+(defn spit-zen-packages [ztx {:keys [out-dir package git-url-format zen-fhir-lib-url]
+                              :or {zen-fhir-lib-url "git@github.com:zen-fhir/zen.fhir.git"}}]
   (let [packages (cond->> (collect-packages ztx)
                    (some? package)
                    (filter #{(name package)}))
@@ -107,7 +108,7 @@
             :let [package-dir (str out-dir \/ package \/)
                   package-git-url (format git-url-format package)
                   package-file-path (str package-dir "/zen-package.edn")
-                  package-deps (into {'zen.fhir "git@github.com:zen-fhir/zen.fhir.git"}
+                  package-deps (into {'zen.fhir zen-fhir-lib-url}
                                      (map (fn [dep] [(symbol dep) (format git-url-format dep)]))
                                      (get packages-deps (symbol package)))
                   package-file {:deps package-deps}]]

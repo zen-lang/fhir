@@ -461,9 +461,10 @@
       (delete-directory-recursive (io/file test-dir))
       (sh/sh "mkdir" "-p" test-dir)
 
-      (t/is (= :done (sut/spit-zen-packages ztx {:out-dir        test-dir
-                                                 :package        "fhir-r4"
-                                                 :git-url-format (str test-dir "/%s")})))
+      (t/is (= :done (sut/spit-zen-packages ztx {:out-dir          test-dir
+                                                 :package          "fhir-r4"
+                                                 :git-url-format   (str test-dir "/%s")
+                                                 :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")})))
 
       (t/is (.exists (io/file (str test-dir "/fhir-r4/zrc/fhir-r4/Element.edn"))))
       (t/is (.exists (io/file (str test-dir "/fhir-r4/.git/"))))
@@ -481,8 +482,9 @@
       (delete-directory-recursive (io/file test-dir))
       (sh/sh "mkdir" "-p" test-dir)
 
-      (t/is (= :done (sut/spit-zen-packages ztx {:out-dir        test-dir
-                                                 :git-url-format (str test-dir "/%s")})))
+      (t/is (= :done (sut/spit-zen-packages ztx {:out-dir          test-dir
+                                                 :git-url-format   (str test-dir "/%s")
+                                                 :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")})))
 
       (t/is (.exists (io/file (str test-dir "/fhir-r4/zrc/fhir-r4/Element.edn"))))
       (t/is (.exists (io/file (str test-dir "/us-core-v3/zrc/us-core-v3/us-core-patient.edn"))))
