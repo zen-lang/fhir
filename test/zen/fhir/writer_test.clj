@@ -307,7 +307,7 @@
 
 (t/deftest zen-package-project-write
 
-  (def test-dir "/tmp/zen-fhir-package-write-test/test-zen-modules")
+  (def test-dir "/tmp/zen-fhir-package-write-test/test-zen-packages")
 
   (def og-ztx @ztx)
 
@@ -456,7 +456,7 @@
   (def _ (swap! ztx update :fhir.zen/ns select-keys
                 (into tested-nses ns-deps)))
 
-  (t/testing "zen-modules"
+  (t/testing "zen-packages"
     (t/testing "spit single module"
       (delete-directory-recursive (io/file test-dir))
       (sh/sh "mkdir" "-p" test-dir)
