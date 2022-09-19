@@ -29,7 +29,5 @@ jobs:
       - uses: DeLaGuardo/setup-clojure@9.5
         with:
           cli: 1.11.1.1155
-      - run: git fetch --all --tags
-      - run: git describe --tag --abbrev=0
       - run: git config --global user.email "hello@health-samurai.io" && git config --global user.name "zen-lang/fhir GH Action — test"
       - run: bb ci-test
