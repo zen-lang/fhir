@@ -2,6 +2,7 @@
   (:require [zen.fhir.writer :as sut]
             [zen.fhir.generator]
             [zen.fhir.loader]
+            [zen.package]
             [zen.core]
             [matcho.core :as matcho]
             [clojure.test :as t]
@@ -287,7 +288,8 @@
 
   (t/testing "read zen npm modules"
     (def zctx (zen.core/new-context
-               {:paths ["test-temp-zrc/"]}))
+               {:paths ["test-temp-zrc/"]
+                :package-paths ["zen.fhir/"]}))
 
     (def _ (zen.core/read-ns zctx 'us-core-v3.us-core-patient))
 
@@ -471,7 +473,7 @@
                                    slurp
                                    read-string)]
                    (matcho/match package
-                                 {:deps {'zen.fhir (str test-dir "/zen.fhir")}}))))
+                                 {:deps {'zen.fhir string?}}))))
 
       (t/is (not (.exists (io/file (str test-dir "/us-core-v3/zrc/us-core-v3/us-core-patient.edn"))))))
 
@@ -534,7 +536,7 @@
 
    (zen.package/zen-init-deps! package-dir)
    (def zctx (zen.core/new-context
-              {:package-paths [package-dir]}))
+              {:package-paths ["zen.fhir" package-dir]}))
 
     (def _ (zen.core/read-ns zctx 'us-core-v3.us-core-patient))
 

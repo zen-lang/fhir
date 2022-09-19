@@ -107,7 +107,7 @@
             :let [package-dir (str out-dir \/ package \/)
                   package-git-url (format git-url-format package)
                   package-file-path (str package-dir "/zen-package.edn")
-                  package-deps (into {'zen.fhir (str out-dir "/zen.fhir")}
+                  package-deps (into {'zen.fhir "git@github.com:zen-fhir/zen.fhir.git"}
                                      (map (fn [dep] [(symbol dep) (format git-url-format dep)]))
                                      (get packages-deps (symbol package)))
                   package-file {:deps package-deps}]]

@@ -336,7 +336,8 @@
 
 (t/deftest zen-schemas-validation
   (def zctx (zen.core/new-context
-             {:memory-store (:fhir.zen/ns @ztx)}))
+             {:package-paths ["zen.fhir"]
+              :memory-store (:fhir.zen/ns @ztx)}))
 
   (run! (fn [zen-ns]
           (zen.core/load-ns zctx (get-in @zctx [:memory-store zen-ns])))
@@ -412,7 +413,8 @@
                  :fhir/flags        #{:MS}}}}))
 
   (t/testing "Generated zen schemas are correct"
-    (def zctx (zen.core/new-context {:memory-store (:fhir.zen/ns @ztx)}))
+    (def zctx (zen.core/new-context {:package-paths ["zen.fhir"]
+                                     :memory-store (:fhir.zen/ns @ztx)}))
 
     (zen.core/load-ns zctx (get (:memory-store @zctx) 'plannet.plannet-PractitionerRole))
 

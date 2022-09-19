@@ -1,0 +1,3 @@
+[submodule "zen.fhir"]
+	path = zen.fhir
+	url = git@github.com:zen-fhir/zen.fhir.git

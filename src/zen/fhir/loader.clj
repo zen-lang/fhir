@@ -737,8 +737,7 @@
    (init-ztx (zen.core/new-context)))
 
   ([ztx]
-   (zen.core/read-ns ztx 'zen.fhir)
-   (swap! ztx assoc :zen.fhir/version (:zen.fhir/version (zen.core/get-symbol ztx 'zen.fhir/version)))
+   (swap! ztx assoc :zen.fhir/version (slurp (io/resource "zen-fhir-version")))
    ztx))
 
 (defn preload-all [ztx & [{:keys [params node-modules-folder whitelist blacklist]
