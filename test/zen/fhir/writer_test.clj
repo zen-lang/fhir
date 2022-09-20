@@ -7,6 +7,7 @@
             [matcho.core :as matcho]
             [clojure.test :as t]
             [clojure.java.io :as io]
+            [clojure.string :as str]
             [cheshire.core :as json]
             [clojure.java.shell :as sh]))
 
@@ -34,38 +35,35 @@
 
 (defonce ztx (zen.core/new-context {}))
 
+(defn generate&spit-project []
+  (reset! ztx @(zen.core/new-context {}))
 
-(t/use-fixtures :once
-  (fn generate&spit-project [t]
-    (reset! ztx @(zen.core/new-context {}))
+  (zen.fhir.loader/init-ztx ztx)
 
-    (zen.fhir.loader/init-ztx ztx)
+  (do ;; 'nested-extension test fixtures
+    (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
+    (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
+    (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
+    (zen.fhir.loader/load-definiton ztx {:url (:url practitioner-role-profile)} (assoc practitioner-role-profile :zen.fhir/package-ns "plannet"))
+    (zen.fhir.loader/load-definiton ztx {:url (:url new-patients-extension)} (assoc new-patients-extension :zen.fhir/package-ns "plannet"))
+    (zen.fhir.loader/load-definiton ztx {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet")))
 
-    (do ;; 'nested-extension test fixtures
-      (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
-      (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
-      (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
-      (zen.fhir.loader/load-definiton ztx {:url (:url practitioner-role-profile)} (assoc practitioner-role-profile :zen.fhir/package-ns "plannet"))
-      (zen.fhir.loader/load-definiton ztx {:url (:url new-patients-extension)} (assoc new-patients-extension :zen.fhir/package-ns "plannet"))
-      (zen.fhir.loader/load-definiton ztx {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet")))
+  (zen.fhir.loader/load-all ztx nil
+                            {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
+                                      "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}}
+                             :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
+                                                      "http://hl7.org/fhir/us/core/ValueSet/birthsex"
+                                                      "http://hl7.org/fhir/ValueSet/c80-practice-codes"
+                                                      "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
+                                                      "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualAndGroupSpecialtiesVS"
+                                                      "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/NonIndividualSpecialtiesVS"}}})
 
-    (zen.fhir.loader/load-all ztx nil
-                              {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
-                                        "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}}
-                               :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
-                                                        "http://hl7.org/fhir/us/core/ValueSet/birthsex"
-                                                        "http://hl7.org/fhir/ValueSet/c80-practice-codes"
-                                                        "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
-                                                        "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualAndGroupSpecialtiesVS"
-                                                        "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/NonIndividualSpecialtiesVS"}}})
-
-    (zen.fhir.generator/generate-zen-schemas ztx)
-
-    (t)))
-
+  (zen.fhir.generator/generate-zen-schemas ztx))
 
 
 (t/deftest project-write
+  (generate&spit-project)
+
   (def og-ztx @ztx)
 
   (def tested-nses '#{fhir-r4.Element us-core-v3.us-core-patient})
@@ -303,6 +301,7 @@
 
 
 (t/deftest zen-package-project-write
+  (generate&spit-project)
 
   (def test-dir "/tmp/zen-fhir-package-write-test/test-zen-packages")
 
@@ -453,7 +452,137 @@
   (def _ (swap! ztx update :fhir.zen/ns select-keys
                 (into tested-nses ns-deps)))
 
+
+
+
+
   (t/testing "zen-packages"
+    (t/testing "generate-package-config"
+      (matcho/match
+       (sut/generate-package-config
+        ztx
+        {:out-dir "/tmp"
+         :package "fhir-r4"
+         :git-url-format (str "/tmp" "/%s")
+         :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")}
+        "fhir-r4")
+       {:package "fhir-r4"
+        :package-dir "/tmp/fhir-r4/"
+        :packages-deps {}
+        :package-git-url "/tmp/fhir-r4"
+        :package-file-path "/tmp/fhir-r4/zen-package.edn"
+        :package-file
+        {:deps {'zen.fhir string?}}}))
+
+    (t/testing "existing repo clone-zen-package"
+      (delete-directory-recursive (io/file test-dir))
+      (sh/sh "mkdir" "-p" test-dir)
+
+      (matcho/match
+       (sut/clone-zen-package
+        {:package-git-url "https://github.com/HealthSamurai/zen-samples.git"
+         :package-dir (str test-dir "/test-clone")})
+       {:cloned? true}))
+
+    (t/testing "non-existing repo clone-zen-package"
+      (delete-directory-recursive (io/file test-dir))
+      (sh/sh "mkdir" "-p" test-dir)
+
+      (matcho/match
+       (sut/clone-zen-package
+        ;; TODO: username and password hack to avoid entering creds
+        {:package-git-url "https://:@github.com/HealthSamurai/non-existing-i-hope.git"
+         :package-dir (str test-dir "/test-clone")})
+       {:cloned? false}))
+
+    (t/testing "create-repo! post request"
+      (require 'org.httpkit.client)
+
+      (def module-dir (str test-dir "/fhir-r4"))
+
+      (swap! ztx assoc-in [:env :github-token] "hello-world")
+      (swap! ztx assoc :org-name "hs")
+
+      (t/testing "create repo ok"
+        (delete-directory-recursive (io/file test-dir))
+        (sh/sh "mkdir" "-p" test-dir)
+
+        (with-redefs [org.httpkit.client/post
+                    (fn [url options]
+                      (println url (:headers options))
+                      (future (if (and (= url "https://api.github.com/orgs/hs/repos")
+                                       (= (get-in options [:headers "Authorization"]) "token hello-world"))
+                                {:status 200}
+                                {:status 401
+                                 :body "You shall not pass"})))]
+          (sut/init-zen-repo!
+           ztx
+           {:cloned? false
+            :out-dir test-dir
+            :package "fhir-r4"
+            :package-git-url (str test-dir "/fhir-r4")
+            :package-dir (str test-dir "/fhir-r4")}))
+
+        (t/is (.exists (io/file module-dir)))
+        (t/is
+         "main"
+         (->> (zen.package/sh! "git" "branch" "--show-current" :dir module-dir)
+              :out
+              str/trim-newline))
+
+        (t/is (= 1 (->> (zen.package/sh! "git" "log" "--oneline" :dir module-dir)
+                        :out
+                        str/split-lines
+                        (filter (partial re-find #"Init commit"))
+                        count)))
+
+        (t/is (= "https://github.com/hs/fhir-r4"
+                 (->> (zen.package/sh! "git" "remote" "get-url" "origin" :dir module-dir)
+                      :out
+                      str/trim-newline))))
+
+      (t/testing "create repo error"
+        (delete-directory-recursive (io/file test-dir))
+        (sh/sh "mkdir" "-p" test-dir)
+
+        (swap! ztx assoc :org-name "nothing")
+
+        (matcho/match
+         (with-redefs [org.httpkit.client/post
+                       (fn [url options]
+                         (println url)
+                         (future {:status 401
+                                  :body "You shall not pass"}))]
+           (unreduced (sut/init-zen-repo! ztx
+                                          {:cloned? false
+                                           :out-dir test-dir
+                                           :package "fhir-r4"
+                                           :package-git-url (str test-dir "/fhir-r4")
+                                           :package-dir (str test-dir "/fhir-r4")})))
+         {:error {:status 401
+                  :body "You shall not pass"}
+          :cloned? false
+          :out-dir string?
+          :package string?
+          :package-git-url string?
+          :package-dir string?})))
+
+    (t/testing "spit data in package"
+      (delete-directory-recursive (io/file test-dir))
+
+      (def package-dir (str test-dir "/fhir-r4"))
+
+      (sh/sh "mkdir" "-p" package-dir)
+      (sh/sh "mkdir" "-p" (str package-dir "/zrc"))
+
+      (sut/spit-data ztx {:package-dir package-dir
+                          :package "fhir-r4"
+                          :package-file-path (str package-dir "/zen-package.edn")
+                          :package-file
+                            {:deps {'zen.fhir "/home/hex/Project/sansara/box/libs/fhir/zen.fhir/"}}}))
+
+
+
     (t/testing "spit single module"
       (delete-directory-recursive (io/file test-dir))
       (sh/sh "mkdir" "-p" test-dir)

@@ -5,6 +5,7 @@
             [clojure.java.io]
             [clojure.pprint]
             [clojure.walk]
+            [org.httpkit.client :as client]
             [zen.package]))
 
 
@@ -96,6 +97,96 @@
       (spit-terminology-bundle ztx package-dir {:package package})
       (spit package-file-path (json/generate-string package-file {:pretty true})))
     :done))
+
+
+(defn generate-package-config [ztx {:keys [out-dir git-url-format zen-fhir-lib-url]
+                                    :or {zen-fhir-lib-url "git@github.com:zen-fhir/zen.fhir.git"}} package]
+  (let [package-dir (str out-dir \/ package \/)
+        packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir/inter @ztx))
+        package-git-url (format git-url-format package)
+        package-file-path (str package-dir "zen-package.edn")
+        package-deps (into {'zen.fhir zen-fhir-lib-url}
+                           (map (fn [dep] [(symbol dep) (format git-url-format dep)]))
+                           (get packages-deps (symbol package)))
+        package-file {:deps package-deps}]
+    {:package package
+     :package-dir package-dir
+     :packages-deps packages-deps
+     :package-git-url package-git-url
+     :package-file-path package-file-path
+     :package-file package-file}))
+
+
+(defn clone-zen-package [{:keys [package-git-url package-dir] :as config}]
+  (assoc config :cloned?
+         (zero? (:exit (zen.package/sh! "git" "clone" package-git-url package-dir)))))
+
+
+(defn create-repo! [token org-name repo-name]
+  @(client/post
+     (str "https://api.github.com/orgs/" org-name "/repos")
+     {:headers
+      {"Authorization" (str "token " token)}
+      :body
+      (json/encode {:name repo-name
+                    :private false
+                    :visibility "public"})}))
+
+(defn add-git-remote [ztx dir remote-url]
+  (zen.package/sh! "git" "remote" "add" "origin" remote-url :dir dir))
+
+(defn init-zen-repo! [ztx {:keys [cloned? out-dir package package-git-url package-dir] :as config}]
+  (if-not cloned?
+    (let [org-name (:org-name @ztx)
+          token (get-in @ztx [:env :github-token])
+          {:keys [status body]} (create-repo! token org-name package)]
+      (if (< status 300)
+        (do
+          (zen.package/mkdir! out-dir package)
+          (zen.package/zen-init! package-git-url)
+          (zen.package/sh! "git" "add" "--all" :dir package-dir)
+          (zen.package/sh! "git" "commit" "-m" "'Init commit'" :dir package-dir)
+          (zen.package/sh! "git" "branch" "-M" "main")
+          (add-git-remote ztx package-dir (str "https://github.com/" org-name \/ package))
+          config)
+        (reduced (assoc config :error {:status status :body body}))))
+    config))
+
+
+(defn spit-data [ztx {:keys [package-dir package package-file-path package-file] :as config}]
+  (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
+  (spit-terminology-bundle ztx package-dir {:package package})
+  (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
+  config)
+
+
+(defn commit-zen-changes [{:keys [package-dir] :as config}]
+  (zen.package/sh! "git" "add" "--all" :dir package-dir)
+  (zen.package/sh! "git" "commit" "-m" "'Update zen package'" :dir package-dir)
+  config)
+
+
+(defn release-zen-package [{:keys [package-dir]}]
+  (zen.package/sh! "git" "push" "-u" "origin" "main" :dir package-dir))
+
+
+(defn release-xform [ztx config]
+  (comp
+   (map (partial generate-package-config ztx config))
+   (map clone-zen-package)
+   (map (partial init-zen-repo! ztx))
+   (map spit-data)
+   (map commit-zen-changes)
+   (map release-zen-package)))
+
+
+(defn release-packages [ztx {:keys [package] :as config}]
+  (into
+   []
+   (release-xform ztx config)
+   (cond->> (collect-packages ztx)
+     (some? package)
+     (filter #{(name package)}))))
 
 
 (defn spit-zen-packages [ztx {:keys [out-dir package git-url-format zen-fhir-lib-url]
