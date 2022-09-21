@@ -452,10 +452,6 @@
   (def _ (swap! ztx update :fhir.zen/ns select-keys
                 (into tested-nses ns-deps)))
 
-
-
-
-
   (t/testing "zen-packages"
     (t/testing "filter packages"
 
@@ -723,7 +719,7 @@
                                     :zen.fhir/package-ns nil?
                                     :zen.fhir/schema-ns nil?}]})))))
 
-    (t/testing "release packages"
+    #_(t/testing "release packages" #_"NOTE: don't know how to test release, it's just git push"
       #_(delete-directory-recursive (io/file test-dir))
       #_(sh/sh "mkdir" "-p" test-dir)
 
@@ -752,7 +748,6 @@
     (def _ (zen.core/read-ns zctx 'us-core-v3.us-core-patient))
 
     (t/is (empty? (:errors @zctx)))
-    #_(sort (distinct (map :missing-ns (filter (comp #(clojure.string/starts-with? % "No file for ns") :message) (:errors @zctx)))))
 
     (t/is (every? #(contains? (:ns @zctx) %)
                   ['us-core-v3.us-core-patient

@@ -14,7 +14,6 @@
 (def collect-packages        zen.fhir.writer/collect-packages)
 (def spit-zen-modules        zen.fhir.writer/spit-zen-modules)
 (def spit-zen-npm-modules    zen.fhir.writer/spit-zen-npm-modules)
-(def spit-zen-packages       zen.fhir.writer/spit-zen-packages)
 (def packages-deps-nses      zen.fhir.inter-utils/packages-deps-nses)
 
 
