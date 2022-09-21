@@ -105,7 +105,7 @@
 
 
 (defn generate-package-config [ztx
-                               {:keys [out-dir git-url-format zen-fhir-lib-url git-release-url-format]}
+                               {:keys [out-dir git-url-format zen-fhir-lib-url git-auth-url-format]}
                                package]
   (let [package-dir (str out-dir \/ package \/)
         packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir/inter @ztx))
@@ -115,19 +115,27 @@
                            (map (fn [dep] [(symbol dep) (format git-url-format dep)]))
                            (get packages-deps (symbol package)))
         package-file {:deps package-deps}
-        git-release-url-format (some-> git-release-url-format (format package))]
+        package-git-auth-url (some-> git-auth-url-format (format package))]
     {:package package
      :package-dir package-dir
      :package-git-url package-git-url
      :package-file-path package-file-path
      :package-file package-file
-     :git-release-url-format git-release-url-format
+     :package-git-auth-url (or package-git-auth-url
+                               package-git-url)
      :out-dir out-dir}))
 
 
-(defn clone-zen-package [{:keys [package-git-url package-dir] :as config}]
+(defn clone-zen-package [{:as config
+                          :keys [package-git-auth-url
+                                 package-git-url
+                                 package-dir]}]
   (assoc config :cloned?
-         (zero? (:exit (zen.package/sh! "git" "clone" package-git-url package-dir)))))
+         (zero? (:exit (zen.package/sh! "git"
+                                        "clone"
+                                        (or package-git-auth-url
+                                            package-git-url)
+                                        package-dir)))))
 
 
 (defn create-repo! [token org-name repo-name]
@@ -145,19 +153,19 @@
   (zen.package/sh! "git" "remote" "add" "origin" remote-url :dir dir))
 
 
-(defn create-remote! [ztx {:as config :keys [cloned? package package-dir]}]
+(defn create-remote! [ztx {:as config :keys [cloned? package package-dir package-git-auth-url package-git-url]}]
   (if cloned?
     config
     (let [org-name (:org-name @ztx)
           token    (get-in @ztx [:env :github-token])
           {:keys [status body]} (create-repo! token org-name package)]
       (if (< status 300)
-        (do (add-git-remote ztx package-dir (str "https://github.com/" org-name \/ package))
+        (do (add-git-remote ztx package-dir (or package-git-auth-url package-git-url))
             config)
         (reduced (assoc config :error {:status status :body body}))))))
 
 
-(defn init-zen-repo! [ztx {:as config, :keys [cloned? out-dir package package-git-url package-dir]}]
+(defn init-zen-repo! [ztx {:as config, :keys [cloned? out-dir package package-dir]}]
   (if cloned?
     config
     (do

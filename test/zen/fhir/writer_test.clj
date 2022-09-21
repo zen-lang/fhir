@@ -528,7 +528,7 @@
           (->> {:cloned? false
                 :out-dir test-dir
                 :package "fhir-r4"
-                :package-git-url (str test-dir "/fhir-r4")
+                :package-git-url "https://github.com/hs/fhir-r4"
                 :package-dir (str test-dir "/fhir-r4")}
                (sut/init-zen-repo! ztx)
                (sut/create-remote! ztx)))
