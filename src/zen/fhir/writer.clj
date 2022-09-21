@@ -99,8 +99,15 @@
     :done))
 
 
-(defn generate-package-config [ztx {:keys [out-dir git-url-format zen-fhir-lib-url]
-                                    :or {zen-fhir-lib-url "git@github.com:zen-fhir/zen.fhir.git"}} package]
+(defn filter-zen-packages [ztx {:keys [package] :as config} package-name]
+  (or (nil? package)
+      (= (name package) package-name)))
+
+
+(defn generate-package-config [ztx
+                               {:keys [out-dir git-url-format zen-fhir-lib-url]
+                                :or {zen-fhir-lib-url "git@github.com:zen-fhir/zen.fhir.git"}}
+                               package]
   (let [package-dir (str out-dir \/ package \/)
         packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir/inter @ztx))
         package-git-url (format git-url-format package)
@@ -172,6 +179,7 @@
 
 (defn release-xform [ztx config]
   (comp
+   (filter (partial filter-zen-packages ztx config))
    (map (partial generate-package-config ztx config))
    (map clone-zen-package)
    (map (partial init-zen-repo! ztx))
@@ -180,13 +188,11 @@
    (map release-zen-package)))
 
 
-(defn release-packages [ztx {:keys [package] :as config}]
+(defn release-packages [ztx config]
   (into
    []
    (release-xform ztx config)
-   (cond->> (collect-packages ztx)
-     (some? package)
-     (filter #{(name package)}))))
+   (collect-packages ztx)))
 
 
 (defn spit-zen-packages [ztx {:keys [out-dir package git-url-format zen-fhir-lib-url]
