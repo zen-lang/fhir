@@ -1,4 +1,4 @@
-name: release
+name: terminologies
 
 on:
   push:
