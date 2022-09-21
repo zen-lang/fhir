@@ -105,7 +105,7 @@
 
 
 (defn generate-package-config [ztx
-                               {:keys [out-dir git-url-format zen-fhir-lib-url]}
+                               {:keys [out-dir git-url-format zen-fhir-lib-url git-release-url-format]}
                                package]
   (let [package-dir (str out-dir \/ package \/)
         packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir/inter @ztx))
@@ -120,6 +120,7 @@
      :package-git-url package-git-url
      :package-file-path package-file-path
      :package-file package-file
+     :git-release-url-format git-release-url-format
      :out-dir out-dir}))
 
 
