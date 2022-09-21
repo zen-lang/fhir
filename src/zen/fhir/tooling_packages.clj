@@ -27,7 +27,7 @@
                                                               :zen-fhir-lib-url       zen-fhir-lib-url})]
     (->> release-result
          (mapv :git-release-url-format)
-         (clojure.string/join " "))))
+         (clojure.string/join "\n"))))
 
 
 (defn -main [return-path node-modules-folder out-dir & [zen-fhir-lib-url git-url-format package-name]]
