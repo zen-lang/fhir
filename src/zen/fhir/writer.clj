@@ -160,7 +160,7 @@
     config
     (do
       (zen.package/mkdir! out-dir package)
-      (zen.package/zen-init! package-git-url)
+      (zen.package/zen-init! package-dir)
       (zen.package/sh! "git" "add" "--all" :dir package-dir)
       (zen.package/sh! "git" "commit" "-m" "'Init commit'" :dir package-dir)
       (zen.package/sh! "git" "branch" "-M" "main")
