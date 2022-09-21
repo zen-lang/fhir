@@ -118,10 +118,10 @@
         package-file {:deps package-deps}]
     {:package package
      :package-dir package-dir
-     :packages-deps packages-deps
      :package-git-url package-git-url
      :package-file-path package-file-path
-     :package-file package-file}))
+     :package-file package-file
+     :out-dir out-dir}))
 
 
 (defn clone-zen-package [{:keys [package-git-url package-dir] :as config}]
@@ -139,28 +139,37 @@
                     :private false
                     :visibility "public"})}))
 
+
 (defn add-git-remote [ztx dir remote-url]
   (zen.package/sh! "git" "remote" "add" "origin" remote-url :dir dir))
 
-(defn init-zen-repo! [ztx {:keys [cloned? out-dir package package-git-url package-dir] :as config}]
-  (if-not cloned?
+
+(defn create-remote! [ztx {:as config :keys [cloned? package package-dir]}]
+  (if cloned?
+    config
     (let [org-name (:org-name @ztx)
-          token (get-in @ztx [:env :github-token])
+          token    (get-in @ztx [:env :github-token])
           {:keys [status body]} (create-repo! token org-name package)]
       (if (< status 300)
-        (do
-          (zen.package/mkdir! out-dir package)
-          (zen.package/zen-init! package-git-url)
-          (zen.package/sh! "git" "add" "--all" :dir package-dir)
-          (zen.package/sh! "git" "commit" "-m" "'Init commit'" :dir package-dir)
-          (zen.package/sh! "git" "branch" "-M" "main")
-          (add-git-remote ztx package-dir (str "https://github.com/" org-name \/ package))
-          config)
-        (reduced (assoc config :error {:status status :body body}))))
-    config))
+        (do (add-git-remote ztx package-dir (str "https://github.com/" org-name \/ package))
+            config)
+        (reduced (assoc config :error {:status status :body body}))))))
+
+
+(defn init-zen-repo! [ztx {:as config, :keys [cloned? out-dir package package-git-url package-dir]}]
+  (if cloned?
+    config
+    (do
+      (zen.package/mkdir! out-dir package)
+      (zen.package/zen-init! package-git-url)
+      (zen.package/sh! "git" "add" "--all" :dir package-dir)
+      (zen.package/sh! "git" "commit" "-m" "'Init commit'" :dir package-dir)
+      (zen.package/sh! "git" "branch" "-M" "main")
+      config)))
 
 
 (defn spit-data [ztx {:keys [package-dir package package-file-path package-file] :as config}]
+  (println package-dir config)
   (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
   (spit-terminology-bundle ztx package-dir {:package package})
   (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
@@ -183,7 +192,8 @@
    (map (partial generate-package-config ztx config))
    (map clone-zen-package)
    (map (partial init-zen-repo! ztx))
-   (map spit-data)
+   (map (partial create-remote! ztx))
+   (map (partial spit-data ztx))
    (map commit-zen-changes)
    (map release-zen-package)))
 

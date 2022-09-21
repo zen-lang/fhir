@@ -477,13 +477,13 @@
         ztx
         {:out-dir "/tmp"
          :package "fhir-r4"
-         :git-url-format (str "/tmp" "/%s")
+         :git-url-format "https://github.com/zen-fhir/%s"
          :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")}
         "fhir-r4")
-       {:package "fhir-r4"
+       {:out-dir "/tmp"
+        :package "fhir-r4"
         :package-dir "/tmp/fhir-r4/"
-        :packages-deps {}
-        :package-git-url "/tmp/fhir-r4"
+        :package-git-url "https://github.com/zen-fhir/fhir-r4"
         :package-file-path "/tmp/fhir-r4/zen-package.edn"
         :package-file
         {:deps {'zen.fhir string?}}}))
@@ -529,13 +529,13 @@
                                 {:status 200}
                                 {:status 401
                                  :body "You shall not pass"})))]
-          (sut/init-zen-repo!
-           ztx
-           {:cloned? false
-            :out-dir test-dir
-            :package "fhir-r4"
-            :package-git-url (str test-dir "/fhir-r4")
-            :package-dir (str test-dir "/fhir-r4")}))
+          (->> {:cloned? false
+                :out-dir test-dir
+                :package "fhir-r4"
+                :package-git-url (str test-dir "/fhir-r4")
+                :package-dir (str test-dir "/fhir-r4")}
+               (sut/init-zen-repo! ztx)
+               (sut/create-remote! ztx)))
 
         (t/is (.exists (io/file module-dir)))
         (t/is
@@ -567,12 +567,13 @@
                          (println url)
                          (future {:status 401
                                   :body "You shall not pass"}))]
-           (unreduced (sut/init-zen-repo! ztx
-                                          {:cloned? false
-                                           :out-dir test-dir
-                                           :package "fhir-r4"
-                                           :package-git-url (str test-dir "/fhir-r4")
-                                           :package-dir (str test-dir "/fhir-r4")})))
+           (unreduced (->> {:cloned? false
+                            :out-dir test-dir
+                            :package "fhir-r4"
+                            :package-git-url (str test-dir "/fhir-r4")
+                            :package-dir (str test-dir "/fhir-r4")}
+                           (sut/init-zen-repo! ztx)
+                           (sut/create-remote! ztx))))
          {:error {:status 401
                   :body "You shall not pass"}
           :cloned? false
@@ -650,20 +651,23 @@
       (delete-directory-recursive (io/file test-dir))
       (sh/sh "mkdir" "-p" test-dir)
 
-      (def package-dir (str test-dir "/fhir-r4"))
+      (doseq [package-name (sut/collect-packages ztx)]
+        (let [package (sut/generate-package-config
+                        ztx
+                        {:create-remote? false
+                         :out-dir test-dir
+                         :cloned? false
+                         :git-url-format (str test-dir "/%s")
+                         :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")}
+                        package-name)]
+          (->> package
+               sut/clone-zen-package
+               (sut/init-zen-repo! ztx)
+               (sut/spit-data ztx)
+               (sut/commit-zen-changes))))
 
-      (sh/sh "mkdir" "-p" package-dir)
-      (sh/sh "mkdir" "-p" (str package-dir "/zrc"))
 
-      (let [config (sut/generate-package-config
-                    ztx
-                    {:out-dir test-dir
-                     :git-url-format (str "/tmp" "/%s")
-                     :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")}
-                    nil)]
-
-        (sut/spit-data ztx config))
-
+      (t/is (.exists (io/file (str test-dir "/fhir-r4/.git"))))
       (t/is (.exists (io/file (str test-dir "/fhir-r4/zrc/fhir-r4/Element.edn"))))
       (t/is (and (.exists (io/file (str test-dir "/fhir-r4/zen-package.edn")))
                  (let [package (-> (str test-dir "/fhir-r4/zen-package.edn")
@@ -673,7 +677,16 @@
                    (matcho/match package
                                  {:deps {'zen.fhir string?}}))))
 
+      (t/is (.exists (io/file (str test-dir "/us-core-v3/.git"))))
       (t/is (.exists (io/file (str test-dir "/us-core-v3/zrc/us-core-v3/us-core-patient.edn"))))
+      (t/is (and (.exists (io/file (str test-dir "/us-core-v3/zen-package.edn")))
+                 (let [package (-> (str test-dir "/us-core-v3/zen-package.edn")
+                                   io/file
+                                   slurp
+                                   read-string)]
+                   (matcho/match package
+                                 {:deps {'zen.fhir string?
+                                         'fhir-r4 (str test-dir "/fhir-r4")}}))))
 
       (t/is (and (.exists (io/file (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")))
                  (let [bundle (->> (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")
@@ -710,89 +723,31 @@
                                     :zen.fhir/package-ns nil?
                                     :zen.fhir/schema-ns nil?}]})))))
 
+    (t/testing "release packages"
+      #_(delete-directory-recursive (io/file test-dir))
+      #_(sh/sh "mkdir" "-p" test-dir)
 
-    #_(t/testing "spit single module"
-      (delete-directory-recursive (io/file test-dir))
-      (sh/sh "mkdir" "-p" test-dir)
+      (swap! ztx assoc :org-name "hs")
+      (swap! ztx assoc-in [:env :github-token] "hello-world")
 
-      (t/is (= :done (sut/spit-zen-packages ztx {:out-dir          test-dir
-                                                 :package          "fhir-r4"
-                                                 :git-url-format   (str test-dir "/%s")
-                                                 :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")})))
-
-      (t/is (.exists (io/file (str test-dir "/fhir-r4/zrc/fhir-r4/Element.edn"))))
-      (t/is (.exists (io/file (str test-dir "/fhir-r4/.git/"))))
-      (t/is (and (.exists (io/file (str test-dir "/fhir-r4/zen-package.edn")))
-                 (let [package (-> (str test-dir "/fhir-r4/zen-package.edn")
-                                   io/file
-                                   slurp
-                                   read-string)]
-                   (matcho/match package
-                                 {:deps {'zen.fhir string?}}))))
-
-      (t/is (not (.exists (io/file (str test-dir "/us-core-v3/zrc/us-core-v3/us-core-patient.edn"))))))
-
-    #_(t/testing "spit all modules"
-      (delete-directory-recursive (io/file test-dir))
-      (sh/sh "mkdir" "-p" test-dir)
-
-      (t/is (= :done (sut/spit-zen-packages ztx {:out-dir          test-dir
-                                                 :git-url-format   (str test-dir "/%s")
-                                                 :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")})))
-
-      (t/is (.exists (io/file (str test-dir "/fhir-r4/zrc/fhir-r4/Element.edn"))))
-      (t/is (.exists (io/file (str test-dir "/us-core-v3/zrc/us-core-v3/us-core-patient.edn"))))
-      (t/is (and (.exists (io/file (str test-dir "/us-core-v3/zen-package.edn")))
-                 (let [package (-> (str test-dir "/us-core-v3/zen-package.edn")
-                                   io/file
-                                   slurp
-                                   read-string)]
-                   (matcho/match package
-                                 {:deps {'fhir-r4 (str test-dir "/fhir-r4")}}))))
-
-      (t/is (and (.exists (io/file (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")))
-                 (let [bundle (->> (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")
-                                   (read-ndjson-bundle)
-                                   (group-by (juxt :resourceType :id)))]
-                   (matcho/match bundle
-                                 {["ValueSet" "administrative-gender"]
-                                  [{:url "http://hl7.org/fhir/ValueSet/administrative-gender"
-                                    :_source "zen.fhir"
-                                    :zen.fhir/header nil?
-                                    :zen.fhir/package nil?
-                                    :zen.fhir/package-ns nil?
-                                    :zen.fhir/schema-ns nil?}]
-
-                                  ["CodeSystem" "administrative-gender"]
-                                  [{:url "http://hl7.org/fhir/administrative-gender"
-                                    :concept nil?
-                                    :_source "zen.fhir"
-
-                                    :zen.fhir/header nil?
-                                    :zen.fhir/package nil?
-                                    :zen.fhir/package-ns nil?
-                                    :zen.fhir/schema-ns nil?}]
-
-                                  ["Concept" "http:--hl7.org-fhir-administrative-gender-other"]
-                                  [{:code       "other"
-                                    :display    "Other"
-                                    :definition "Other."
-                                    :system     "http://hl7.org/fhir/administrative-gender"
-                                    :valueset   ["http://hl7.org/fhir/ValueSet/administrative-gender"]
-                                    :_source "zen.fhir"
-                                    :zen.fhir/header nil?
-                                    :zen.fhir/package nil?
-                                    :zen.fhir/package-ns nil?
-                                    :zen.fhir/schema-ns nil?}]}))))))
+      #_(with-redefs [org.httpkit.client/post
+                    (fn [url options]
+                      (future {:status 200}))]
+        (sut/release-packages
+         ztx
+         {:out-dir test-dir
+          :package "fhir-r4"
+          :git-url-format (str test-dir "/%s")
+          :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")}))))
 
 
   (t/testing "read zen package with deps"
 
-   (def package-dir (str test-dir "/us-core-v3"))
+    (def package-dir (str test-dir "/us-core-v3"))
 
-   (zen.package/zen-init-deps! package-dir)
-   (def zctx (zen.core/new-context
-              {:package-paths ["zen.fhir" package-dir]}))
+    (zen.package/zen-init-deps! package-dir)
+    (def zctx (zen.core/new-context
+               {:package-paths ["zen.fhir" package-dir]}))
 
     (def _ (zen.core/read-ns zctx 'us-core-v3.us-core-patient))
 
