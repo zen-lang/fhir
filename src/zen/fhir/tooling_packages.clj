@@ -8,10 +8,13 @@
 
 
 (defn github-release-zen-packages [{:keys [node-modules-folder out-dir package-name zen-fhir-lib-url git-url-format]}]
-  (let [zen-fhir-lib-url (or zen-fhir-lib-url "git@github.com:zen-fhir/zen.fhir.git")
-        git-url-format   (or git-url-format "git@github.com:zen-fhir/%s.git")
+  (let [github-user  (System/getenv "ZEN_FHIR_RELEASE_GITHUB_USER")
         github-token (System/getenv "ZEN_FHIR_RELEASE_GITHUB_TOKEN")
         org-name     (System/getenv "ZEN_FHIR_RELEASE_GITHUB_ORG")
+
+        zen-fhir-lib-url (or zen-fhir-lib-url "https://github.com/zen-fhir/zen.fhir.git")
+        git-url-format   (or git-url-format (str "https://" github-user ":" github-token "@github.com/zen-fhir/%s.git"))
+
         ztx (zen.core/new-context {:env {:github-token github-token}
                                    :org-name org-name})
         _ (zen.fhir.loader/load-all ztx nil {:node-modules-folder node-modules-folder})
