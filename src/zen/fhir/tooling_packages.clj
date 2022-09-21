@@ -13,7 +13,7 @@
                      git-url-format]
               :or   {zen-fhir-lib-url "git@github.com:zen-fhir/zen.fhir.git"
                      git-url-format   "git@github.com:zen-fhir/%s.git"}}]
-  (let [github-token (System/getenv "GITHUB_TOKEN")
+  (let [github-token (System/getenv "ZEN_FHIR_RELEASE_GITHUB_TOKEN")
         org-name     (System/getenv "ZEN_FHIR_RELEASE_GITHUB_ORG")
         ztx (zen.core/new-context {:env {:github-token github-token}
                                    :org-name org-name})]
