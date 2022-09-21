@@ -114,13 +114,14 @@
         package-deps (into {'zen.fhir zen-fhir-lib-url}
                            (map (fn [dep] [(symbol dep) (format git-url-format dep)]))
                            (get packages-deps (symbol package)))
-        package-file {:deps package-deps}]
+        package-file {:deps package-deps}
+        git-release-url-format (some-> git-release-url-format (format package))]
     {:package package
      :package-dir package-dir
      :package-git-url package-git-url
      :package-file-path package-file-path
      :package-file package-file
-     :git-release-url-format (format git-release-url-format package)
+     :git-release-url-format git-release-url-format
      :out-dir out-dir}))
 
 
