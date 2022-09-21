@@ -120,7 +120,7 @@
      :package-git-url package-git-url
      :package-file-path package-file-path
      :package-file package-file
-     :git-release-url-format git-release-url-format
+     :git-release-url-format (format git-release-url-format package)
      :out-dir out-dir}))
 
 
