@@ -38,8 +38,15 @@ jobs:
       - run: bb init
         name: Install npm FHIR packages
 
+      - run: git config --global user.email "hello@health-samurai.io" && git config --global user.name "zen-lang/fhir GH Action —  release"
+        name: Set up git config
+
       - run: bb zen-profiles-packages "release.txt" "node_modules/" "zen-packages/"
-        name: Generate npm Zen packages
+        name: Generate & release npm Zen packages
+        env:
+          ZEN_FHIR_RELEASE_GITHUB_USER: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_USER }}
+          ZEN_FHIR_RELEASE_GITHUB_TOKEN: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_TOKEN }}
+          ZEN_FHIR_RELEASE_GITHUB_ORG: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_ORG }}
 
       - name: Release
         uses: softprops/action-gh-release@v1
