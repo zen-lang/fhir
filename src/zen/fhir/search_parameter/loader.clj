@@ -26,6 +26,7 @@
             :base-resource-types (:base res)
             :expression (:expression res)})))
 
+(interleave (repeat :|) [:a :b :c ])
 
 (defn get-type-by-knife [ztx inter base-rt knife]
   (let [inter-path (->> (remove map? knife)
@@ -49,14 +50,16 @@
         expr        (into {}
                           (map (fn [base-rt]
                                  (let [knifes      (get knife-paths base-rt)
-                                       jsonpath    (fhirpath/knife->jsonpath knifes)
+                                       default-knifes (get knife-paths :default)
+                                       all-knifes (into [] (concat knifes default-knifes))
+                                       jsonpath    (fhirpath/knife->jsonpath all-knifes)
                                        sp-template (keyword (:type inter))
                                        types       (into #{}
                                                          (mapcat (partial get-type-by-knife ztx inter base-rt))
                                                          knifes)]
                                    {(keyword base-rt)
                                     (utils/strip-nils
-                                      {:knife      knifes
+                                      {:knife      all-knifes
                                        :jsonpath   jsonpath
                                        :data-types types
                                        :template   sp-template
