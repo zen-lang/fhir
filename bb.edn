@@ -20,11 +20,12 @@
                  (defn sh
                    "clojure.java.shell/sh wrapper-simplifier
                     command - shell command represented as a single string"
-                   [command]
-                   (println "$" command)
-                   (-> clojure.java.shell/sh
-                       (apply (str/split command (re-pattern "\\s")))
-                       :out)))
+                   [command & {:keys [dir]}]
+                   (let [args       (str/split command (re-pattern "\\s"))
+                         args-w-dir (concat args (when dir [:dir dir]))
+                         cmd-str    (str "$ " command (when dir (str " :dir " dir)))]
+                     (println cmd-str)
+                     (:out (apply clojure.java.shell/sh args-w-dir)))))
          :enter (do
                   (println (str purple  "Executing: " clear-color bold (:name (current-task)) bold-end))
                   (def task-start-ts (System/currentTimeMillis)))
@@ -101,8 +102,18 @@
                      (binding [*command-line-args* (list (str dep-folder "node_modules/")
                                                          "zrc/standalone_projects/"
                                                          dependency-name
-                                                         (if (= v latest-dep-version) dependency (str dependency "-" v)))]
-                       (run 'build-stanadlone-projects))
+                                                         (if (= v latest-dep-version)
+                                                           dependency
+                                                           (str dependency "-" v)))]
+                       (run 'build-stanadlone-projects)
+                       #_"NOTE: this is latest IG version zip name hotfix"
+                       (when (= v latest-dep-version)
+                         (let [zip-location "zrc/standalone_projects/"
+                               zip-name (str dependency ".zip")
+                               zip-fixed-name (str (str/replace dependency \. \-) ".zip")
+                               zip-version-name (str dependency "-" v ".zip")]
+                           (sh (str "cp " zip-name " " zip-fixed-name) :dir zip-location)
+                           (sh (str "cp " zip-name " " zip-version-name) :dir zip-location))))
 
                      :else
                      (println (str purple "WARNING:" clear-color " package FHIR core version is not r4"))))
