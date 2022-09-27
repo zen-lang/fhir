@@ -4,6 +4,7 @@
   - [References](#references) 
   - [First-class extensions](#first-class-extensions)
   - [Polymorphics](#polymorphics)
+- [Use zen FHIR schemas to describe FHIR constraints and extensions](#use-zen-fhir-schemas-to-describe-fhir-constraints-and-extensions)
 - [Convert FHIR IG to zen-lang](#convert-fhir-ig-to-zen-lang)
   - [Artifacts](#artifacts)
   - [How to](#how-to)
@@ -132,8 +133,13 @@ Output:
 
 TODO: Convert zen-lang to FHIR
 -->
+
+# Use zen FHIR schemas to describe FHIR constraints and extensions
+
+[`zen.fhir`](https://github.com/zen-fhir/zen.fhir) extends `zen/schema` to allow describing FHIR specific info such as bindings, references, extensions, etc. Documentation with examples is located [here](https://github.com/zen-fhir/zen.fhir#about).
+
 # Convert FHIR IG to zen-lang
-[FHIR package](https://registry.fhir.org/learn) to [zen-lang](https://github.com/zen-lang/zen) schemas converter.
+This repository contains [FHIR package](https://registry.fhir.org/learn) to [zen-lang](https://github.com/zen-lang/zen) schemas converter.
 
 ## Artifacts
 On each [release](https://github.com/zen-lang/fhir/releases) Github action publishes:
