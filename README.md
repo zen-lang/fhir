@@ -1,5 +1,14 @@
+# About
+
+This repo contains source code for FHIR IG to [zen-lang](https://github.com/zen-lang/zen) converter which uses [zen.fhir namespace](https://github.com/zen-fhir/zen.fhir#about) to describe FHIR data structure in [zen FHIR format](#zen-fhir-format).
+
+FHIR IG can be [converted](#convert-fhir-ig-to-zen-lang) to zen-lang using the cli tool published on release.
+
+[Release](https://github.com/zen-lang/fhir/releases) workflow is also set up to convert [various IGs](https://github.com/zen-lang/fhir/blob/main/resources/package.edn) to zen-lang.
+
 # Table of contents
 
+- [About](#about) 
 - [Zen FHIR format](#zen-fhir-format) 
   - [References](#references) 
   - [First-class extensions](#first-class-extensions)
