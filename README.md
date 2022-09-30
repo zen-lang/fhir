@@ -110,8 +110,10 @@ resourceType: Patient
   id: sample-pt
   race:
     text: Asian Indian
-    category: {system: 'urn:oid:2.16.840.1.113883.6.238', code: 2028-9, display: Asian}
-    detailed: {system: 'urn:oid:2.16.840.1.113883.6.238', code: 2029-7, display: Asian Indian}
+    category: 
+    - {system: 'urn:oid:2.16.840.1.113883.6.238', code: 2028-9, display: Asian}
+    detailed: 
+    - {system: 'urn:oid:2.16.840.1.113883.6.238', code: 2029-7, display: Asian Indian}
 ```
 
 ## Polymorphics
