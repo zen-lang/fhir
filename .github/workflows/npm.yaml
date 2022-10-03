@@ -12,6 +12,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3.0.2
+        with:
+          fetch-depth: 0 
+          submodules: 'recursive'
 
       - name: Setup Babashka
         uses: turtlequeue/setup-babashka@v1.5.0
