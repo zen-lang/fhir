@@ -76,7 +76,7 @@
     :done))
 
 
-(defn spit-zen-npm-modules [ztx zrc-node-modules-dir ver & [package-name]]
+(defn spit-zen-npm-modules [ztx zrc-node-modules-dir ver & [package-name zen-fhir-lib-version]]
   (let [packages (cond->> (collect-packages ztx)
                    (some? package-name)
                    (filter #{(name package-name)}))
@@ -84,7 +84,7 @@
     (doseq [package packages
             :let [package-dir (str zrc-node-modules-dir \/ package \/)
                   package-file-path (str package-dir "/package.json")
-                  package-deps (into {}
+                  package-deps (into {"@zen-lang/zen.fhir" zen-fhir-lib-version}
                                      (map #(-> {(str "@zen-lang/" %) ver}))
                                      (get packages-deps (symbol package)))
                   package-file {:name    (str "@zen-lang/" package)

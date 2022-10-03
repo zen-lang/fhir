@@ -39,20 +39,27 @@
                                        (println (str "Version: " bold match bold-end))
                                        (spit "resources/zen-fhir-version" match))}
 
-         init {:depends [set-zen-fhir-version]
+         set-zen-fhir-lib-version {:doc "Setup zen.fhir lib version"
+                                   :task (let [current-git-repo-tag (or (first *command-line-args*)
+                                                                        (str/trim-newline (sh "git describe --tag --abbrev=0"
+                                                                                              :dir "zen.fhir")))]
+                                           (println (str "Version: " bold current-git-repo-tag bold-end))
+                                           (spit "resources/zen-fhir-lib-version" current-git-repo-tag))}
+
+         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                :task (do
                        (shell "npm --registry=https://packages.simplifier.net install")
                        (shell "npm --registry=https://packages.simplifier.net install"))}
 
-         repl {:depends [set-zen-fhir-version]
+         repl {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                :task (clojure "-M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]")}
 
-         test {:depends [set-zen-fhir-version]
+         test {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                :task (clojure "-M:test:kaocha")}
 
-         ci-test {:depends [set-zen-fhir-version init test]}
+         ci-test {:depends [set-zen-fhir-version set-zen-fhir-lib-version init test]}
 
-         init-r3 {:depends [set-zen-fhir-version]
+         init-r3 {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                   :task (do
                           (shell {:dir "r3"} "npm --registry=https://packages.simplifier.net install")
                           (shell {:dir "r3"} "npm --registry=https://packages.simplifier.net install"))}
