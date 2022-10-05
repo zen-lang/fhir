@@ -71,7 +71,6 @@
 
 (defmethod date-expr :default
   [jsonpaths {polymorphic? :polymorphic? type :type}]
-  (println "jsonpaths " jsonpaths " poly " polymorphic?  " type " type)
   (let [max-param [:pg/call :max_text_date_bound [:pg/sql "{{param}}"]]
         min-param [:pg/call :min_text_date_bound [:pg/sql "{{param}}"]]
         extract-max (fn [jp] [:pg/call :jsonpath_extract_max_timestamptz [:pg/sql "{{table}}.resource"] jp])
