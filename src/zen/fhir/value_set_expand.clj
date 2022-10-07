@@ -146,6 +146,12 @@
                             (apply some-fn)
                             complement)
 
+        expansion-fn (when-let [expansion-contains (not-empty (get-in vs [:expansion :contains]))]
+                       (let [expansion-concepts (into #{} (map #(select-keys % [:code :system])) expansion-contains)]
+                         (fn [concept]
+                           (let [code-and-system (select-keys concept [:code :system])]
+                             (contains? expansion-concepts code-and-system)))))
+
         includes-and-excludes (concat includes excludes)
 
         systems    (into #{}
@@ -153,7 +159,7 @@
                          includes-and-excludes)]
     {:systems    (not-empty systems)
      :compose-fn
-     (or (some->> [include-fn exclude-fn]
+     (or (some->> [include-fn exclude-fn #_expansion-fn]
                   (remove nil?)
                   not-empty
                   (apply every-pred))
