@@ -580,11 +580,20 @@
       {:zen.fhir/package-ns package-ns
        :zen.fhir/schema-ns (symbol (str (name package-ns) \. "value-set" \. (:id res) ))
        :zen.fhir/resource (apply dissoc res loader-keys)
-       :fhir/concepts (let [inter-part (select-keys res loader-keys)]
-                        (->> (select-keys (:compose res) [:include :exclude])
-                             vals
-                             (apply concat)
-                             (filter :concept)
+       :fhir/concepts (let [inter-part (select-keys res loader-keys)
+                            concepts (->> (select-keys (:compose res) [:include :exclude])
+                                          vals
+                                          (apply concat)
+                                          (filter :concept))
+                            concepts (->> [:expansion :contains]
+                                          (get-in res)
+                                          not-empty
+                                          (group-by :system)
+                                          (reduce-kv (fn [acc system concepts]
+                                                       (conj acc {:system system :concept concepts}))
+                                                     [])
+                                          (into concepts))]
+                        (->> concepts
                              (mapcat (fn [{:keys [system concept]}]
                                        (extract-concepts inter-part
                                                          (fn [{:keys [code]}] (str/replace (str system \/ code) \/ \-))

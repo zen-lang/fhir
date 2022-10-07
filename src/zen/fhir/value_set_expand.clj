@@ -146,11 +146,12 @@
                             (apply some-fn)
                             complement)
 
-        expansion-fn (when-let [expansion-contains (not-empty (get-in vs [:expansion :contains]))]
+        expansion-fn (if-let [expansion-contains (not-empty (get-in vs [:expansion :contains]))]
                        (let [expansion-concepts (into #{} (map #(select-keys % [:code :system])) expansion-contains)]
-                         (fn [concept]
+                         (fn [{concept :zen.fhir/resource}]
                            (let [code-and-system (select-keys concept [:code :system])]
-                             (contains? expansion-concepts code-and-system)))))
+                             (contains? expansion-concepts code-and-system))))
+                       (constantly false))
 
         includes-and-excludes (concat includes excludes)
 
@@ -159,19 +160,21 @@
                          includes-and-excludes)]
     {:systems    (not-empty systems)
      :compose-fn
-     (or (some->> [include-fn exclude-fn #_expansion-fn]
+     (or (some->> [include-fn exclude-fn]
                   (remove nil?)
                   not-empty
-                  (apply every-pred))
+                  (apply every-pred)
+                  (some-fn expansion-fn))
          #_(assert (some? include-fn) (str "ValueSet.compose.include is required. Value set url is " (:url vs)))
          (constantly false))}))
+
 
 
 (defn denormalize-into-concepts [ztx valuesets concepts-map]
   (reduce
     (fn [concepts-acc vs]
-      (let [{systems        :systems
-             concept-in-vs? :compose-fn}
+      (let [{systems            :systems
+             concept-in-vs?     :compose-fn}
             (compose ztx vs)]
         (reduce
           (fn [acc [system concepts]]
