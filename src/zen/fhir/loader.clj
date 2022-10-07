@@ -578,21 +578,23 @@
     res
     (when-let [package-ns (:zen.fhir/package-ns res)]
       {:zen.fhir/package-ns package-ns
-       :zen.fhir/schema-ns (symbol (str (name package-ns) \. "value-set" \. (:id res) ))
+       :zen.fhir/schema-ns (symbol (str (name package-ns) \. "value-set" \. (:id res)))
        :zen.fhir/resource (apply dissoc res loader-keys)
        :fhir/concepts (let [inter-part (select-keys res loader-keys)
                             concepts (->> (select-keys (:compose res) [:include :exclude])
                                           vals
                                           (apply concat)
                                           (filter :concept))
-                            concepts (->> [:expansion :contains]
-                                          (get-in res)
-                                          not-empty
-                                          (group-by :system)
-                                          (reduce-kv (fn [acc system concepts]
-                                                       (conj acc {:system system :concept concepts}))
-                                                     [])
-                                          (into concepts))]
+                            concepts (or (some->> [:expansion :contains]
+                                                  (get-in res)
+                                                  not-empty
+                                                  (map #(assoc % :valueset [(:url res)]))
+                                                  (group-by :system)
+                                                  (reduce-kv (fn [acc system concepts]
+                                                               (conj acc {:system system :concept concepts}))
+                                                             [])
+                                                  (into concepts))
+                                         concepts)]
                         (->> concepts
                              (mapcat (fn [{:keys [system concept]}]
                                        (extract-concepts inter-part

@@ -146,13 +146,6 @@
                             (apply some-fn)
                             complement)
 
-        expansion-fn (if-let [expansion-contains (not-empty (get-in vs [:expansion :contains]))]
-                       (let [expansion-concepts (into #{} (map #(select-keys % [:code :system])) expansion-contains)]
-                         (fn [{concept :zen.fhir/resource}]
-                           (let [code-and-system (select-keys concept [:code :system])]
-                             (contains? expansion-concepts code-and-system))))
-                       (constantly false))
-
         includes-and-excludes (concat includes excludes)
 
         systems    (into #{}
@@ -163,8 +156,7 @@
      (or (some->> [include-fn exclude-fn]
                   (remove nil?)
                   not-empty
-                  (apply every-pred)
-                  (some-fn expansion-fn))
+                  (apply every-pred))
          #_(assert (some? include-fn) (str "ValueSet.compose.include is required. Value set url is " (:url vs)))
          (constantly false))}))
 
