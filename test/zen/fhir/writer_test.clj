@@ -40,20 +40,16 @@
 
   (zen.fhir.loader/init-ztx ztx)
 
-  (do ;; 'nested-extension test fixtures
-    (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
-    (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
-    (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
-    (zen.fhir.loader/load-definiton ztx {:url (:url practitioner-role-profile)} (assoc practitioner-role-profile :zen.fhir/package-ns "plannet"))
-    (zen.fhir.loader/load-definiton ztx {:url (:url new-patients-extension)} (assoc new-patients-extension :zen.fhir/package-ns "plannet"))
-    (zen.fhir.loader/load-definiton ztx {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet")))
-
   (zen.fhir.loader/load-all ztx nil
                             {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
                                       "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}}
                              :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
                                                       "http://hl7.org/fhir/us/core/ValueSet/birthsex"
                                                       "http://hl7.org/fhir/ValueSet/c80-practice-codes"
+                                                      "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.32"
+                                                      "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1114.17"
+                                                      "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.101"
+                                                      "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"
                                                       "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
                                                       "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualAndGroupSpecialtiesVS"
                                                       "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/NonIndividualSpecialtiesVS"}}})
@@ -68,7 +64,18 @@
 
   (def tested-nses '#{fhir-r4.Element us-core-v3.us-core-patient})
 
-  (def ns-deps '#{fhir-r4.Address
+  (def ns-deps '#{us-core-v3.us-core-birthsex
+                  us-core-v3.us-core-ethnicity
+                  us-core-v3.us-core-race
+                  us-core-v3.us-core-genderIdentity
+                  us-core-v3.value-set.birthsex
+                  us-core-v3.value-set.detailed-ethnicity
+                  us-core-v3.value-set.detailed-race
+                  us-core-v3.value-set.omb-ethnicity-category
+                  us-core-v3.value-set.omb-race-category
+                  us-nlm-vsac.value-set.2.16.840.1.113762.1.4.1021.32
+
+                  fhir-r4.Address
                   fhir-r4.BackboneElement
                   fhir-r4.CodeableConcept
                   fhir-r4.ContactPoint
@@ -83,10 +90,6 @@
                   fhir-r4.value-set.administrative-gender
                   fhir-r4.value-set.contact-point-system
                   fhir-r4.value-set.contact-point-use
-                  us-core-v3.us-core-birthsex
-                  us-core-v3.us-core-ethnicity
-                  us-core-v3.us-core-race
-                  us-core-v3.value-set.birthsex
 
                   fhir-r4.Attachment
                   fhir-r4.Coding
@@ -107,10 +110,6 @@
                   fhir-r4.value-set.languages
                   fhir-r4.value-set.link-type
                   fhir-r4.value-set.name-use
-                  us-core-v3.value-set.detailed-ethnicity
-                  us-core-v3.value-set.detailed-race
-                  us-core-v3.value-set.omb-ethnicity-category
-                  us-core-v3.value-set.omb-race-category
 
                   fhir-r4.Age
                   fhir-r4.Annotation
@@ -309,7 +308,18 @@
 
   (def tested-nses '#{fhir-r4.Element us-core-v3.us-core-patient})
 
-  (def ns-deps '#{fhir-r4.Address
+  (def ns-deps '#{us-core-v3.us-core-birthsex
+                  us-core-v3.us-core-ethnicity
+                  us-core-v3.us-core-race
+                  us-core-v3.us-core-genderIdentity
+                  us-core-v3.value-set.birthsex
+                  us-core-v3.value-set.detailed-ethnicity
+                  us-core-v3.value-set.detailed-race
+                  us-core-v3.value-set.omb-ethnicity-category
+                  us-core-v3.value-set.omb-race-category
+                  us-nlm-vsac.value-set.2.16.840.1.113762.1.4.1021.32
+
+                  fhir-r4.Address
                   fhir-r4.BackboneElement
                   fhir-r4.CodeableConcept
                   fhir-r4.ContactPoint
@@ -324,10 +334,6 @@
                   fhir-r4.value-set.administrative-gender
                   fhir-r4.value-set.contact-point-system
                   fhir-r4.value-set.contact-point-use
-                  us-core-v3.us-core-birthsex
-                  us-core-v3.us-core-ethnicity
-                  us-core-v3.us-core-race
-                  us-core-v3.value-set.birthsex
 
                   fhir-r4.Attachment
                   fhir-r4.Coding
@@ -348,10 +354,6 @@
                   fhir-r4.value-set.languages
                   fhir-r4.value-set.link-type
                   fhir-r4.value-set.name-use
-                  us-core-v3.value-set.detailed-ethnicity
-                  us-core-v3.value-set.detailed-race
-                  us-core-v3.value-set.omb-ethnicity-category
-                  us-core-v3.value-set.omb-race-category
 
                   fhir-r4.Age
                   fhir-r4.Annotation
