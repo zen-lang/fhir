@@ -20,7 +20,7 @@
 (def deps
   {"ValueSet"
    #{"http://hl7.org/fhir/ValueSet/administrative-gender"
-     "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"
+     "http://hl7.org/fhir/ValueSet/ucum-bodylength"
      "http://hl7.org/fhir/ValueSet/link-type"
      "http://hl7.org/fhir/ValueSet/use-context"
      "http://hl7.org/fhir/ValueSet/practitioner-specialty"
@@ -316,7 +316,7 @@
                    {:code      "EXPEC"
                     :system    "http://terminology.hl7.org/CodeSystem/v3-ActMood"
                     :hierarchy ["_ActMoodPredicate" nil]
-                    :property  nil?})
+                    :property  {"status" "active"}})
 
       (match-inter ztx "Concept" "http:--terminology.hl7.org-CodeSystem-v3-ActMood-GOL.CRT"
                    {:code      "GOL.CRT"
@@ -325,11 +325,11 @@
                     :property  {"status" "retired"}})))
 
   (t/testing "value set contained concepts extract"
-    (match-inter ztx "ValueSet" "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"
-                 {:url "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"
-                  :zen.fhir/package-ns 'hl7-fhir-us-mcode
-                  :zen.fhir/schema-ns 'hl7-fhir-us-mcode.value-set.mcode-cancer-staging-system-vs
-                  :fhir/concepts #(every? (set (map :code %)) #{"C4683555" "444256004"})}))
+    (match-inter ztx "ValueSet" "http://hl7.org/fhir/ValueSet/ucum-bodylength"
+                 {:url "http://hl7.org/fhir/ValueSet/ucum-bodylength"
+                  :zen.fhir/package-ns 'hl7-fhir-r4-core
+                  :zen.fhir/schema-ns 'hl7-fhir-r4-core.value-set.ucum-bodylength
+                  :fhir/concepts #(every? (set (map :code %)) #{"cm" "[in_i]"})}))
 
   (t/testing "compose"
     (t/testing "include.system"
@@ -345,20 +345,25 @@
                     :valueset #{"http://hl7.org/fhir/ValueSet/link-type"}}))
 
     (t/testing "include.concept"
-      (match-inter ztx "Concept" "http:--terminology.hl7.org-CodeSystem-umls-C4683555"
-                   {:id       "http:--terminology.hl7.org-CodeSystem-umls-C4683555"
-                    :code     "C4683555"
-                    :display  "Ann Arbor Stage"
-                    :system   "http://terminology.hl7.org/CodeSystem/umls"
-                    :valueset #{"http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"}
-                    :zen.fhir/resource {:valueset ["http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs"]}})
+      (keys (-> @ztx
+                :fhir/inter
+                (get "Concept")))
 
-      (match-inter ztx "Concept" "http:--snomed.info-sct-444256004"
-                   {:id       "http:--snomed.info-sct-444256004"
-                    :code     "444256004"
-                    :display  string?
-                    :system   "http://snomed.info/sct"
-                    :valueset #(contains? % "http://hl7.org/fhir/us/mcode/ValueSet/mcode-cancer-staging-system-vs")}))
+      (match-inter ztx "Concept" "http:--unitsofmeasure.org-cm"
+                   {:id       "http:--unitsofmeasure.org-cm"
+                    :code     "cm"
+                    :display  nil?
+                    :system   "http://unitsofmeasure.org"
+                    :valueset #{"http://hl7.org/fhir/ValueSet/ucum-bodylength"}
+                    :zen.fhir/resource {:valueset ["http://hl7.org/fhir/ValueSet/ucum-bodylength"]}})
+
+      (match-inter ztx "Concept" "http:--unitsofmeasure.org-[in_i]"
+                   {:id       "http:--unitsofmeasure.org-[in_i]" #_"Fix square bracets in id"
+                    :code     "[in_i]"
+                    :display  nil?
+                    :system   "http://unitsofmeasure.org"
+                    :valueset #{"http://hl7.org/fhir/ValueSet/ucum-bodylength"}
+                    :zen.fhir/resource {:valueset ["http://hl7.org/fhir/ValueSet/ucum-bodylength"]}}))
 
     (t/testing "include.valueSet"
       (match-inter ztx "ValueSet" "http://hl7.org/fhir/ValueSet/use-context"
