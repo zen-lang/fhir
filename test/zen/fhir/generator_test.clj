@@ -443,4 +443,8 @@
                       :id "some-plannet-network"}}})
      {:errors [{:path [:newpatients]
                 :schema ['plannet.plannet-PractitionerRole/schema :newpatients]}
+               {:path [:newpatients some?],
+                :type "unknown-key"}
+               {:path [:newpatients some?],
+                :type "unknown-key"}
                nil]})))
