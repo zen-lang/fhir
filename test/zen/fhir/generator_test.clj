@@ -34,7 +34,7 @@
 
     (zen.fhir.core/load-all ztx nil
                             {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
-                                      "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}}
+                                      "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core}}
                              :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
                                                       "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1"
                                                       "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.103"
@@ -62,13 +62,13 @@
                          'fhir-r4.Patient
                          'fhir-r4.Practitioner})}
 
-     'us-core-v3
-     {'ns 'us-core-v3
+     'us-core
+     {'ns 'us-core
       'import (partial clojure.set/subset?
                        #{'fhir-r4
-                         'us-core-v3.us-core-patient
-                         'us-core-v3.value-set.birthsex
-                         'us-core-v3.us-core-birthsex})}
+                         'us-core.us-core-patient
+                         'us-core.value-set.birthsex
+                         'us-core.us-core-birthsex})}
 
      'fhir-r4.string
      {'ns     'fhir-r4.string
@@ -209,8 +209,8 @@
                                :zen.fhir/value-set {:symbol 'fhir-r4.value-set.administrative-gender/value-set
                                                     :strength :required}}}}}
 
-     'us-core-v3.us-core-patient
-     {'ns     'us-core-v3.us-core-patient
+     'us-core.us-core-patient
+     {'ns     'us-core.us-core-patient
       'import #(and (contains? % 'fhir-r4.Patient)
                     (contains? % 'zen.fhir))
       'schema {:zen/tags #{'zen/schema 'zen.fhir/profile-schema}
@@ -221,11 +221,11 @@
                :zen.fhir/profileUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
                :zen.fhir/version zen-fhir-version
                :require #{:name :gender :identifier}
-               :keys {:race      {:confirms #{'us-core-v3.us-core-race/schema}
+               :keys {:race      {:confirms #{'us-core.us-core-race/schema}
                                   :fhir/extensionUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
-                      :ethnicity {:confirms #{'us-core-v3.us-core-ethnicity/schema}
+                      :ethnicity {:confirms #{'us-core.us-core-ethnicity/schema}
                                   :fhir/extensionUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity"}
-                      :birthsex  {:confirms #{'us-core-v3.us-core-birthsex/schema}
+                      :birthsex  {:confirms #{'us-core.us-core-birthsex/schema}
                                   :fhir/extensionUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex"}
                       :identifier {:type     'zen/vector
                                    :minItems 1
@@ -235,8 +235,8 @@
                                                      :value  {:zen/desc "The value that is unique within the system."
                                                               :confirms #{'fhir-r4.string/schema}}}}}}}}
 
-     'us-core-v3.value-set.birthsex
-     {'ns 'us-core-v3.value-set.birthsex
+     'us-core.value-set.birthsex
+     {'ns 'us-core.value-set.birthsex
       'import #{'zen.fhir}
 
       'value-set
@@ -247,14 +247,14 @@
                             {:fhir/url "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"
                              :zen.fhir/content :bundled}}}}
 
-     'us-core-v3.us-core-birthsex
-     {'ns 'us-core-v3.us-core-birthsex
-      'import #(and (contains? % 'us-core-v3.value-set.birthsex)
+     'us-core.us-core-birthsex
+     {'ns 'us-core.us-core-birthsex
+      'import #(and (contains? % 'us-core.value-set.birthsex)
                     (contains? % 'zen.fhir))
 
       'schema
       {:zen.fhir/version zen-fhir-version
-       :zen.fhir/value-set {:symbol 'us-core-v3.value-set.birthsex/value-set
+       :zen.fhir/value-set {:symbol 'us-core.value-set.birthsex/value-set
                             :strength :required}}}
 
      'fhir-r4.MolecularSequence
@@ -341,7 +341,7 @@
   (run! (fn [zen-ns]
           (zen.core/load-ns zctx (get-in @zctx [:memory-store zen-ns])))
         '#{fhir-r4
-           us-core-v3
+           us-core
            hl7.fhir.us.carin-bb
            hl7.fhir.us.Davinci-drug-formulary
            hl7.fhir.us.davinci-pdex
@@ -357,7 +357,7 @@
                          :ns 'fhir-r4.familymemberhistory-genetic}}))))
 
   (t/is (every? #(contains? (:ns @zctx) %)
-                ['us-core-v3.us-core-patient
+                ['us-core.us-core-patient
                  'fhir-r4.Patient]))
 
   (t/is (empty? (:errors (zen.core/validate zctx '#{fhir-r4.Patient/schema} {}))))
@@ -367,7 +367,7 @@
   (t/is (empty? (:errors (zen.core/validate zctx '#{fhir-r4.Patient/schema} fhir-pat))))
 
   (matcho/match
-   (:errors (zen.core/validate zctx '#{us-core-v3.us-core-patient/schema} {}))
+   (:errors (zen.core/validate zctx '#{us-core.us-core-patient/schema} {}))
     [{:path [:name], :type "require"}
      {:path [:identifier], :type "require"}
      {:path [:gender], :type "require"}

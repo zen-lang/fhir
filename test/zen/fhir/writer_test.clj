@@ -42,7 +42,7 @@
 
   (zen.fhir.loader/load-all ztx nil
                             {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
-                                      "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}}
+                                      "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core}}
                              :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
                                                       "http://hl7.org/fhir/us/core/ValueSet/birthsex"
                                                       "http://hl7.org/fhir/ValueSet/c80-practice-codes"
@@ -62,17 +62,17 @@
 
   (def og-ztx @ztx)
 
-  (def tested-nses '#{fhir-r4.Element us-core-v3.us-core-patient})
+  (def tested-nses '#{fhir-r4.Element us-core.us-core-patient})
 
-  (def ns-deps '#{us-core-v3.us-core-birthsex
-                  us-core-v3.us-core-ethnicity
-                  us-core-v3.us-core-race
-                  us-core-v3.us-core-genderIdentity
-                  us-core-v3.value-set.birthsex
-                  us-core-v3.value-set.detailed-ethnicity
-                  us-core-v3.value-set.detailed-race
-                  us-core-v3.value-set.omb-ethnicity-category
-                  us-core-v3.value-set.omb-race-category
+  (def ns-deps '#{us-core.us-core-birthsex
+                  us-core.us-core-ethnicity
+                  us-core.us-core-race
+                  us-core.us-core-genderIdentity
+                  us-core.value-set.birthsex
+                  us-core.value-set.detailed-ethnicity
+                  us-core.value-set.detailed-race
+                  us-core.value-set.omb-ethnicity-category
+                  us-core.value-set.omb-race-category
                   us-nlm-vsac.value-set.2.16.840.1.113762.1.4.1021.32
 
                   fhir-r4.Address
@@ -226,7 +226,7 @@
                      {:name "@zen-lang/fhir-r4"
                       :version zen-fhir-version}))))
 
-      (t/is (not (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn")))))
+      (t/is (not (.exists (io/file "test-temp-zrc/node_modules/us-core/us-core/us-core-patient.edn")))))
 
     (t/testing "spit all modules"
       (delete-directory-recursive (io/file "test-temp-zrc"))
@@ -234,14 +234,14 @@
       (t/is (= :done (sut/spit-zen-npm-modules ztx "test-temp-zrc/node_modules/" zen-fhir-version)))
 
       (t/is (.exists (io/file "test-temp-zrc/node_modules/fhir-r4/fhir-r4/Element.edn")))
-      (t/is (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/us-core-v3/us-core-patient.edn")))
-      (t/is (and (.exists (io/file "test-temp-zrc/node_modules/us-core-v3/package.json"))
-                 (let [package (-> "test-temp-zrc/node_modules/us-core-v3/package.json"
+      (t/is (.exists (io/file "test-temp-zrc/node_modules/us-core/us-core/us-core-patient.edn")))
+      (t/is (and (.exists (io/file "test-temp-zrc/node_modules/us-core/package.json"))
+                 (let [package (-> "test-temp-zrc/node_modules/us-core/package.json"
                                    io/file
                                    slurp
                                    (json/parse-string))]
                    (matcho/match package
-                     {"name" "@zen-lang/us-core-v3"
+                     {"name" "@zen-lang/us-core"
                       "version" zen-fhir-version
                       "dependencies" {"@zen-lang/fhir-r4" zen-fhir-version}}))))
 
@@ -285,13 +285,13 @@
                {:paths ["test-temp-zrc/"]
                 :package-paths ["zen.fhir/"]}))
 
-    (def _ (zen.core/read-ns zctx 'us-core-v3.us-core-patient))
+    (def _ (zen.core/read-ns zctx 'us-core.us-core-patient))
 
     (t/is (empty? (:errors @zctx)))
     #_(sort (distinct (map :missing-ns (filter (comp #(clojure.string/starts-with? % "No file for ns") :message) (:errors @zctx)))))
 
     (t/is (every? #(contains? (:ns @zctx) %)
-                  ['us-core-v3.us-core-patient
+                  ['us-core.us-core-patient
                    'fhir-r4.Patient])))
 
   (def _ (reset! ztx og-ztx))
@@ -306,17 +306,17 @@
 
   (def og-ztx @ztx)
 
-  (def tested-nses '#{fhir-r4.Element us-core-v3.us-core-patient})
+  (def tested-nses '#{fhir-r4.Element us-core.us-core-patient})
 
-  (def ns-deps '#{us-core-v3.us-core-birthsex
-                  us-core-v3.us-core-ethnicity
-                  us-core-v3.us-core-race
-                  us-core-v3.us-core-genderIdentity
-                  us-core-v3.value-set.birthsex
-                  us-core-v3.value-set.detailed-ethnicity
-                  us-core-v3.value-set.detailed-race
-                  us-core-v3.value-set.omb-ethnicity-category
-                  us-core-v3.value-set.omb-race-category
+  (def ns-deps '#{us-core.us-core-birthsex
+                  us-core.us-core-ethnicity
+                  us-core.us-core-race
+                  us-core.us-core-genderIdentity
+                  us-core.value-set.birthsex
+                  us-core.value-set.detailed-ethnicity
+                  us-core.value-set.detailed-race
+                  us-core.value-set.omb-ethnicity-category
+                  us-core.value-set.omb-race-category
                   us-nlm-vsac.value-set.2.16.840.1.113762.1.4.1021.32
 
                   fhir-r4.Address
@@ -608,7 +608,7 @@
                    (matcho/match package
                                  {:deps {'zen.fhir string?}}))))
 
-      (t/is (not (.exists (io/file (str test-dir "/us-core-v3/zrc/us-core-v3/us-core-patient.edn")))))
+      (t/is (not (.exists (io/file (str test-dir "/us-core/zrc/us-core/us-core-patient.edn")))))
 
       (t/is (and (.exists (io/file (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")))
                  (let [bundle (->> (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")
@@ -675,10 +675,10 @@
                    (matcho/match package
                                  {:deps {'zen.fhir string?}}))))
 
-      (t/is (.exists (io/file (str test-dir "/us-core-v3/.git"))))
-      (t/is (.exists (io/file (str test-dir "/us-core-v3/zrc/us-core-v3/us-core-patient.edn"))))
-      (t/is (and (.exists (io/file (str test-dir "/us-core-v3/zen-package.edn")))
-                 (let [package (-> (str test-dir "/us-core-v3/zen-package.edn")
+      (t/is (.exists (io/file (str test-dir "/us-core/.git"))))
+      (t/is (.exists (io/file (str test-dir "/us-core/zrc/us-core/us-core-patient.edn"))))
+      (t/is (and (.exists (io/file (str test-dir "/us-core/zen-package.edn")))
+                 (let [package (-> (str test-dir "/us-core/zen-package.edn")
                                    io/file
                                    slurp
                                    read-string)]
@@ -741,18 +741,18 @@
 
   (t/testing "read zen package with deps"
 
-    (def package-dir (str test-dir "/us-core-v3"))
+    (def package-dir (str test-dir "/us-core"))
 
     (zen.package/zen-init-deps! package-dir)
     (def zctx (zen.core/new-context
                {:package-paths ["zen.fhir" package-dir]}))
 
-    (def _ (zen.core/read-ns zctx 'us-core-v3.us-core-patient))
+    (def _ (zen.core/read-ns zctx 'us-core.us-core-patient))
 
     (t/is (empty? (:errors @zctx)))
 
     (t/is (every? #(contains? (:ns @zctx) %)
-                  ['us-core-v3.us-core-patient
+                  ['us-core.us-core-patient
                    'fhir-r4.Patient])))
 
   (def _ (reset! ztx og-ztx))
