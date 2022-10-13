@@ -87,22 +87,19 @@
                                                               :period     {:fhir/flags #{:MS} :type "Period"}}}
                                  :race          {;; :maxItems   nil?
                                       ;; :extension-profiles nil?
-                                                 :fhir/flags #{:MS}
                                                  :fhir/extension "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
                                  :name          {:fhir/flags #{:MS}
                                                  :type       "HumanName"
                                                  :vector     true
                                                  :minItems   1
                                                  :required   true
-                                                 :| {:family {:type "string" :condition ["us-core-8"] :fhir/flags #{:MS}}
-                                                     :given  {:type "string" :condition ["us-core-8"] :vector true :fhir/flags #{:MS}}}}
+                                                 :| {:family {:type "string" :condition [string? nil] :fhir/flags #{:MS}}
+                                                     :given  {:type "string" :condition [string? nil] :vector true :fhir/flags #{:MS}}}}
                                  :birthDate     {:type "date" :fhir/flags #{:MS}}
-                                 :ethnicity     {:fhir/flags #{:MS}
-                                                 :fhir/extension "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity"}
+                                 :ethnicity     {:fhir/extension "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity"}
                                  :communication {:vector     true
                                                  :type       "BackboneElement"
-                                                 :fhir/flags #{:MS}
-                                                 :|          {:language {:type "CodeableConcept" :fhir/flags #{:MS} :required true}}}
+                                                 :|          {:language {:type "CodeableConcept" :fhir/flags #{:MS}}}}
                                  :identifier    {:type       "Identifier"
                                                  :vector     true
                                                  :fhir/flags #{:MS}
@@ -114,7 +111,6 @@
                                                                       :fhir/flags #{:MS}
                                                                       :required   true}}}
                                  :telecom       {:vector     true
-                                                 :fhir/flags #{:MS}
                                                  :type       "ContactPoint"
                                                  :| {:system {:type       "code"
                                                               :binding    {:strength    "required"
@@ -132,11 +128,7 @@
                                           :required   true
                                           :binding {:strength "required"
                                                     :valueSet {:url "http://hl7.org/fhir/ValueSet/administrative-gender"}}}
-                                 :birthsex {:fhir/extension "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex"
-                                            :fhir/flags #{:MS}
-                                            :binding    {:strength    "required"
-                                                         :description "Code for sex assigned at birth"
-                                                         :valueSet    {:url "http://hl7.org/fhir/us/core/ValueSet/birthsex"}}}}})
+                                 :birthsex {:fhir/extension "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex"}}})
 
   (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Observation"
                {:baseDefinition "http://hl7.org/fhir/StructureDefinition/DomainResource"
@@ -155,7 +147,7 @@
                                                                                     :Quantity {:type "Quantity"}}}}}}})
 
   (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/us/core/StructureDefinition/pediatric-bmi-for-age"
-               {:baseDefinition "http://hl7.org/fhir/StructureDefinition/vitalsigns"
+               {:baseDefinition "http://hl7.org/fhir/us/core/StructureDefinition/us-core-vital-signs"
                 :kind           "resource",
                 :type           "Observation"
                 :derivation     "constraint",
