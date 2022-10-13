@@ -36,6 +36,8 @@
                             {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
                                       "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core-v3}}
                              :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
+                                                      "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1"
+                                                      "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.103"
                                                       "http://hl7.org/fhir/us/core/ValueSet/birthsex"
                                                       "http://hl7.org/fhir/ValueSet/c80-practice-codes"
                                                       "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
@@ -212,7 +214,7 @@
       'import #(and (contains? % 'fhir-r4.Patient)
                     (contains? % 'zen.fhir))
       'schema {:zen/tags #{'zen/schema 'zen.fhir/profile-schema}
-               :zen/desc "Defines constraints and extensions on the patient resource for the minimal set of data to query and retrieve patient demographic information."
+               :zen/desc string?
                :confirms #{'fhir-r4.Patient/schema 'zen.fhir/Resource}
                :type 'zen/map
                :zen.fhir/type "Patient"
