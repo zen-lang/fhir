@@ -90,7 +90,10 @@
 (defn root-element? [el-path]
   (not (str/includes? (str el-path) ".")))
 
-(defn reference-profiles [el]
+(defn reference-profiles 
+  "Add targetProfile to :profiles if exists
+   targetProfile key is only allowed if the type is Reference or canonical"
+  [el]
   (let [tp       (first (:type el))
         tpc      (:code tp)
         prof     (:targetProfile tp)
@@ -99,7 +102,9 @@
       (assoc el :profiles (into #{} profiles))
       el)))
 
-(defn get-type-code[{code :code extension :extension}]
+(defn get-type-code
+  "Get type from fhir-type extension or code"
+  [{code :code extension :extension}]
   ;; wellknonw bug in FHIR SDs
   ;; StructureDefinition generator has a bug
   ;; instead of id type it uses exension type
@@ -110,40 +115,64 @@
               (utils/poly-get :value))
       code))
 
-(defn extension-profiles [el]
+(defn extension-profiles 
+  "add key with profile url for the extension"
+  [el]
   (if-let [ext-profs (:profile (first (:type el)))]
     (let [ext-profs (if (string? ext-profs) [ext-profs] ext-profs)]
-      (do
-        (assert (= 1 (count ext-profs)) (pr-str :unexpected-extension-profiles (:type el)))
-        (assoc el :fhir/extension (first ext-profs))))
+      (assert (= 1 (count ext-profs)) (pr-str :unexpected-extension-profiles (:type el)))
+      (assoc el :fhir/extension (first ext-profs)))
     el))
 
+(defn is-polymorphic-element? [element]
+   (str/ends-with? (str (:id element)) poly-id-terminator))
+
+(defn type-stu3->r4
+  "In STU3 type is an array of entries each of which can contain
+   a `profile` or a `targetProfile` (or both).
+   In R4 each type can contain an array of `profile`s
+   or an array or `targetProfile`-s (or both)"
+  [element]
+  (let [profiles (mapv :profile (:type element))
+        target-profiles (mapv :targetProfile (:type element))
+        type' (-> (first (:type element))
+                  (assoc :profile profiles
+                         :targetProfile target-profiles)
+                  (utils/sanitize-obj))
+        element' (assoc element :type [type'])]
+    element'))
+
+(def my-el {:id "patient.deceased [x]"
+            :type [{:code "boolean"} {:code "dateTime"}]})
+
+(normalize-polymorphic my-el)
+
+(defn mk-polymorphic-type-spec
+  "Specify target profiles if type is Reference, set concrete type"
+  [type-entry] 
+  (-> (reference-profiles {:type [type-entry]})
+      (assoc :type (get-type-code type-entry))))
+
+(defn mk-polymorphic-types-spec
+  "Specify target profiles if type is Reference, set concrete type"
+  [type-vec] 
+  (reduce (fn [acc {code :code :as type-entry}]
+            (assoc acc (keyword code) (mk-polymorphic-type-spec type-entry)))
+          {} type-vec))
+
+(defn type-code-set [element]
+   (->> (:type element) (map :code) (into #{})))
+
 (defn normalize-polymorphic [el & [stu3?]]
-  (if (str/ends-with? (str (:id el)) "[x]")
-    (-> (assoc el :polymorphic true)
-        (dissoc :type)
-        (assoc :| (->> (:type el)
-                         (reduce (fn [acc {c :code :as tp}]
-                                   (assoc acc (keyword c) (-> (reference-profiles {:type [tp]})
-                                                              (assoc :type (get-type-code tp)))))
-                                 {})))
-        (assoc :types (->> (:type el) (map :code) (into #{}))))
-    (if-not (:type el)
-      el
-      (cond
-        stu3?
-        ;; In STU3 type is an array of entries each of which can contain
-        ;; a `profile` or a `targetProfile` (or both).
-        ;; In R4 each type can contain an array of `profile`s
-        ;; or an array or `targetProfile`-s (or both)
-        (let [profiles (mapv :profile (:type el))
-              target-profiles (mapv :targetProfile (:type el))
-              type' (-> (first (:type el))
-                        (assoc :profile profiles
-                               :targetProfile target-profiles)
-                        (utils/sanitize-obj))
-              el' (assoc el :type [type'])]
-          (normalize-polymorphic el'))
+  (let [el (if stu3? (type-stu3->r4 el) el)]
+    (if (is-polymorphic-element? el)
+      (-> (assoc el :polymorphic true)
+          (assoc :| (mk-polymorphic-types-spec (:type el)))
+          (assoc :types (type-code-set el)))
+      
+      (cond 
+        (not (:type el))
+        el
 
         (= 1 (count (:type el)))
         (let [tp  (first (:type el))
@@ -153,32 +182,48 @@
               (extension-profiles)
               (assoc :type tpc)))
 
-        :else ;; NOTE: allowed by FHIR but not implemented.
-        (throw (Exception. (pr-str el)))))))
+        :else
+        (throw (Exception. (pr-str "Not polymorphic with multiple types " el)))))))
 
-(defn normalize-require [{:as element, el-min :min}]
+(defn normalize-require 
+  "Add :required if min cardinality is not 0"
+  [{:as element, el-min :min}]
   (if (pos? (or el-min 0))
     (assoc element :required true)
     element))
+
+(defn max-cardinality>1? [{max-cardinality :max :as _element}]
+  (and (not (nil? max-cardinality)) (not (contains? #{"0" "1"} max-cardinality))))
+
+(defn min-cardinality>0? [{min-cardinality :min :as _element}]
+  (and (not (nil? min-cardinality)) (not (= 0 min-cardinality))))
+
+(defn max-cardinality<inf? [{max-cardinality :max :as _element}]
+  (and (not (nil? max-cardinality)) (not (contains? #{"*"} max-cardinality))))
+
 
 (defn normalize-arity
   "The first ElementDefinition (root element) usually has max=* which may be treated as a collection
   but we are treating StructureDefinition as a tool to validate a single resource"
   [{:as element, id :id, el-min :min, el-max :max}]
-  (->
-    (cond-> element
-      (and (not (nil? el-max)) (not (contains? #{"1" "0"} el-max)) (not (root-element? id)))
+  (cond-> element
+      (and (max-cardinality>1? element)
+           (not (root-element? id)))
       (assoc :vector true)
 
-      (and (not (nil? el-min)) (not (= 0 el-min)))
+      (min-cardinality>0? element)
       (assoc :minItems el-min)
 
-      (and (not (nil? el-max)) (not (contains? #{"*"} el-max) ))
-      (assoc :maxItems (utils/parse-int el-max)))
-    (dissoc :min :max)))
+      (max-cardinality<inf? element)
+      (assoc :maxItems (utils/parse-int el-max))
+      
+      :finally
+      (dissoc :min :max)))
 
 
-(defn parse-canonical-url [canonical-url]
+(defn parse-canonical-url 
+  "Convert fhir canonical to map of url and version"
+  [canonical-url]
   (when-not (str/blank? canonical-url)
     (let [parts   (str/split canonical-url #"\|")
           url     (str/join "|" (cons (first parts) (butlast (rest parts))))
@@ -193,12 +238,18 @@
       (get-in binding [:valueSetUri])
       (get-in binding [:valueSetReference :reference])))
 
+(defn normalize-valueset-in-binding 
+  "Preprocess valueset in either STU3 or R4 format"
+  [binding]
+  (-> binding
+      (dissoc :valueSet :valueSetUri :valueSetReference)
+      (assoc :valueSet (parse-canonical-url (binding->canonical binding)))))
+
 (defn normalize-binding [el]
   (if-let [bn (:binding el)]
     (assoc el :binding (-> bn
                            (dissoc :extension)
-                           (dissoc :valueSet :valueSetUri :valueSetReference)
-                           (assoc :valueSet (parse-canonical-url (binding->canonical bn)))))
+                           normalize-valueset-in-binding))
     el))
 
 
@@ -219,7 +270,9 @@
         (cond->
             (not (empty? flags)) (assoc :fhir/flags flags)))))
 
-(defn normalize-nested [x]
+(defn normalize-nested 
+  "Add nested key for validating resources in Bundles"
+  [x]
   (if (= "Resource" (:type x))
     (assoc x :nested true)
     x))
@@ -386,20 +439,6 @@
   [structure-definition]
   (get-in structure-definition [:differential :element]))
 
-(defn load-intermidiate [res]
-  (let [stu3? (is-stu3? res)]
-    (->> (get-differential res)
-         (mapv #(normalize-element % stu3?))
-         (group-elements (select-keys res [:kind :abstract :derivation
-                                           :baseDefinition :description :fhirVersion :type :url]))
-         (normalize-description)
-         (normalize-extension)
-         (normalize-slicing)
-         (merge
-          (when-let [package-ns (:zen.fhir/package-ns res)]
-            {:zen.fhir/package-ns package-ns
-             :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))})))))
-
 (defn rich-parse-path-full [id]
   (if (str/blank? id)
     []
@@ -460,3 +499,22 @@
 
 (defmethod preprocess-slices-by-discriminator :value [slices discriminator]
   (slice-discriminator->match slices discriminator :fixed))
+
+(defn load-intermidiate 
+  "Preprocess StructureDefinition resource"
+  [res]
+  (let [stu3? (is-stu3? res)]
+    (->> (get-differential res)
+         (mapv #(normalize-element % stu3?))
+         (group-elements (select-keys res [:kind :abstract :derivation
+                                           :baseDefinition :description :fhirVersion :type :url]))
+         (normalize-description)
+         (normalize-extension)
+         (normalize-slicing)
+         (merge
+          (when-let [package-ns (:zen.fhir/package-ns res)]
+            {:zen.fhir/package-ns package-ns
+             :zen.fhir/schema-ns (symbol (str (name package-ns) \. (:id res)))})))))
+
+
+

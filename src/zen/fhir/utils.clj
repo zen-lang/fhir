@@ -133,7 +133,9 @@
 
 
 (defn poly-get-all
-  "Gets all values by fhir polymorphic key[x]"
+  "Gets all values by fhir polymorphic key[x]
+
+  Get all values in map for which the keys start with k."
   [m k]
   (let [key-pat (name k)]
     (sp/select [sp/ALL (comp #(str/starts-with? % key-pat) name first) sp/LAST]
@@ -147,8 +149,15 @@
 
 
 (defn code-search
-  "Finds code in vector of hmaps which is equal to one
-   of the values provided with descending prioty"
+  "Finds code in vector of hashmaps which is equal to one
+   of the values provided with descending priority
+   
+   code is a keyword
+   values is a vector
+   coll is a vector of maps
+
+   Returns last map from `coll` which contains key `code` with value from `values`.
+   If there are multiple values, the map for first matching value is returned."
   [code values coll]
   (some (into {} (map (juxt code identity) coll))
         values))
