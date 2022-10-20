@@ -2,6 +2,12 @@
   (:require [clojure.string :as str]
             [com.rpl.specter :as sp]))
 
+;; FIXME: unused.
+(defn base-url [subj]
+  (println(:type subj) (pr-str :no-type-in subj))
+  (or (:baseDefinition subj)
+      (str "http://hl7.org/fhir/StructureDefinition/" (:type subj))))
+
 (defn ^String decapitalize-first-letter
   "Converts first character of the string to lower-case, all other characters leaves as is"
   [^CharSequence s]
@@ -11,41 +17,75 @@
       (str (.toLowerCase (subs s 0 1))
            (subs s 1)))))
 
-(defn base-url [subj]
-  (println(:type subj) (pr-str :no-type-in subj))
-  (or (:baseDefinition subj)
-      (str "http://hl7.org/fhir/StructureDefinition/" (:type subj))))
-
-
-(defn get-definition [ztx url]
+(defn get-definition
+  "Get FHIR StructureDefinition resource by URL"
+  [ztx url]
   (get-in @ztx [:fhir/inter "StructureDefinition" url]))
+
+(defn is-fhirpath-type?
+  "Check if type code is from fhirpath.
+  All types we encountered yet start with 'http://hl7.org/fhirpath/System.'"
+  [type-code]
+  (str/starts-with? type-code "http://hl7.org/fhirpath/System."))
+
+
+(defn fhirpath-type-code->typename
+  "Convert fhirpath type code to typename.
+  All types we encountered yet start with 'http://hl7.org/fhirpath/System.'
+  And they correspond to primitive types in FHIR which start with lower case."
+  [type-code]
+  (let [typename-first-letter-idx 31
+        typename-rest-letters-idx (inc typename-first-letter-idx)
+        typename-first-letter (subs type-code typename-first-letter-idx typename-rest-letters-idx)
+        typename-rest-letters (subs type-code typename-rest-letters-idx)]
+    (str (str/lower-case typename-first-letter) typename-rest-letters)))
+
+(defn type-code->typename
+  "Get type name from ElementDefinition.type.code value
+  The type code is uri.
+  Most types are written as-is (e.g. Address).
+  Some types are from fhirpath (e.g. string)"
+  [type-code]
+  (if (is-fhirpath-type? type-code)
+    (fhirpath-type-code->typename type-code)
+    type-code))
+
+(defn typename->structure-definition-url
+  "Only base FHIR is allowed to define data types.
+  Therefore all structure definition for types have consistent URLs"
+  [typename]
+  (str "http://hl7.org/fhir/StructureDefinition/" typename))
 
 
 (defn get-type-definition [ztx subj el type-name]
-  (let [tp (if (str/starts-with? type-name "http://hl7.org/fhirpath/System.")
-             (str (str/lower-case (subs type-name 31 32)) (subs type-name 32))
-             type-name)
-        definition (get-definition ztx (str "http://hl7.org/fhir/StructureDefinition/" tp))]
+  (let [typename (type-code->typename type-name)
+        structure-definition-url (typename->structure-definition-url typename)
+        definition (get-definition ztx structure-definition-url)]
     (when-not definition
       (throw (Exception.
-               (str "Could not find type definition: " (pr-str tp) " url " (pr-str (str "http://hl7.org/fhir/StructureDefinition/" tp))
+              (str "Could not find type definition: " (pr-str typename) " url " (pr-str structure-definition-url)
                     " in "    (pr-str (:url  subj))
                     " element " (pr-str el)
                     " file: " (pr-str (get-in subj [:zen/loader :file]))))))
     definition))
 
 
-(defn is-profile? [url subj]
+(defn is-profile?
+  ;; NOTE: seems unused
+  [url subj]
   (and (= "constraint" (:derivation subj))
        (not (or (= "Extension" (:type subj))
-                (:fhir/extension subj)))
-       #_(not (= url (base-url subj)))))
+                (:fhir/extension subj)))))
 
-(defn get-bases [ztx subj]
-  (loop [base       (:baseDefinition subj)
+(defn get-bases
+  "Get all StructureDefinition of every ancestor with respect to subtyping relation.
+  Note that any FHIR type can have at most one base-type."
+  [ztx structure-definition]
+  (loop [base       (:baseDefinition structure-definition)
          base-stack []
          bases      #{}]
     (if (or (nil? base)
+            ;; NOTE: Why? Circular subtyping is not allowed by FHIR.
             (contains? bases base))
       base-stack
       (let [base-def (get-definition ztx base)]
@@ -53,8 +93,9 @@
                (conj base-stack base-def)
                (conj bases base))))))
 
-(defn get-base-elements [ztx subj k el bases]
-  (let [elements-stack bases ;;(cons el bases) ;; ????
+(defn get-base-elements
+  [ztx subj k el bases]
+  (let [elements-stack bases
         base-elements  (keep #(get-in % [:| k]) (reverse elements-stack))]
     (not-empty (vec base-elements))))
 
@@ -106,27 +147,35 @@
 (defn enrich-slicing [ctx el base-els]
   (update-in el [:fhir/slicing :slices] #(sp/transform [sp/MAP-VALS] fix-match-vectors %)))
 
+(defn has-nesting?
+  "Check if some (sub)field in preprocessed resource has subfields"
+  [element]
+  (seq (:| element)))
+
+(defn make-first-class-extensions [acc [field-name element]]
+  (if (= :extension field-name)
+    (make-first-class-ext-keys acc element)
+    (assoc acc field-name element)))
+
 (defn enrich-element [ctx el base-els]
   ;; TODO: if vector do min/max items
   ;;       required/prohibited
-  ;;       tragetProfile type profile
-  (letfn [(make-first-class-extensions [acc [k el]]
-            (if (and (= :extension k) (not (:do-not-handle-first-class-ext? ctx)))
-              (make-first-class-ext-keys acc el)
-              (assoc acc k el)))]
-    (let [v? (some :vector (cons el base-els))
-          tp (or (:type el)
-                 (->> base-els
-                      (filter (fn [{tp :type}] (and (not (nil? tp))
-                                                    (not (= "Element" tp)))))
-                      (some :type)))]
-      (cond-> el
-        v?                            (assoc :vector true)
-        (not v?)                      (dissoc :minItems :maxItems)
-        tp                            (assoc :type tp)
-        (contains? el :fhir/slicing)  (as-> $ (enrich-slicing ctx $ base-els))
-        (seq (:| el))                 (update :| (partial reduce make-first-class-extensions {}))
-        (fhir-primitive? el base-els) (assoc :fhir/primitive-attr true)))))
+  ;;       targetProfile type profile
+  (let [is-element-vector? (some :vector (cons el base-els))
+        handle-first-class-ext? (not (:do-not-handle-first-class-ext? ctx))
+        tp (or (:type el)
+               (->> base-els
+                    (filter (fn [{tp :type}] (and (not (nil? tp))
+                                                  (not (= "Element" tp)))))
+                    (some :type)))]
+    (cond-> el
+      ;; NOTE: Is this condition ever true?
+      is-element-vector? (assoc :vector true)
+      (not is-element-vector?) (dissoc :minItems :maxItems)
+      tp                            (assoc :type tp)
+      (contains? el :fhir/slicing)  (as-> $ (enrich-slicing ctx $ base-els))
+      (and (has-nesting? el) handle-first-class-ext?) (update :| (partial reduce make-first-class-extensions {}))
+      (fhir-primitive? el base-els) (assoc :fhir/primitive-attr true))))
 
 (defn search-base-elements [ztx subj k el bases]
   (if-let [b-els (get-base-elements ztx subj k el bases)]
@@ -173,8 +222,14 @@
    :_primitive {:key (primitive-element-key k)
                 :el (primitive-element k el)}})
 
-;; Profile.element
-;; Base.element
+(defn add-primitive-element-attrs [acc [k el]]
+            (if (:fhir/primitive-attr el)
+              (let [{:keys [primitive _primitive]} (extract-_primitive k el)]
+                (assoc acc
+                       (:key primitive) (:el primitive)
+                       (:key _primitive) (:el _primitive)))
+              (assoc acc k el)))
+
 (defn walk-with-bases [ztx ctx subj bases]
   (letfn [(walk-with-bases-recursive [acc [k el]]
             (let [{:keys [el-key element base-elements]
@@ -186,15 +241,7 @@
               (when (and (not= "specialization" (:derivation ctx))
                          (empty? base-elements))
                 (println :no-base-for-element (conj (:path ctx) k) el))
-              (assoc acc el-key (walk-with-bases ztx new-ctx element base-elements))))
-
-          (add-primitive-element-attrs [acc [k el]]
-            (if (:fhir/primitive-attr el)
-              (let [{:keys [primitive _primitive]} (extract-_primitive k el)]
-                (assoc acc
-                       (:key primitive) (:el primitive)
-                       (:key _primitive) (:el _primitive)))
-              (assoc acc k el)))]
+              (assoc acc el-key (walk-with-bases ztx new-ctx element base-elements))))]
     (let [enr-subj (enrich-element ctx subj bases)]
       (cond-> enr-subj
         (seq (:| enr-subj))
@@ -214,25 +261,41 @@
                              slices)))))))
 
 (defn is-extension?
-  [_url subj]
-  (= "Extension" (:type subj)))
+  "Check if StructureDefinition is for FHIR extension"
+  [structure-definition]
+  (= "Extension" (:type structure-definition)))
 
 (defn process-extension
+  ;; FIXME NOP
   [ztx url subj]
   subj)
 
+(defn has-no-base-but-should?
+  "Check if StructureDefinition doesn't have a known base when it should.
+  It can be either error in StructureDefinition or in loading base."
+  [structure-definition bases]
+  (and (= "constraint" (:derivation structure-definition))
+       (empty? bases)))
+
+(defn should-ignore-first-class-exts?
+  "Check if first class extensions should be ignored for these elements.
+
+  Element and DomainResource are base resources in FHIR 4.0.1.
+  They have extension field which should be allowed by zen."
+  [structure-definition]
+  (or (= "http://hl7.org/fhir/StructureDefinition/Element" (:url structure-definition))
+      (= "http://hl7.org/fhir/StructureDefinition/DomainResource" (:url structure-definition))))
+
 (defn process-sd [ztx url subj]
-  (if (is-extension? url subj)
+  (if (is-extension? subj)
     (process-extension ztx url subj)
     (let [bases (get-bases ztx subj)]
-      (when (and (= "constraint" (:derivation subj)) (empty? bases))
+      (when (has-no-base-but-should? subj bases)
         (println :no-base-resource (pr-str url)))
       (walk-with-bases ztx {:lvl 0
                             :path [url]
                             :derivation (:derivation subj)
-                            :do-not-handle-first-class-ext?
-                            (or (= "http://hl7.org/fhir/StructureDefinition/Element" (:url subj))
-                                (= "http://hl7.org/fhir/StructureDefinition/DomainResource" (:url subj)))}
+                            :do-not-handle-first-class-ext? (should-ignore-first-class-exts? subj)}
                        subj
                        bases))))
 
