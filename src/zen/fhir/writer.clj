@@ -6,7 +6,8 @@
             [clojure.pprint]
             [clojure.walk]
             [org.httpkit.client :as client]
-            [zen.package]))
+            [zen.package]
+            [ftr.core]))
 
 
 (defn order-zen-ns [zen-ns-map]
@@ -105,7 +106,7 @@
 
 
 (defn generate-package-config [ztx
-                               {:keys [out-dir git-url-format zen-fhir-lib-url git-auth-url-format]}
+                               {:keys [out-dir git-url-format zen-fhir-lib-url git-auth-url-format node-modules-folder]}
                                package]
   (let [package-dir (str out-dir \/ package \/)
         packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir/inter @ztx))
@@ -123,7 +124,8 @@
      :package-file package-file
      :package-git-auth-url (or package-git-auth-url
                                package-git-url)
-     :out-dir out-dir}))
+     :out-dir out-dir
+     :node-modules-folder node-modules-folder}))
 
 
 (defn clone-zen-package [{:as config
@@ -177,9 +179,47 @@
       config)))
 
 
+(defn produce-ftr-manifests [ztx {:as config,
+                                  :keys [package package-dir node-modules-folder]}]
+  (if (= package "hl7-fhir-r4-core")
+    (let [ftr-manifest {:module      "ftr"
+                        :source-url  (str node-modules-folder "/" (str/replace package "-" "."))
+                        :source-type :ig
+                        :ftr-path    package-dir
+                        :tag         "init"}]
+      (swap! ztx update :fhir.zen/ns
+             (fn [namespaces]
+               (into {}
+                     (map (fn [[zen-ns ns-content]]
+                            (let [nss  (name zen-ns)
+                                  package-name (first (str/split nss #"\." 2))]
+                              (if (and (= package package-name) (get ns-content 'value-set))
+                                [zen-ns (assoc-in ns-content ['value-set :ftr] ftr-manifest)]
+                                [zen-ns ns-content]))))
+                     namespaces)))
+      config)
+    config))
+
+
+(defn spit-ftr [ztx package]
+  (when (= package "hl7-fhir-r4-core")
+    (let [value-sets (->> (get-in @ztx [:fhir.zen/ns])
+                                        (filter (fn [[zen-ns ns-content]]
+                                                  (let [nss  (name zen-ns)
+                                                        package-name (first (str/split nss #"\." 2))]
+                                                    (and (= package package-name) (get ns-content 'value-set)))))
+                                        (map (fn [[_zen-ns ns-content]] (get ns-content 'value-set))))
+                        ftr-configs (->> value-sets
+                                         (group-by :ftr)
+                                         keys
+                                         (filter identity))]
+                    (doseq [ftr ftr-configs]
+                      (ftr.core/apply-cfg {:cfg ftr})))))
+
 (defn spit-data [ztx {:keys [package-dir package package-file-path package-file] :as config}]
   (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
   (spit-terminology-bundle ztx package-dir {:package package})
+  (spit-ftr ztx package)
   (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
   config)
 
@@ -197,14 +237,15 @@
 
 (defn release-xform [ztx config]
   (comp
-   (filter (partial filter-zen-packages ztx config))
-   (map (partial generate-package-config ztx config))
-   (map clone-zen-package)
-   (map (partial init-zen-repo! ztx))
-   (map (partial create-remote! ztx))
-   (map (partial spit-data ztx))
-   (map commit-zen-changes)
-   (map release-zen-package)))
+    (filter (partial filter-zen-packages ztx config))
+    (map (partial generate-package-config ztx config))
+    (map clone-zen-package)
+    (map (partial init-zen-repo! ztx))
+    (map (partial create-remote! ztx))
+    (map (partial produce-ftr-manifests ztx))
+    (map (partial spit-data ztx))
+    (map commit-zen-changes)
+    (map release-zen-package)))
 
 
 (defn release-packages [ztx config]

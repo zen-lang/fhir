@@ -24,7 +24,8 @@
                                                               :package             package-name
                                                               :git-url-format      git-url-format
                                                               :git-auth-url-format git-auth-url-format
-                                                              :zen-fhir-lib-url    zen-fhir-lib-url})]
+                                                              :zen-fhir-lib-url    zen-fhir-lib-url
+                                                              :node-modules-folder node-modules-folder})]
     (->> (map :package-git-url release-result)
          (clojure.string/join "\n"))))
 
