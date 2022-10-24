@@ -9,7 +9,8 @@
             [clojure.java.io :as io]
             [clojure.string :as str]
             [cheshire.core :as json]
-            [clojure.java.shell :as sh]))
+            [clojure.java.shell :as sh]
+            [ftr.zen-package]))
 
 
 (def zen-fhir-version (slurp (clojure.java.io/resource "zen-fhir-version")))
@@ -299,7 +300,16 @@
   :done)
 
 
-(t/deftest zen-package-project-write
+(defn fs-tree->tree-map [path]
+  (let [splitted-path (drop 1 (str/split path #"/"))
+        tree-map (reduce
+                   (fn [store path] (assoc-in store path {}))
+                   {}
+                   (map (fn [f] (drop 1 (str/split (str f) #"/"))) (file-seq (io/file path))))]
+    (get-in tree-map splitted-path)))
+
+
+(t/deftest ^:kaocha/pending zen-package-project-write
   (generate&spit-project)
 
   (def test-dir "/tmp/zen-fhir-package-write-test/test-zen-packages")
@@ -590,12 +600,14 @@
       (sh/sh "mkdir" "-p" (str package-dir "/zrc"))
 
       (let [config (sut/generate-package-config
-                    ztx
-                    {:out-dir test-dir
-                     :package "fhir-r4"
-                     :git-url-format (str "/tmp" "/%s")
-                     :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")}
-                    "fhir-r4")]
+                     ztx
+                     {:out-dir test-dir
+                      :package "fhir-r4"
+                      :git-url-format (str "/tmp" "/%s")
+                      :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")}
+                     "fhir-r4")
+
+            _ (sut/produce-ftr-manifests ztx config)]
 
         (sut/spit-data ztx config))
 
@@ -609,6 +621,14 @@
                                  {:deps {'zen.fhir string?}}))))
 
       (t/is (not (.exists (io/file (str test-dir "/us-core/zrc/us-core/us-core-patient.edn")))))
+
+      (t/testing "FTR shaped correctly"
+        (matcho/match
+          (fs-tree->tree-map package-dir)
+          {"fhir-r4-terminology-bundle.ndjson.gz" nil
+           "ftr"
+           {"vs" {}
+            "tags" {"init.ndjson.gz" {}}}}))
 
       (t/is (and (.exists (io/file (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")))
                  (let [bundle (->> (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")
@@ -754,6 +774,17 @@
     (t/is (every? #(contains? (:ns @zctx) %)
                   ['us-core.us-core-patient
                    'fhir-r4.Patient])))
+
+  (t/testing "vs validation works"
+    (ftr.zen-package/ftr->memory-cache zctx)
+
+    (matcho/match (ftr.zen-package/validate zctx #{'fhir-r4.Patient/schema} {:gender "incorrect-value"})
+                  {:errors [{:type ":zen.fhir/value-set"
+                             :path [:gender nil]}
+                            nil]})
+
+    (matcho/match (ftr.zen-package/validate zctx #{'fhir-r4.Patient/schema} {:gender "male"})
+                  {:errors empty?}))
 
   (def _ (reset! ztx og-ztx))
 

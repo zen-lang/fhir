@@ -180,46 +180,61 @@
 
 
 (defn produce-ftr-manifests [ztx {:as config,
-                                  :keys [package package-dir node-modules-folder]}]
-  (if (= package "hl7-fhir-r4-core")
-    (let [ftr-manifest {:module      "ftr"
-                        :source-url  (str node-modules-folder "/" (str/replace package "-" "."))
-                        :source-type :ig
-                        :ftr-path    package-dir
-                        :tag         "init"}]
-      (swap! ztx update :fhir.zen/ns
-             (fn [namespaces]
-               (into {}
-                     (map (fn [[zen-ns ns-content]]
-                            (let [nss  (name zen-ns)
-                                  package-name (first (str/split nss #"\." 2))]
-                              (if (and (= package package-name) (get ns-content 'value-set))
-                                [zen-ns (assoc-in ns-content ['value-set :ftr] ftr-manifest)]
-                                [zen-ns ns-content]))))
-                     namespaces)))
-      config)
+                                  :keys [package package-dir]}]
+  (let [inter-valuesets (get-in @ztx [:fhir/inter "ValueSet"])
+
+        {:as _package-meta,
+         file-path :file
+         {npm-package-name :name} :package}
+        (->> inter-valuesets
+             (filter (fn [[_vs-url {:as vs, :zen.fhir/keys [package-ns]}]]
+                       (= (name package-ns) package)))
+             first
+             second
+             :zen/loader)
+
+        ftr-source-url (let [file-path (str/split file-path #"/")
+                             path-to-ig (str/join "/"
+                                                  (into (list npm-package-name) (take-while #(not= npm-package-name %) file-path)))]
+                         path-to-ig)
+
+        ftr-manifest {:module      "ftr"
+                      :source-url  ftr-source-url
+                      :source-type :ig
+                      :ftr-path    package-dir
+                      :tag         "init"}]
+
+    (swap! ztx update :fhir.zen/ns
+           (fn [namespaces]
+             (into {}
+                   (map (fn [[zen-ns ns-content]]
+                          (let [nss  (name zen-ns)
+                                package-name (first (str/split nss #"\." 2))]
+                            (if (and (= package package-name) (get ns-content 'value-set))
+                              [zen-ns (assoc-in ns-content ['value-set :ftr] ftr-manifest)]
+                              [zen-ns ns-content]))))
+                   namespaces)))
     config))
 
 
 (defn spit-ftr [ztx package]
-  (when (= package "hl7-fhir-r4-core")
-    (let [value-sets (->> (get-in @ztx [:fhir.zen/ns])
-                                        (filter (fn [[zen-ns ns-content]]
-                                                  (let [nss  (name zen-ns)
-                                                        package-name (first (str/split nss #"\." 2))]
-                                                    (and (= package package-name) (get ns-content 'value-set)))))
-                                        (map (fn [[_zen-ns ns-content]] (get ns-content 'value-set))))
-                        ftr-configs (->> value-sets
-                                         (group-by :ftr)
-                                         keys
-                                         (filter identity))]
-                    (doseq [ftr ftr-configs]
-                      (ftr.core/apply-cfg {:cfg ftr})))))
+  (let [value-sets (->> (get-in @ztx [:fhir.zen/ns])
+                        (filter (fn [[zen-ns ns-content]]
+                                  (let [nss  (name zen-ns)
+                                        package-name (first (str/split nss #"\." 2))]
+                                    (and (= package package-name) (get ns-content 'value-set)))))
+                        (map (fn [[_zen-ns ns-content]] (get ns-content 'value-set))))
+        ftr-configs (->> value-sets
+                         (group-by :ftr)
+                         keys
+                         (filter identity))]
+    (doseq [ftr ftr-configs]
+      (ftr.core/apply-cfg {:cfg ftr}))))
 
 (defn spit-data [ztx {:keys [package-dir package package-file-path package-file] :as config}]
   (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
   (spit-terminology-bundle ztx package-dir {:package package})
-  (spit-ftr ztx package)
+  #_(spit-ftr ztx package)
   (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
   config)
 
@@ -242,7 +257,7 @@
     (map clone-zen-package)
     (map (partial init-zen-repo! ztx))
     (map (partial create-remote! ztx))
-    (map (partial produce-ftr-manifests ztx))
+    #_(map (partial produce-ftr-manifests ztx))
     (map (partial spit-data ztx))
     (map commit-zen-changes)
     (map release-zen-package)))
