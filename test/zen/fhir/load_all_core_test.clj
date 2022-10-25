@@ -192,7 +192,7 @@
                {:| {:description {}
                     :subjectType {}
                     :item
-                    {:| {:item       {:recur {:symbol 'hl7-fhir-r4-core.Questionnaire/item
+                    {:| {:item       {:recur {:symbol 'hl7-fhir-r4-core.Questionnaire/item-schema
                                               :path [:item nil]}}
                          :enableWhen {:| {:question {}
                                           :operator {}
