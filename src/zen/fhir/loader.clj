@@ -283,7 +283,7 @@
                          (str/split #"\.")
                          rest
                          (->> (map keyword)))
-          cr-name    (str/join "-" (map name el-path))
+          cr-name    (str/join "-" (concat (map name el-path) ["schema"]))
           cr-symbol  (symbol schema-ns cr-name)]
       (assoc x :recur {:symbol cr-symbol
                        :path el-path}))
