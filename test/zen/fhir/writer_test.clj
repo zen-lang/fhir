@@ -777,7 +777,7 @@
                    'fhir-r4.Patient])))
 
   (t/testing "vs validation works"
-    (ftr.zen-package/ftr->memory-cache zctx)
+    (ftr.zen-package/build-ftr-index zctx)
 
     (matcho/match (ftr.zen-package/validate zctx #{'fhir-r4.Patient/schema} {:gender "incorrect-value"})
                   {:errors [{:type ":zen.fhir/value-set"
