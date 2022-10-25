@@ -198,10 +198,10 @@
                                                   (into (list npm-package-name) (take-while #(not= npm-package-name %) file-path)))]
                          path-to-ig)
 
-        ftr-manifest {:module      "ftr"
+        ftr-manifest {:module      "ig"
                       :source-url  ftr-source-url
                       :source-type :ig
-                      :ftr-path    package-dir
+                      :ftr-path    "ftr"
                       :tag         "init"}]
 
     (swap! ztx update :fhir.zen/ns
@@ -217,7 +217,7 @@
     config))
 
 
-(defn spit-ftr [ztx package]
+(defn spit-ftr [ztx package-dir package]
   (let [value-sets (->> (get-in @ztx [:fhir.zen/ns])
                         (filter (fn [[zen-ns ns-content]]
                                   (let [nss  (name zen-ns)
@@ -229,12 +229,12 @@
                          keys
                          (filter identity))]
     (doseq [ftr ftr-configs]
-      (ftr.core/apply-cfg {:cfg ftr}))))
+      (ftr.core/apply-cfg {:cfg (assoc ftr :ftr-path (str package-dir "/ftr"))}))))
 
 (defn spit-data [ztx {:keys [package-dir package package-file-path package-file] :as config}]
   (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
   (spit-terminology-bundle ztx package-dir {:package package})
-  #_(spit-ftr ztx package)
+  #_(spit-ftr ztx package-dir package)
   (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
   config)
 

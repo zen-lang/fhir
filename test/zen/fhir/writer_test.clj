@@ -627,8 +627,9 @@
           (fs-tree->tree-map package-dir)
           {"fhir-r4-terminology-bundle.ndjson.gz" nil
            "ftr"
-           {"vs" {}
-            "tags" {"init.ndjson.gz" {}}}}))
+           {"ig"
+            {"vs" {}
+             "tags" {"init.ndjson.gz" {}}}}}))
 
       (t/is (and (.exists (io/file (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")))
                  (let [bundle (->> (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")
