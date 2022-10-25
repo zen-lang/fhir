@@ -3,7 +3,8 @@
             [zen.fhir.inter-utils]
             [zen.fhir.writer]
             [com.rpl.specter :as sp]
-            [clojure.walk]))
+            [clojure.walk]
+            [clojure.string :as str]))
 
 
 (def order-zen-ns            zen.fhir.writer/order-zen-ns)
@@ -167,6 +168,8 @@
                               (remove #(= % "http://hl7.org/fhir/StructureDefinition/Resource"))
                               (keep (fn [x] (url->symbol fhir-inter x {:type :reference :el el :url url})))
                               (into #{}))}})
+             (when-let [el-recur-sym (get-in el [:recur :symbol])]
+               {:confirms #{el-recur-sym}})
              (when (:nested el)
                {:zen.fhir/nested {}})
 
@@ -272,6 +275,48 @@
          :version (:version inter-res)})}}))
 
 
+(defn path-in-schema [schema keys-path]
+  (reduce (fn [path path-el]
+            (conj (if (get-in schema (conj path :keys))
+                    (conj path :keys)
+                    (apply conj path [:every :keys]))
+                  path-el))
+          []
+          keys-path))
+
+
+(defn path-to-fhir-map-schema [schema keys-path]
+  (let [path-to  (path-in-schema schema keys-path)
+        ref-node (get-in schema path-to)]
+    (if (= (:type ref-node) 'zen/vector)
+      (conj (vec path-to) :every)
+      path-to)))
+
+
+(defn extract-recur-referred-schema [_fhir-inter [_url inter-res] zen-ns-map recur-ref]
+  (let [ref-ns-sym (:symbol recur-ref)
+        ref-name   (name ref-ns-sym)
+        ref-sym    (symbol ref-name)
+
+        ref-path (->> (path-to-fhir-map-schema (get zen-ns-map 'schema)
+                                               (:path recur-ref))
+                      (cons 'schema))
+
+        ref-schema (merge {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
+                           :zen.fhir/version (:zen.fhir/version inter-res)}
+                          (get-in zen-ns-map ref-path))]
+
+    (-> zen-ns-map
+        (assoc ref-sym ref-schema)
+        (assoc-in ref-path {:confirms #{ref-ns-sym}}))))
+
+
+(defn extract-recur-referred-schemas [_fhir-inter [_url inter-res] schema-ns-map]
+  (reduce #(extract-recur-referred-schema _fhir-inter [_url inter-res] %1 %2)
+          schema-ns-map
+          (get inter-res :recur-refs)))
+
+
 (defmethod generate-zen-schema :StructureDefinition [_rt fhir-inter [url inter-res]]
   (let [inter-res   (cond-> inter-res ;; NOTE: should be done in zen.fhir.core when inter-res are generated
                       (and (= "Extension" (:type inter-res))
@@ -291,19 +336,23 @@
                                  "specialization" 'zen.fhir/base-schema
                                  'zen.fhir/structure-schema)
         schema-part            (generate-kind-schema fhir-inter [url inter-res])
-        this-schema-sym        (symbol (name schema-ns) "schema")]
-    {schema-ns {'ns     schema-ns
-                'import (disj imports schema-ns)
-                'schema (-> (utils/safe-merge-with-into
-                              {:zen/tags (into #{'zen/schema}
-                                               (when severity-tag [severity-tag]))
-                               :zen/desc (:text-description inter-res)
-                               :zen.fhir/type (:type inter-res)
-                               :zen.fhir/profileUri url
-                               :zen.fhir/version (:zen.fhir/version inter-res)}
-                              schema-part)
-                            (update :confirms (comp not-empty disj) this-schema-sym)
-                            utils/strip-nils)}}))
+        this-schema-sym        (symbol (name schema-ns) "schema")
+        schema                 (-> (utils/safe-merge-with-into
+                                     {:zen/tags            (into #{'zen/schema}
+                                                                 (when severity-tag [severity-tag]))
+                                      :zen/desc            (:text-description inter-res)
+                                      :zen.fhir/type       (:type inter-res)
+                                      :zen.fhir/profileUri url
+                                      :zen.fhir/version    (:zen.fhir/version inter-res)}
+                                     schema-part)
+                                   (update :confirms (comp not-empty disj) this-schema-sym)
+                                   utils/strip-nils)
+        ns-with-all-schemas    (extract-recur-referred-schemas fhir-inter
+                                                               [url inter-res]
+                                                               {'schema schema})]
+    {schema-ns (merge {'ns     schema-ns
+                       'import (disj imports schema-ns)}
+                      ns-with-all-schemas)}))
 
 
 (defmethod generate-zen-schema :SearchParameter [_rt fhir-inter [url inter-res]]

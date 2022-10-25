@@ -192,7 +192,8 @@
                {:| {:description {}
                     :subjectType {}
                     :item
-                    {:| {:item       {:recur [:item]}
+                    {:| {:item       {:recur {:symbol 'hl7-fhir-r4-core.Questionnaire/item
+                                              :path [:item nil]}}
                          :enableWhen {:| {:question {}
                                           :operator {}
                                           :answer   {}}}}}}})

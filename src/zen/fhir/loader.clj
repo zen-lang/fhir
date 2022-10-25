@@ -115,6 +115,9 @@
                            el-root-path   (vec (butlast el-path))
                            el-parent-path (vec (butlast el-root-path))]
                        (cond-> acc
+                         (some? (:recur el))
+                         (update :recur-refs #(conj (set %) (:recur el)))
+
                          (= :poly (:type last-part))
                          (assoc-in (conj el-parent-path :fhir-poly-keys)
                                    (build-fhir-poly-keys-mapping (:key last-part) (:types el)))
@@ -251,11 +254,47 @@
     el))
 
 
-(defn normalize-content-ref [x]
-  (if-let [cr (:contentReference x)]
-    (assoc x :recur (->> (rest (str/split cr #"\."))
-                         (mapv keyword)))
-    x))
+(defn deduce-ref-type [content-reference]
+  (cond
+    (nil? content-reference)
+    :none
+
+    (str/starts-with? content-reference "#")
+    :local-ref
+
+    (str/starts-with? content-reference "http://")
+    :external-ref
+
+    :else
+    :unknown))
+
+
+(defn normalize-content-ref [x parent-resource]
+  (case (deduce-ref-type (:contentReference x))
+
+    :none
+    x
+
+    :local-ref
+    (let [package-ns (:zen.fhir/package-ns parent-resource)
+          schema-ns  (when package-ns
+                       (str (name package-ns) "." (:id parent-resource)))
+          el-path    (-> (:contentReference x)
+                         (str/split #"\.")
+                         rest
+                         (->> (map keyword)))
+          cr-name    (str/join "-" (map name el-path))
+          cr-symbol  (symbol schema-ns cr-name)]
+      (assoc x :recur {:symbol cr-symbol
+                       :path el-path}))
+
+    :external-ref
+    (do (println :unsupported-content-reference-type (:contentReference x))
+        x)
+
+    :unknown
+    (do (println :unknown-content-reference-type (:contentReference x))
+        x)))
 
 
 (defn normalize-flags [x]
@@ -286,7 +325,7 @@
     res))
 
 
-(defn normalize-element [x & [stu3?]]
+(defn normalize-element [x parent-resource & [stu3?]]
   (-> (dissoc x
               :mapping :constraint :extension :comment :comments :requirements :definition :alias
               :meaningWhenMissing :isModifierReason)
@@ -295,7 +334,7 @@
       (normalize-arity)
       (normalize-polymorphic stu3?)
       (normalize-nested)
-      (normalize-content-ref)
+      (normalize-content-ref parent-resource)
       (normalize-flags)
       (normalize-fixed)
       (normalize-pattern)))
@@ -487,7 +526,7 @@
     #_(assert (:derivation res) (str ":derivation is required " (pr-str (:url res))))
     (let [stu3? ((fnil str/starts-with? "") (:fhirVersion res) "3")]
       (->> (get-in res [:differential :element])
-           (mapv #(normalize-element % stu3?))
+           (mapv #(normalize-element % res stu3?))
            (group-elements (select-keys res [:kind :abstract :derivation
                                              :baseDefinition :description :fhirVersion :type :url]))
            (normalize-description)
