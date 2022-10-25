@@ -314,7 +314,8 @@
 (defn extract-recur-referred-schemas [_fhir-inter [_url inter-res] schema-ns-map]
   (reduce #(extract-recur-referred-schema _fhir-inter [_url inter-res] %1 %2)
           schema-ns-map
-          (get inter-res :recur-refs)))
+          (sort-by (fn [{:keys [path]}] (- (count path)))
+                   (get inter-res :recur-refs))))
 
 
 (defmethod generate-zen-schema :StructureDefinition [_rt fhir-inter [url inter-res]]
