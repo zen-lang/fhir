@@ -202,6 +202,7 @@
                       :source-url  ftr-source-url
                       :source-type :ig
                       :ftr-path    "ftr"
+                      :zen/package-name package
                       :tag         "init"}]
 
     (swap! ztx update :fhir.zen/ns
@@ -234,7 +235,7 @@
 (defn spit-data [ztx {:keys [package-dir package package-file-path package-file] :as config}]
   (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
   (spit-terminology-bundle ztx package-dir {:package package})
-  #_(spit-ftr ztx package-dir package)
+  (spit-ftr ztx package-dir package)
   (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
   config)
 
@@ -257,7 +258,7 @@
     (map clone-zen-package)
     (map (partial init-zen-repo! ztx))
     (map (partial create-remote! ztx))
-    #_(map (partial produce-ftr-manifests ztx))
+    (map (partial produce-ftr-manifests ztx))
     (map (partial spit-data ztx))
     (map commit-zen-changes)
     (map release-zen-package)))
