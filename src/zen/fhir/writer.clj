@@ -234,7 +234,6 @@
 
 (defn spit-data [ztx {:keys [package-dir package package-file-path package-file] :as config}]
   (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
-  (spit-terminology-bundle ztx package-dir {:package package})
   (spit-ftr ztx package-dir package)
   (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
   config)

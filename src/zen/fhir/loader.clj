@@ -659,17 +659,23 @@
 
 
 ;; TODO filter by resource type
-(defn load-definiton [ztx opts res]
+(defn load-definiton [ztx {:as opts, :keys [skip-concept-processing]} res]
   (let [rt (:resourceType res)
         url (or (:url res) (:url opts))]
     (if (and rt url)
-      (when-let [processed-res (process-on-load res)]
-        (swap! ztx update-in [:fhir/inter rt url]
-               (fn [x] (when x (println :override-resource url))
-                 (merge processed-res
-                        {:_source "zen.fhir"
-                         :zen.fhir/version (:zen.fhir/version @ztx)}
-                        (select-keys res (conj loader-keys :_source))))))
+      (let [processed-res (process-on-load res)
+            processed-res (cond-> processed-res
+                            (and processed-res
+                                 (comp #{"CodeSystem" "ValueSet"} :resourceType)
+                                 skip-concept-processing)
+                            (assoc :fhir/concepts '()))]
+        (when processed-res
+         (swap! ztx update-in [:fhir/inter rt url]
+                (fn [x] (when x (println :override-resource url))
+                  (merge processed-res
+                         {:_source "zen.fhir"
+                          :zen.fhir/version (:zen.fhir/version @ztx)}
+                         (select-keys res (conj loader-keys :_source)))))))
       (println :skip-resource "no url or rt" (get-in res [:zen/loader :file])))))
 
 
@@ -707,10 +713,11 @@
 
 (defn process-resources
   "this is processing of resources with context"
-  [ztx]
+  [ztx & [{:as _params, :keys [skip-concept-processing]}]]
   (structure-definition.loader/process-structure-definitions ztx)
   (search-parameter.loader/process-search-parameters ztx)
-  (process-concepts ztx))
+  (when-not skip-concept-processing
+    (process-concepts ztx)))
 
 
 (defn dir? [^java.io.File file]
@@ -790,7 +797,7 @@
    (swap! ztx assoc :zen.fhir/version (slurp (io/resource "zen-fhir-version")))
    ztx))
 
-(defn preload-all [ztx & [{:keys [params node-modules-folder whitelist blacklist]
+(defn preload-all [ztx & [{:keys [params node-modules-folder whitelist blacklist skip-concept-processing]
                            :or {node-modules-folder "node_modules"}}]]
   (init-ztx ztx)
   (doseq [pkg-dir  (find-packages node-modules-folder)]
@@ -800,6 +807,7 @@
       (doseq [f (.listFiles pkg-dir)]
         (do-load-file ztx
                       {:params package-params
+                       :skip-concept-processing skip-concept-processing
                        :whitelist whitelist
                        :blacklist (merge-with merge
                                               {"StructureDefinition" #{"http://hl7.org/fhir/StructureDefinition/familymemberhistory-genetic"
@@ -811,5 +819,5 @@
 
 (defn load-all [ztx _ & [params]]
   (preload-all ztx params)
-  (process-resources ztx)
+  (process-resources ztx params)
   :done)

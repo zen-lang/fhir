@@ -36,24 +36,25 @@
 
 (defonce ztx (zen.core/new-context {}))
 
-(defn generate&spit-project []
+(defn generate&spit-project [& [opts]]
   (reset! ztx @(zen.core/new-context {}))
 
   (zen.fhir.loader/init-ztx ztx)
 
   (zen.fhir.loader/load-all ztx nil
-                            {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
-                                      "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core}}
-                             :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
-                                                      "http://hl7.org/fhir/us/core/ValueSet/birthsex"
-                                                      "http://hl7.org/fhir/ValueSet/c80-practice-codes"
-                                                      "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.32"
-                                                      "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1114.17"
-                                                      "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.101"
-                                                      "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"
-                                                      "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
-                                                      "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualAndGroupSpecialtiesVS"
-                                                      "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/NonIndividualSpecialtiesVS"}}})
+                            (merge {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
+                                             "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core}}
+                                    :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
+                                                             "http://hl7.org/fhir/us/core/ValueSet/birthsex"
+                                                             "http://hl7.org/fhir/ValueSet/c80-practice-codes"
+                                                             "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.32"
+                                                             "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1114.17"
+                                                             "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.101"
+                                                             "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"
+                                                             "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
+                                                             "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualAndGroupSpecialtiesVS"
+                                                             "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/NonIndividualSpecialtiesVS"}}}
+                                   opts))
 
   (zen.fhir.generator/generate-zen-schemas ztx))
 
@@ -309,8 +310,8 @@
     (get-in tree-map splitted-path)))
 
 
-(t/deftest ^:kaocha/pending zen-package-project-write
-  (generate&spit-project)
+(t/deftest zen-package-project-write
+  (generate&spit-project {:skip-concept-processing true})
 
   (def test-dir "/tmp/zen-fhir-package-write-test/test-zen-packages")
 
@@ -629,42 +630,7 @@
            "ftr"
            {"ig"
             {"vs" {}
-             "tags" {"init.ndjson.gz" {}}}}}))
-
-      (t/is (and (.exists (io/file (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")))
-                 (let [bundle (->> (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")
-                                   (read-ndjson-bundle)
-                                   (group-by (juxt :resourceType :id)))]
-                   (matcho/match bundle
-                                 {["ValueSet" "administrative-gender"]
-                                  [{:url "http://hl7.org/fhir/ValueSet/administrative-gender"
-                                    :_source "zen.fhir"
-                                    :zen.fhir/header nil?
-                                    :zen.fhir/package nil?
-                                    :zen.fhir/package-ns nil?
-                                    :zen.fhir/schema-ns nil?}]
-
-                                  ["CodeSystem" "administrative-gender"]
-                                  [{:url "http://hl7.org/fhir/administrative-gender"
-                                    :concept nil?
-                                    :_source "zen.fhir"
-
-                                    :zen.fhir/header nil?
-                                    :zen.fhir/package nil?
-                                    :zen.fhir/package-ns nil?
-                                    :zen.fhir/schema-ns nil?}]
-
-                                  ["Concept" "http:--hl7.org-fhir-administrative-gender-other"]
-                                  [{:code       "other"
-                                    :display    "Other"
-                                    :definition "Other."
-                                    :system     "http://hl7.org/fhir/administrative-gender"
-                                    :valueset   ["http://hl7.org/fhir/ValueSet/administrative-gender"]
-                                    :_source "zen.fhir"
-                                    :zen.fhir/header nil?
-                                    :zen.fhir/package nil?
-                                    :zen.fhir/package-ns nil?
-                                    :zen.fhir/schema-ns nil?}]})))))
+             "tags" {"init.ndjson.gz" {}}}}})))
 
     (t/testing "spit all packages data"
       (delete-directory-recursive (io/file test-dir))
@@ -705,42 +671,7 @@
                                    read-string)]
                    (matcho/match package
                                  {:deps {'zen.fhir string?
-                                         'fhir-r4 (str test-dir "/fhir-r4")}}))))
-
-      (t/is (and (.exists (io/file (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")))
-                 (let [bundle (->> (str test-dir "/fhir-r4/fhir-r4-terminology-bundle.ndjson.gz")
-                                   (read-ndjson-bundle)
-                                   (group-by (juxt :resourceType :id)))]
-                   (matcho/match bundle
-                                 {["ValueSet" "administrative-gender"]
-                                  [{:url "http://hl7.org/fhir/ValueSet/administrative-gender"
-                                    :_source "zen.fhir"
-                                    :zen.fhir/header nil?
-                                    :zen.fhir/package nil?
-                                    :zen.fhir/package-ns nil?
-                                    :zen.fhir/schema-ns nil?}]
-
-                                  ["CodeSystem" "administrative-gender"]
-                                  [{:url "http://hl7.org/fhir/administrative-gender"
-                                    :concept nil?
-                                    :_source "zen.fhir"
-
-                                    :zen.fhir/header nil?
-                                    :zen.fhir/package nil?
-                                    :zen.fhir/package-ns nil?
-                                    :zen.fhir/schema-ns nil?}]
-
-                                  ["Concept" "http:--hl7.org-fhir-administrative-gender-other"]
-                                  [{:code       "other"
-                                    :display    "Other"
-                                    :definition "Other."
-                                    :system     "http://hl7.org/fhir/administrative-gender"
-                                    :valueset   ["http://hl7.org/fhir/ValueSet/administrative-gender"]
-                                    :_source "zen.fhir"
-                                    :zen.fhir/header nil?
-                                    :zen.fhir/package nil?
-                                    :zen.fhir/package-ns nil?
-                                    :zen.fhir/schema-ns nil?}]})))))
+                                         'fhir-r4 (str test-dir "/fhir-r4")}})))))
 
     #_(t/testing "release packages" #_"NOTE: don't know how to test release, it's just git push"
       #_(delete-directory-recursive (io/file test-dir))
