@@ -64,6 +64,7 @@
   (->> (vals (:fhir/inter @ztx))
        (mapcat vals)
        (keep #(some-> % :zen.fhir/package-ns name))
+       (remove #{"us-nlm-vsac"})
        set))
 
 
