@@ -8,7 +8,7 @@
         fipp/fipp            {:mvn/version "0.6.26"}
         http-kit/http-kit    {:mvn/version "2.6.0"}
         health-samurai/ftr   {:git/url "https://github.com/HealthSamurai/ftr.git"
-                              :sha "34417382285285b8252ae55cd21816ac18717680"}
+                              :sha "9a9b2330b183c5d39a9dca17b12fec70b0500ecc"}
 
         com.rpl/specter      {:mvn/version "1.1.4"}
         cli-matic/cli-matic {:mvn/version "0.5.4"}
