@@ -7,7 +7,8 @@
             [clojure.string]))
 
 
-(defn github-release-zen-packages [{:keys [node-modules-folder out-dir package-name zen-fhir-lib-url git-url-format git-auth-url-format]}]
+(defn github-release-zen-packages [{:keys [node-modules-folder out-dir package-name zen-fhir-lib-url git-url-format git-auth-url-format
+                                           blacklisted-packages]}]
   (let [github-user  (System/getenv "ZEN_FHIR_RELEASE_GITHUB_USER")
         github-token (System/getenv "ZEN_FHIR_RELEASE_GITHUB_TOKEN")
         org-name     (System/getenv "ZEN_FHIR_RELEASE_GITHUB_ORG")
@@ -21,12 +22,13 @@
         _ (zen.fhir.loader/load-all ztx nil {:node-modules-folder node-modules-folder
                                              :skip-concept-processing true})
         _ (zen.fhir.generator/generate-zen-schemas ztx)
-        release-result (zen.fhir.writer/release-packages ztx {:out-dir             out-dir
-                                                              :package             package-name
-                                                              :git-url-format      git-url-format
-                                                              :git-auth-url-format git-auth-url-format
-                                                              :zen-fhir-lib-url    zen-fhir-lib-url
-                                                              :node-modules-folder node-modules-folder})]
+        release-result (zen.fhir.writer/release-packages ztx {:out-dir              out-dir
+                                                              :package              package-name
+                                                              :git-url-format       git-url-format
+                                                              :git-auth-url-format  git-auth-url-format
+                                                              :zen-fhir-lib-url     zen-fhir-lib-url
+                                                              :blacklisted-packages blacklisted-packages
+                                                              :node-modules-folder  node-modules-folder})]
     (->> (map :package-git-url release-result)
          (clojure.string/join "\n"))))
 
@@ -34,9 +36,10 @@
 (defn -main [return-path node-modules-folder out-dir & [zen-fhir-lib-url git-url-format git-auth-url-format package-name]]
   (spit return-path
         (github-release-zen-packages
-          {:node-modules-folder node-modules-folder
-           :out-dir             out-dir
-           :package-name        package-name
-           :zen-fhir-lib-url    zen-fhir-lib-url
-           :git-auth-url-format git-auth-url-format
-           :git-url-format      git-url-format})))
+          {:node-modules-folder  node-modules-folder
+           :out-dir              out-dir
+           :package-name         package-name
+           :zen-fhir-lib-url     zen-fhir-lib-url
+           :git-auth-url-format  git-auth-url-format
+           :git-url-format       git-url-format
+           :blacklisted-packages #{"us-nlm-vsac"}})))

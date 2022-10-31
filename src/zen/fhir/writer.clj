@@ -60,11 +60,12 @@
 
 (defn collect-packages ;; TODO: Shouldn't be a function, result should be stored in ztx
   "Finds all zen packages in ztx"
-  [ztx]
+  [ztx & [{:as _opts, :keys [blacklisted-packages]
+           :or {blacklisted-packages #{}}}]]
   (->> (vals (:fhir/inter @ztx))
        (mapcat vals)
        (keep #(some-> % :zen.fhir/package-ns name))
-       (remove #{"us-nlm-vsac"})
+       (remove blacklisted-packages)
        set))
 
 
@@ -268,4 +269,4 @@
   (into
    []
    (release-xform ztx config)
-   (collect-packages ztx)))
+   (collect-packages ztx config)))
