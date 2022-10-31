@@ -204,7 +204,6 @@
                       :source-url  ftr-source-url
                       :source-type :ig
                       :ftr-path    "ftr"
-                      :zen/package-name package
                       :tag         "init"}]
 
     (swap! ztx update :fhir.zen/ns
