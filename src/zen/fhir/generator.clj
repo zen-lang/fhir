@@ -24,29 +24,41 @@
 
 
 (def fhir-primitive->zen-primitive
-  '{"boolean" zen/boolean
+  '{"boolean" {:type zen/boolean}
 
-    "decimal"     zen/number
-    "integer"     zen/integer
-    "unsignedInt" zen/integer
-    "positiveInt" zen/integer
+    "decimal"     {:type zen/number}
+    "integer"     {:type zen/integer}
+    "unsignedInt" {:type zen/integer
+                   :min  0}
+    "positiveInt" {:type zen/integer
+                   :min  1}
 
-    "string"       zen/string
-    "markdown"     zen/string
-    "id"           zen/string
-    "uuid"         zen/string
-    "oid"          zen/string
-    "uri"          zen/string
-    "url"          zen/string
-    "canonical"    zen/string
-    "code"         zen/string
-    "base64Binary" zen/string
-    "xhtml"        zen/string
+    "string"       {:type      zen/string
+                    :maxLength 1048576}
+    "markdown"     {:type      zen/string
+                    :maxLength 1048576}
+    "id"           {:type  zen/string
+                    :regex "[A-Za-z0-9\\-\\.]{1,64}"}
+    "uuid"         {:type  zen/string}
+    "oid"          {:type  zen/string
+                    :regex "urn:oid:[0-2](\\.(0|[1-9][0-9]*))+"}
+    "uri"          {:type zen/string}
+    "url"          {:type zen/string}
+    "canonical"    {:type zen/string}
+    "code"         {:type  zen/string
+                    :regex "[^\\s]+(\\s[^\\s]+)*"}
+    "base64Binary" {:type  zen/string
+                    :regex "(\\s*([0-9a-zA-Z\\+\\=]){4}\\s*)+"}
+    "xhtml"        {:type zen/string}
 
-    "instant"  zen/string
-    "dateTime" zen/string
-    "date"     zen/string
-    "time"     zen/string})
+    "instant"  {:type  zen/string
+                :regex "([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\\.[0-9]+)?(Z|(\\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00))"}
+    "dateTime" {:type  zen/string
+                :regex "([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1])(T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\\.[0-9]+)?(Z|(\\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00)))?)?)?"}
+    "date"     {:type  zen/string
+                :regex "([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1]))?)?"}
+    "time"     {:type  zen/string
+                :regex "([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\\.[0-9]+)?"}})
 
 
 (defn confirms-base [fhir-inter [_url inter-res]]
@@ -59,8 +71,8 @@
 (defmethod generate-kind-schema :primitive-type [fhir-inter [url inter-res]]
   (let [tp         (or (get-in inter-res [:| :value :type])
                        (:type inter-res))
-        zen-type   (fhir-primitive->zen-primitive tp)]
-    (merge {:type zen-type}
+        zen-type-schema   (fhir-primitive->zen-primitive tp)]
+    (merge zen-type-schema
            (when (not= "http://hl7.org/fhir/StructureDefinition/Element"
                        (:baseDefinition inter-res))
              (confirms-base fhir-inter [url inter-res])))))
