@@ -43,4 +43,4 @@
            :zen-fhir-lib-url     zen-fhir-lib-url
            :git-auth-url-format  git-auth-url-format
            :git-url-format       git-url-format
-           :blacklisted-packages #{}})))
+           :blacklisted-packages #{"us-nlm-vsac"}})))
