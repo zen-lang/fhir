@@ -183,7 +183,9 @@
 
 
 (defn clean-up-clonned-repo! [ztx {:as config, :keys [package-dir]}]
-  (zen.package/sh! "bash" "-c" "ls | grep -v ftr | xargs rm -rf" :dir package-dir))
+  (when package-dir
+    (zen.package/sh! "bash" "-c" "ls | grep -v ftr | xargs rm -rf" :dir package-dir))
+  config)
 
 
 (defn produce-ftr-manifests [ztx {:as config,
@@ -199,7 +201,6 @@
              first
              second
              :zen/loader)
-
         ftr-source-url (let [file-path (str/split file-path #"/")
                              path-to-ig (str/join "/"
                                                   (into (list npm-package-name) (take-while #(not= npm-package-name %) file-path)))]
@@ -221,7 +222,7 @@
                               [zen-ns (assoc-in ns-content ['value-set :ftr] ftr-manifest)]
                               [zen-ns ns-content]))))
                    namespaces)))
-    config))
+    (assoc config :npm-package-original-name npm-package-name)))
 
 
 (defn spit-ftr [ztx package-dir package]
@@ -261,6 +262,11 @@
   config)
 
 
+(defn rm-npm-package! [{:as config, :keys [node-modules-folder npm-package-original-name]}]
+  (zen.package/sh! "rm" "-rf" npm-package-original-name :dir node-modules-folder)
+  config)
+
+
 (defn release-xform [ztx config]
   (comp
     (filter (partial filter-zen-packages ztx config))
@@ -271,6 +277,7 @@
     (map (partial clean-up-clonned-repo! ztx))
     (map (partial produce-ftr-manifests ztx))
     (map (partial spit-data ztx))
+    (map rm-npm-package!)
     (map commit-zen-changes)
     (map release-zen-package)
     (map rm-local-repo!)))

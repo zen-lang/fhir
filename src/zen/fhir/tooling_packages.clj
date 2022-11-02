@@ -22,7 +22,6 @@
                                    :org-name org-name})
         _ (zen.fhir.loader/load-all ztx nil {:node-modules-folder node-modules-folder
                                              :skip-concept-processing true})
-        _ (zen.package/sh! "rm" "-rf" node-modules-folder)
         _ (zen.fhir.generator/generate-zen-schemas ztx)
         release-result (zen.fhir.writer/release-packages ztx {:out-dir              out-dir
                                                               :package              package-name
