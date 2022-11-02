@@ -4,7 +4,8 @@
             [zen.fhir.loader]
             [zen.fhir.generator]
             [zen.fhir.writer]
-            [clojure.string]))
+            [clojure.string]
+            [zen.package]))
 
 
 (defn github-release-zen-packages [{:keys [node-modules-folder out-dir package-name zen-fhir-lib-url git-url-format git-auth-url-format
@@ -21,6 +22,7 @@
                                    :org-name org-name})
         _ (zen.fhir.loader/load-all ztx nil {:node-modules-folder node-modules-folder
                                              :skip-concept-processing true})
+        _ (zen.package/sh! "rm" "-rf" node-modules-folder)
         _ (zen.fhir.generator/generate-zen-schemas ztx)
         release-result (zen.fhir.writer/release-packages ztx {:out-dir              out-dir
                                                               :package              package-name

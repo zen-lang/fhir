@@ -182,6 +182,10 @@
       config)))
 
 
+(defn clean-up-clonned-repo! [ztx {:as config, :keys [package-dir]}]
+  (zen.package/sh! "bash" "-c" "ls | grep -v ftr | xargs rm -rf" :dir package-dir))
+
+
 (defn produce-ftr-manifests [ztx {:as config,
                                   :keys [package package-dir]}]
   (let [inter-valuesets (get-in @ztx [:fhir/inter "ValueSet"])
@@ -264,6 +268,7 @@
     (map clone-zen-package)
     (map (partial init-zen-repo! ztx))
     (map (partial create-remote! ztx))
+    (map (partial clean-up-clonned-repo! ztx))
     (map (partial produce-ftr-manifests ztx))
     (map (partial spit-data ztx))
     (map commit-zen-changes)
