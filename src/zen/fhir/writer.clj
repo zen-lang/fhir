@@ -137,6 +137,7 @@
   (assoc config :cloned?
          (zero? (:exit (zen.package/sh! "git"
                                         "clone"
+                                        "--depth=1"
                                         (or package-git-auth-url
                                             package-git-url)
                                         package-dir)))))
