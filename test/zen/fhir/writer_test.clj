@@ -718,6 +718,22 @@
     (matcho/match (ftr.zen-package/validate zctx #{'fhir-r4.Patient/schema} {:gender "male"})
                   {:errors empty?}))
 
+  (t/testing "rm local packages"
+    (doseq [package-name (sut/collect-packages ztx)]
+      (let [package (sut/generate-package-config
+                      ztx
+                      {:create-remote? false
+                       :out-dir test-dir
+                       :cloned? false
+                       :git-url-format (str test-dir "/%s")
+                       :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")}
+                      package-name)]
+        (sut/rm-local-repo! package)))
+
+    (t/is (not (.exists (io/file (str test-dir "/fhir-r4/")))))
+    (t/is (not (.exists (io/file (str test-dir "/us-core/"))))))
+
+
   (def _ (reset! ztx og-ztx))
 
   :done)

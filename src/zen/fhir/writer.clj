@@ -251,6 +251,11 @@
   config)
 
 
+(defn rm-local-repo! [{:as config, :keys [out-dir package]}]
+  (zen.package/sh! "rm" "-rf" package :dir out-dir)
+  config)
+
+
 (defn release-xform [ztx config]
   (comp
     (filter (partial filter-zen-packages ztx config))
@@ -261,7 +266,8 @@
     (map (partial produce-ftr-manifests ztx))
     (map (partial spit-data ztx))
     (map commit-zen-changes)
-    (map release-zen-package)))
+    (map release-zen-package)
+    (map rm-local-repo!)))
 
 
 (defn release-packages [ztx config]
