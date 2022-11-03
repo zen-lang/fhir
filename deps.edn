@@ -12,7 +12,7 @@
 
         com.rpl/specter      {:mvn/version "1.1.4"}
         cli-matic/cli-matic {:mvn/version "0.5.4"}
-        com.github.seancorfield/next.jdbc {:mvn/version "1.3.828"}
+        com.github.seancorfield/next.jdbc {:mvn/version "1.3.834"}
         org.xerial/sqlite-jdbc {:mvn/version "3.39.3.0"}
         org.postgresql/postgresql {:mvn/version "42.5.0"}
         clj-http/clj-http {:mvn/version "3.12.3"}}
@@ -20,7 +20,7 @@
  :aliases
  {:nrepl
   {:extra-paths []
-   :extra-deps  {cider/cider-nrepl {:mvn/version "0.28.5"}
+   :extra-deps  {cider/cider-nrepl {:mvn/version "0.28.7"}
                  hiccup/hiccup {:mvn/version "2.0.0-alpha2"}}
 
    :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]}
@@ -31,7 +31,7 @@
          :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]}
 
   :kaocha
-  {:extra-deps {lambdaisland/kaocha  {:mvn/version "1.69.1069"}}
+  {:extra-deps {lambdaisland/kaocha  {:mvn/version "1.71.1119"}}
    :extra-paths ["test"]
    :jvm-opts    ^:replace ["-XX:-OmitStackTraceInFastThrow"]
    :main-opts   ["-m" "kaocha.runner" "--config-file" "test/test.edn"]}
