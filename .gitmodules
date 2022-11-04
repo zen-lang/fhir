@@ -1,3 +1,6 @@
 [submodule "zen.fhir"]
 	path = zen.fhir
 	url = git@github.com:zen-fhir/zen.fhir.git
+[submodule "libs/ftr"]
+	path = libs/ftr
+	url = git@github.com:HealthSamurai/ftr.git
