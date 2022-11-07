@@ -5,7 +5,8 @@
             [zen.fhir.generator]
             [zen.fhir.writer]
             [clojure.string]
-            [zen.package]))
+            [zen.package]
+            [ftr.core]))
 
 
 (defn github-release-zen-packages [{:keys [node-modules-folder out-dir package-name zen-fhir-lib-url git-url-format git-auth-url-format
@@ -22,8 +23,18 @@
                                    :org-name org-name})
         _ (zen.fhir.loader/load-all ztx nil {:node-modules-folder node-modules-folder
                                              :skip-concept-processing true})
+
+        ftr-context (ftr.core/extract {:cfg
+                                       {:module      "ig"
+                                        :source-url  node-modules-folder
+                                        :source-type :igs
+                                        :ftr-path    "ftr"
+                                        :tag         "init"}})
+
+        _ (zen.package/sh! "rm" "-rf" node-modules-folder)
         _ (zen.fhir.generator/generate-zen-schemas ztx)
-        release-result (zen.fhir.writer/release-packages ztx {:out-dir              out-dir
+        release-result (zen.fhir.writer/release-packages ztx {:ftr-context          ftr-context
+                                                              :out-dir              out-dir
                                                               :package              package-name
                                                               :git-url-format       git-url-format
                                                               :git-auth-url-format  git-auth-url-format

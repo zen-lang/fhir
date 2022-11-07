@@ -7,7 +7,8 @@
             [clojure.walk]
             [org.httpkit.client :as client]
             [zen.package]
-            [ftr.core]))
+            [ftr.core]
+            [clojure.java.io :as io]))
 
 
 (defn order-zen-ns [zen-ns-map]
@@ -108,7 +109,7 @@
 
 
 (defn generate-package-config [ztx
-                               {:keys [out-dir git-url-format zen-fhir-lib-url git-auth-url-format node-modules-folder]}
+                               {:keys [out-dir git-url-format zen-fhir-lib-url git-auth-url-format node-modules-folder ftr-context]}
                                package]
   (let [package-dir (str out-dir \/ package \/)
         packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir/inter @ztx))
@@ -127,7 +128,8 @@
      :package-git-auth-url (or package-git-auth-url
                                package-git-url)
      :out-dir out-dir
-     :node-modules-folder node-modules-folder}))
+     :node-modules-folder node-modules-folder
+     :ftr-context ftr-context}))
 
 
 (defn clone-zen-package [{:as config
@@ -188,27 +190,48 @@
   config)
 
 
+(defn infer-node-modules-path [f package-name]
+  (-> f
+      (str/split #"/")
+      (->>
+        (take-while (complement #{package-name}))
+        (str/join "/"))))
+
+
+(defn file-exists? [path]
+  (.exists (io/file path)))
+
+
+(defn get-ftr-source-urls [{{:as _npm-package-meta,
+                             npm-package-name :name
+                             dependencies :dependencies} :package
+                            f :file}]
+  (let [node-modules-path (infer-node-modules-path f npm-package-name) #_"FIXME HACK fragile as fuck"
+        package-url (str node-modules-path \/ npm-package-name)
+        deps-urls (->> dependencies
+                       keys
+                       (map (comp (partial str node-modules-path \/) name))
+                       (filter file-exists?))]
+    (into [package-url] deps-urls)))
+
+
 (defn produce-ftr-manifests [ztx {:as config,
-                                  :keys [package package-dir]}]
+                                  :keys [package]}]
   (let [inter-valuesets (get-in @ztx [:fhir/inter "ValueSet"])
 
-        {:as _package-meta,
-         file-path :file
-         {npm-package-name :name} :package}
+        loader-meta
         (->> inter-valuesets
-             (filter (fn [[_vs-url {:as vs, :zen.fhir/keys [package-ns]}]]
+             (filter (fn [[_vs-url {:as _vs, :zen.fhir/keys [package-ns]}]]
                        (= (name package-ns) package)))
              first
              second
              :zen/loader)
-        ftr-source-url (let [file-path (str/split file-path #"/")
-                             path-to-ig (str/join "/"
-                                                  (into (list npm-package-name) (take-while #(not= npm-package-name %) file-path)))]
-                         path-to-ig)
+
+        ftr-source-urls (get-ftr-source-urls loader-meta)
 
         ftr-manifest {:module      "ig"
-                      :source-url  ftr-source-url
-                      :source-type :ig
+                      :source-urls  ftr-source-urls
+                      :source-type :igs
                       :ftr-path    "ftr"
                       :tag         "init"}]
 
@@ -222,26 +245,29 @@
                               [zen-ns (assoc-in ns-content ['value-set :ftr] ftr-manifest)]
                               [zen-ns ns-content]))))
                    namespaces)))
-    (assoc config :npm-package-original-name npm-package-name)))
+    config))
 
-
-(defn spit-ftr [ztx package-dir package]
+(defn spit-ftr [ztx ftr-context package-dir package]
   (let [value-sets (->> (get-in @ztx [:fhir.zen/ns])
                         (filter (fn [[zen-ns ns-content]]
                                   (let [nss  (name zen-ns)
                                         package-name (first (str/split nss #"\." 2))]
                                     (and (= package package-name) (get ns-content 'value-set)))))
                         (map (fn [[_zen-ns ns-content]] (get ns-content 'value-set))))
+        vs-urls (map :uri value-sets)
         ftr-configs (->> value-sets
                          (group-by :ftr)
                          keys
                          (filter identity))]
     (doseq [ftr ftr-configs]
-      (ftr.core/apply-cfg {:cfg (assoc ftr :ftr-path (str package-dir "/ftr"))}))))
+      (ftr.core/spit-ftr (merge ftr-context {:cfg (assoc ftr
+                                                         :ftr-path (str package-dir "/ftr")
+                                                         :vs-urls vs-urls)})))))
 
-(defn spit-data [ztx {:keys [package-dir package package-file-path package-file] :as config}]
+
+(defn spit-data [ztx {:keys [package-dir package package-file-path package-file ftr-context] :as config}]
   (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
-  (spit-ftr ztx package-dir package)
+  (spit-ftr ztx ftr-context package-dir package)
   (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
   config)
 
@@ -262,11 +288,6 @@
   config)
 
 
-(defn rm-npm-package! [{:as config, :keys [node-modules-folder npm-package-original-name]}]
-  (zen.package/sh! "rm" "-rf" npm-package-original-name :dir node-modules-folder)
-  config)
-
-
 (defn release-xform [ztx config]
   (comp
     (filter (partial filter-zen-packages ztx config))
@@ -274,10 +295,9 @@
     (map clone-zen-package)
     (map (partial init-zen-repo! ztx))
     (map (partial create-remote! ztx))
-    ;; (map clean-up-clonned-repo!)
+    (map clean-up-clonned-repo!)
     (map (partial produce-ftr-manifests ztx))
     (map (partial spit-data ztx))
-    ;; (map rm-npm-package!)
     (map commit-zen-changes)
     (map release-zen-package)
     (map rm-local-repo!)))

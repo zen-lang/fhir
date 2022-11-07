@@ -10,7 +10,8 @@
             [clojure.string :as str]
             [cheshire.core :as json]
             [clojure.java.shell :as sh]
-            [ftr.zen-package]))
+            [ftr.zen-package]
+            [ftr.core]))
 
 
 (def zen-fhir-version (slurp (clojure.java.io/resource "zen-fhir-version")))
@@ -600,9 +601,30 @@
       (sh/sh "mkdir" "-p" package-dir)
       (sh/sh "mkdir" "-p" (str package-dir "/zrc"))
 
-      (let [config (sut/generate-package-config
+      (let [extraction-result (ftr.core/extract {:cfg
+                                                 {:module      "ig"
+                                                  :source-url  "node_modules"
+                                                  :source-type :igs
+                                                  :ftr-path    "ftr"
+                                                  :tag         "init"
+                                                  :extractor-options
+                                                  {:whitelist
+                                                   {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
+                                                                 "http://hl7.org/fhir/us/core/ValueSet/birthsex"
+                                                                 "http://hl7.org/fhir/ValueSet/c80-practice-codes"
+                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.32"
+                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1114.17"
+                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.101"
+                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1"
+                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.103"
+                                                                 "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"
+                                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
+                                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualAndGroupSpecialtiesVS"
+                                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/NonIndividualSpecialtiesVS"}}}}})
+            config (sut/generate-package-config
                      ztx
-                     {:out-dir test-dir
+                     {:ftr-context extraction-result
+                      :out-dir test-dir
                       :package "fhir-r4"
                       :git-url-format (str "/tmp" "/%s")
                       :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")}
@@ -632,14 +654,86 @@
             {"vs" {}
              "tags" {"init.ndjson.gz" {}}}}})))
 
+    (t/testing "us-core spit data"
+      (delete-directory-recursive (io/file test-dir))
+      (sh/sh "mkdir" "-p" test-dir)
+
+      (def package-dir (str test-dir "/us-core"))
+
+      (sh/sh "mkdir" "-p" package-dir)
+      (sh/sh "mkdir" "-p" (str package-dir "/zrc"))
+
+      (let [extraction-result (ftr.core/extract {:cfg
+                                                 {:module      "ig"
+                                                  :source-url  "node_modules"
+                                                  :source-type :igs
+                                                  :ftr-path    "ftr"
+                                                  :tag         "init"
+                                                  :extractor-options
+                                                  {:whitelist
+                                                   {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
+                                                                 "http://hl7.org/fhir/us/core/ValueSet/birthsex"
+                                                                 "http://hl7.org/fhir/ValueSet/c80-practice-codes"
+                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.32"
+                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1114.17"
+                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.101"
+                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1"
+                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.103"
+                                                                 "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"
+                                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
+                                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualAndGroupSpecialtiesVS"
+                                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/NonIndividualSpecialtiesVS"}}}}})
+            config (sut/generate-package-config
+                     ztx
+                     {:ftr-context extraction-result
+                      :out-dir test-dir
+                      :package "us-core"
+                      :git-url-format (str "/tmp" "/%s")
+                      :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")}
+                     "us-core")
+
+            _ (sut/produce-ftr-manifests ztx config)]
+
+        (sut/spit-data ztx config))
+
+      (t/testing "FTR shaped correctly"
+        (matcho/match
+          (fs-tree->tree-map package-dir)
+          {"ftr"
+           {"ig"
+            {"vs" {}
+             "tags" {"init.ndjson.gz" {}}}}})))
+
     (t/testing "spit all packages data"
       (delete-directory-recursive (io/file test-dir))
       (sh/sh "mkdir" "-p" test-dir)
 
       (doseq [package-name (sut/collect-packages ztx)]
-        (let [package (sut/generate-package-config
+        (let [extraction-result
+              (ftr.core/extract {:cfg
+                                 {:module      "ig"
+                                  :source-url  "node_modules"
+                                  :source-type :igs
+                                  :ftr-path    "ftr"
+                                  :tag         "init"
+                                  :extractor-options
+                                  {:whitelist
+                                   {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
+                                                 "http://hl7.org/fhir/us/core/ValueSet/birthsex"
+                                                 "http://hl7.org/fhir/ValueSet/c80-practice-codes"
+                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.32"
+                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1114.17"
+                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.101"
+                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1"
+                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.103"
+                                                 "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"
+                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
+                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualAndGroupSpecialtiesVS"
+                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/NonIndividualSpecialtiesVS"}}}}})
+              package (sut/generate-package-config
                         ztx
-                        {:create-remote? false
+                        {:ftr-context extraction-result
+                         :create-remote? false
                          :out-dir test-dir
                          :cloned? false
                          :git-url-format (str test-dir "/%s")
