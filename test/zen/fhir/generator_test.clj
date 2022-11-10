@@ -38,7 +38,10 @@
                              :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
                                                       "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1"
                                                       "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.103"
+                                                      "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.1.11.14914"
+                                                      "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.3.2074.1.1.3"
                                                       "http://hl7.org/fhir/us/core/ValueSet/birthsex"
+                                                      "http://hl7.org/fhir/us/core/ValueSet/detailed-race"
                                                       "http://hl7.org/fhir/ValueSet/c80-practice-codes"
                                                       "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
                                                       "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualAndGroupSpecialtiesVS"
@@ -68,7 +71,8 @@
                        #{'fhir-r4
                          'us-core.us-core-patient
                          'us-core.value-set.birthsex
-                         'us-core.us-core-birthsex})}
+                         'us-core.us-core-birthsex
+                         'us-core.value-set.detailed-race})}
 
      'fhir-r4.string
      {'ns     'fhir-r4.string
@@ -256,6 +260,18 @@
       {:zen.fhir/version zen-fhir-version
        :zen.fhir/value-set {:symbol 'us-core.value-set.birthsex/value-set
                             :strength :required}}}
+
+     'us-core.value-set.detailed-race
+     {'ns 'us-core.value-set.detailed-race
+      'import #{'zen.fhir}
+
+      'value-set
+      {:uri "http://hl7.org/fhir/us/core/ValueSet/detailed-race"
+       :zen.fhir/version zen-fhir-version
+       :fhir/code-systems #{{:fhir/url "urn:oid:2.16.840.1.113883.6.238",
+                             :zen.fhir/content :not-present}
+                            {:fhir/url "http://terminology.hl7.org/CodeSystem/v3-NullFlavor",
+                             :zen.fhir/content :bundled}}}}
 
      'fhir-r4.MolecularSequence
      {'schema
