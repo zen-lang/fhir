@@ -41,5 +41,5 @@ jobs:
       - run: free -h
         name: Available memory
         
-      - run: sudo cat /home/runner/.m2/settings.xml
+      - run: java -XX:+PrintFlagsFinal -version | grep HeapSize
         name: Java settings
