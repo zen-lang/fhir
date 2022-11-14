@@ -40,3 +40,6 @@ jobs:
 
       - run: free -h
         name: Available memory
+        
+      - run: sudo cat /home/runner/.m2/settings.xml
+        name: Java settings
