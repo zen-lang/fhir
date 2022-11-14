@@ -1,0 +1,18 @@
+name: github-package-release
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build:
+    name: Generate FHIR profiles
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: lscpu
+        name: Available CPU
+
+      - run: free -h
+        name: Available memory
