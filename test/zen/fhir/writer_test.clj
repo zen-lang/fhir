@@ -43,9 +43,11 @@
   (zen.fhir.loader/init-ztx ztx)
 
   (zen.fhir.loader/load-all ztx nil
-                            (merge {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
+                            (merge {:params {"hl7.terminology.r4" {:zen.fhir/package-ns 'terminology-r4}
+                                             "hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
                                              "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core}}
-                                    :whitelist {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
+                                    :whitelist {"ValueSet" #{"http://terminology.hl7.org/ValueSet/v3-ExposureMode"
+                                                             "http://hl7.org/fhir/ValueSet/administrative-gender"
                                                              "http://hl7.org/fhir/us/core/ValueSet/birthsex"
                                                              "http://hl7.org/fhir/ValueSet/c80-practice-codes"
                                                              "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.32"
@@ -208,10 +210,19 @@
                   fhir-r4.ProdCharacteristic
                   fhir-r4.ProductShelfLife
                   fhir-r4.value-set.medication-status
-                  fhir-r4.value-set.substance-status})
+                  fhir-r4.value-set.substance-status
+
+                  fhir-r4.value-set.v3-ExposureMode
+                  terminology-r4.value-set.v3-ExposureMode})
 
   (def _ (swap! ztx update :fhir.zen/ns select-keys
                 (into tested-nses ns-deps)))
+
+  (t/testing
+      "When ValueSet from hl7.fhir.r4.core has the same url as ValueSet from hl7.terminology.r4, only the latter one is written"
+    (matcho/match (get-in @ztx [:fhir/inter "ValueSet" "http://terminology.hl7.org/ValueSet/v3-ExposureMode"
+                                :zen/loader :package :name])
+                  "hl7.terminology.r4"))
 
   (t/testing "zen-npm-modules"
     (t/testing "spit single module"
