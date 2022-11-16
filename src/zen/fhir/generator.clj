@@ -396,13 +396,76 @@
                   inter-by-package)))
 
 
+(defn symbols-by-package [fhir-inter]
+  (reduce-kv (fn [acc rt resources]
+               (reduce-kv (fn [acc url resource]
+                            (cond-> acc
+                              (contains? resource :zen.fhir/schema-ns)
+                              (assoc-in
+                                [(:zen.fhir/package-ns resource)
+                                 (case rt
+                                   "StructureDefinition" (if (and (= "Extension" (:type resource))
+                                                                  (= "constraint" (:derivation resource)))
+                                                           :extensions
+                                                           :profiles)
+                                   "ValueSet"            :value-sets
+                                   "SearchParameter"     :searches)
+                                 url]
+                                (with-meta
+                                  (symbol (name (:zen.fhir/schema-ns resource))
+                                          (case rt
+                                            "StructureDefinition" "schema"
+                                            "ValueSet"            "value-set"
+                                            "SearchParameter"     "search"))
+                                  {:zen/quote true}))))
+                          acc
+                          resources))
+             {}
+             fhir-inter))
+
+
+(defn root-package-ns [fhir-inter package-ns package-symbols]
+  (let [dep-nss (set (concat #{'zen.fhir}
+                             (get (zen.fhir.inter-utils/packages-deps-nses
+                                    fhir-inter)
+                                  package-ns)))
+
+        profile-symbols   (:profiles package-symbols)
+        extension-symbols (:extensions package-symbols)
+        value-set-symbols (:value-sets package-symbols)
+        search-symbols    (:searches package-symbols)]
+
+    {package-ns
+     (cond-> {'ns     package-ns
+              'import dep-nss
+
+              'ig {:zen/tags   #{'zen.fhir/ig}}}
+
+       (seq profile-symbols)
+       (-> (assoc-in ['ig :profiles] 'profiles)
+           (assoc-in ['profiles] {:zen/tags #{'zen.fhir/profiles}
+                                  :schemas profile-symbols}))
+
+       (seq extension-symbols)
+       (-> (assoc-in ['ig :extensions] 'extensions)
+           (assoc-in ['extensions] {:zen/tags #{'zen.fhir/extensions}
+                                    :schemas extension-symbols}))
+
+       (seq value-set-symbols)
+       (-> (assoc-in ['ig :value-sets] 'value-sets)
+           (assoc-in ['value-sets] {:zen/tags #{'zen.fhir/value-sets}
+                                    :value-sets value-set-symbols}))
+
+       (seq search-symbols)
+       (-> (assoc-in ['ig :searches] 'searches)
+           (assoc-in ['searches] {:zen/tags #{'zen.fhir/searches}
+                                  :searches search-symbols})))}))
+
+
 (defn generate-root-package-nses [fhir-inter]
   (into {}
-        (for [[package-ns package-nses] (ns-by-package fhir-inter)]
-          {package-ns
-           {'ns     package-ns
-            'import (set (concat (get (zen.fhir.inter-utils/packages-deps-nses fhir-inter) package-ns)
-                                 package-nses))}})))
+        (map #(apply root-package-ns fhir-inter %))
+        (symbols-by-package fhir-inter)))
 
 
 (defn collect-deps [zen-ns]

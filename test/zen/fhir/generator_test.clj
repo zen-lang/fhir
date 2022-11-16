@@ -56,23 +56,64 @@
   (def schemas-match
     {'fhir-r4
      {'ns 'fhir-r4
-      'import (partial clojure.set/subset?
-                       #{'fhir-r4.string
-                         'fhir-r4.Element
-                         'fhir-r4.Resource
-                         'fhir-r4.DomainResource
-                         'fhir-r4.value-set.administrative-gender
-                         'fhir-r4.Patient
-                         'fhir-r4.Practitioner})}
+      'import #{'zen.fhir}
+
+      'ig
+      {:zen/tags   #{'zen.fhir/ig}
+       :profiles   'profiles
+       :extensions 'extensions
+       :value-sets 'value-sets
+       :searches   'searches}
+
+      'profiles
+      {:zen/tags #{'zen.fhir/profiles}
+       :schemas  {"http://hl7.org/fhir/StructureDefinition/string"
+                  (with-meta 'fhir-r4.string/schema {:zen/quote true})
+
+                  "http://hl7.org/fhir/StructureDefinition/Element"
+                  (with-meta 'fhir-r4.Element/schema {:zen/quote true})
+
+                  "http://hl7.org/fhir/StructureDefinition/Resource"
+                  (with-meta 'fhir-r4.Resource/schema {:zen/quote true})
+
+                  "http://hl7.org/fhir/StructureDefinition/DomainResource"
+                  (with-meta 'fhir-r4.DomainResource/schema {:zen/quote true})
+
+                  "http://hl7.org/fhir/StructureDefinition/Patient"
+                  (with-meta 'fhir-r4.Patient/schema {:zen/quote true})
+
+                  "http://hl7.org/fhir/StructureDefinition/Practitioner"
+                  (with-meta 'fhir-r4.Practitioner/schema {:zen/quote true})}}
+
+      'extensions
+      {:zen/tags #{'zen.fhir/extensions}
+       :schemas  {"http://hl7.org/fhir/StructureDefinition/patient-nationality"
+                  (with-meta 'fhir-r4.patient-nationality/schema {:zen/quote true})}}
+
+      'value-sets
+      {:zen/tags   #{'zen.fhir/value-sets}
+       :value-sets {"http://hl7.org/fhir/ValueSet/administrative-gender"
+                    (with-meta 'fhir-r4.value-set.administrative-gender/value-set {:zen/quote true})}}
+
+      'searches
+      {:zen/tags #{'zen.fhir/searches}
+       :searches {"http://hl7.org/fhir/SearchParameter/individual-phone"
+                  (with-meta 'fhir-r4.search.individual-phone/search {:zen/quote true})}}}
 
      'us-core
      {'ns 'us-core
       'import (partial clojure.set/subset?
-                       #{'fhir-r4
-                         'us-core.us-core-patient
-                         'us-core.value-set.birthsex
-                         'us-core.us-core-birthsex
-                         'us-core.value-set.detailed-race})}
+                       #{'zen.fhir 'fhir-r4})
+
+      'ig {:zen/tags   #{'zen.fhir/ig}
+           :profiles   'profiles
+           :extensions 'extensions
+           :value-sets 'value-sets
+           :searches   'searches}
+      'profiles   {}
+      'extensions {}
+      'value-sets {}
+      'searches   {}}
 
      'fhir-r4.string
      {'ns     'fhir-r4.string
@@ -365,6 +406,28 @@
            hl7.fhir.us.dme-orders
            hl7.fhir.us.mcode
            hl7.fhir.uv.sdc})
+
+  (t/is (empty? (:errors @zctx)))
+
+  (t/is (every? #(not (contains? (:ns @zctx) %))
+                ['us-core.us-core-patient
+                 'fhir-r4.Patient]))
+
+  (-> (zen.core/get-symbol zctx 'fhir-r4/ig)
+      :profiles
+      (->> (zen.core/get-symbol zctx) :schemas)
+      (get "http://hl7.org/fhir/StructureDefinition/Patient")
+      namespace
+      symbol
+      (#(zen.core/load-ns zctx (get-in @zctx [:memory-store %]))))
+
+  (-> (zen.core/get-symbol zctx 'us-core/ig)
+      :profiles
+      (->> (zen.core/get-symbol zctx) :schemas)
+      (get "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient")
+      namespace
+      symbol
+      (#(zen.core/load-ns zctx (get-in @zctx [:memory-store %]))))
 
   (t/is (empty? (:errors @zctx)))
 

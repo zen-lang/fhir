@@ -23,8 +23,20 @@
     ordered-zen-ns-map))
 
 
+(defn add-zen-quote-reader-tag [obj]
+  (clojure.walk/postwalk (fn [node]
+                           (if (and (symbol? node)
+                                    (:zen/quote (meta node)))
+                             (symbol (str "#zen/quote" " " "'" (str node)))
+                             node))
+                         obj))
+
+
 (defn format-zen-ns [zen-ns-map]
-  (clojure.pprint/write (order-zen-ns zen-ns-map) :stream nil))
+  (clojure.pprint/write (-> zen-ns-map
+                            add-zen-quote-reader-tag
+                            order-zen-ns)
+                        :stream nil))
 
 
 (defn spit-zen-schemas [ztx zrc-dir & [{:keys [package]}]]
