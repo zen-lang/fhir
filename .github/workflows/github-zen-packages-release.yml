@@ -1,4 +1,4 @@
-name: github-package-release
+name: github-zen-packages-release
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Generate FHIR profiles
+    name: Release zen FHIR Github packages with profiles and FTR
     runs-on: ubuntu-latest
 
     steps:

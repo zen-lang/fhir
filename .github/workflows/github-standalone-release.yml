@@ -1,4 +1,4 @@
-name: github-package-release
+name: github-standalone-release
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Generate FHIR profiles
+    name:  Release standalone zen FHIR profiles with terminology bundles
     runs-on: ubuntu-latest
 
     steps:
