@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3.0.2
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
           submodules: 'recursive'
 
       - name: Setup Babashka
@@ -40,12 +40,6 @@ jobs:
 
       - run: bb init
         name: Install npm FHIR packages
-          
-      - run: bb init-r3
-        name: Install npm R3 packages
-        
-      - name: Build jar
-        run: bb build
 
       - run: git config --global user.email "hello@health-samurai.io" && git config --global user.name "zen-lang/fhir GH Action —  release"
         name: Set up git config
@@ -57,16 +51,9 @@ jobs:
           ZEN_FHIR_RELEASE_GITHUB_TOKEN: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_TOKEN }}
           ZEN_FHIR_RELEASE_GITHUB_ORG: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_ORG }}
 
-      - name: Build standalone R3
-        run: bb build-stanadlone-projects "r3/node_modules/" "zrc/standalone_projects/"
-
-      - name: Build standalone projects
-        run: bb build-standalone-zen-profiles-all-versions "node_modules/" "zrc/standalone_projects/"
-
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           body_path: "release.txt"
-          files: target/zen-fhir-${{ env.RELEASE_VERSION }}-standalone.jar, zrc/standalone_projects/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
