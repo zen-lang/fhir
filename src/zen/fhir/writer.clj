@@ -27,7 +27,7 @@
   (clojure.walk/postwalk (fn [node]
                            (if (and (symbol? node)
                                     (:zen/quote (meta node)))
-                             (symbol (str "#zen/quote" " " "'" (str node)))
+                             (symbol (str "#zen/quote" " " (str node)))
                              node))
                          obj))
 
