@@ -430,14 +430,13 @@
             :else
             :structures))]
 
-    (cond
-      (contains? #{:profiles :base-schemas} ig-artifact-type)
+    (case ig-artifact-type
+      (:profiles :base-schemas)
       [ig-artifact-type schema-resource-type url]
 
-      (= :searches ig-artifact-type)
+      :searches
       [ig-artifact-type (:name resource) url]
 
-      :else
       [ig-artifact-type url])))
 
 
