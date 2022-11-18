@@ -65,30 +65,41 @@
        :value-sets 'value-sets
        :searches   'searches}
 
+      'base-schemas
+      {:zen/tags #{'zen.fhir/base-schemas}
+       :schemas  {"DomainResource"
+                  {"http://hl7.org/fhir/StructureDefinition/DomainResource"
+                   (with-meta 'fhir-r4.DomainResource/schema {:zen/quote true})}
+
+                  "Patient"
+                  {"http://hl7.org/fhir/StructureDefinition/Patient"
+                   (with-meta 'fhir-r4.Patient/schema {:zen/quote true})}
+
+                  "Practitioner"
+                  {"http://hl7.org/fhir/StructureDefinition/Practitioner"
+                   (with-meta 'fhir-r4.Practitioner/schema {:zen/quote true})}}}
+
       'profiles
       {:zen/tags #{'zen.fhir/profiles}
-       :schemas  {"http://hl7.org/fhir/StructureDefinition/string"
-                  (with-meta 'fhir-r4.string/schema {:zen/quote true})
-
-                  "http://hl7.org/fhir/StructureDefinition/Element"
-                  (with-meta 'fhir-r4.Element/schema {:zen/quote true})
-
-                  "http://hl7.org/fhir/StructureDefinition/Resource"
-                  (with-meta 'fhir-r4.Resource/schema {:zen/quote true})
-
-                  "http://hl7.org/fhir/StructureDefinition/DomainResource"
-                  (with-meta 'fhir-r4.DomainResource/schema {:zen/quote true})
-
-                  "http://hl7.org/fhir/StructureDefinition/Patient"
-                  (with-meta 'fhir-r4.Patient/schema {:zen/quote true})
-
-                  "http://hl7.org/fhir/StructureDefinition/Practitioner"
-                  (with-meta 'fhir-r4.Practitioner/schema {:zen/quote true})}}
+       :schemas  {"ServiceRequest"
+                  {"http://hl7.org/fhir/StructureDefinition/servicerequest-genetics"
+                   (with-meta 'fhir-r4.servicerequest-genetics/schema {:zen/quote true})}}}
 
       'extensions
       {:zen/tags #{'zen.fhir/extensions}
        :schemas  {"http://hl7.org/fhir/StructureDefinition/patient-nationality"
                   (with-meta 'fhir-r4.patient-nationality/schema {:zen/quote true})}}
+
+      'structures
+      {:zen/tags #{'zen.fhir/structures}
+       :schemas {"http://hl7.org/fhir/StructureDefinition/string"
+                 (with-meta 'fhir-r4.string/schema {:zen/quote true})
+
+                 "http://hl7.org/fhir/StructureDefinition/Element"
+                 (with-meta 'fhir-r4.Element/schema {:zen/quote true})
+
+                 "http://hl7.org/fhir/StructureDefinition/Resource"
+                 (with-meta 'fhir-r4.Resource/schema {:zen/quote true})}}
 
       'value-sets
       {:zen/tags   #{'zen.fhir/value-sets}
@@ -97,8 +108,11 @@
 
       'searches
       {:zen/tags #{'zen.fhir/searches}
-       :searches {"http://hl7.org/fhir/SearchParameter/individual-phone"
-                  (with-meta 'fhir-r4.search.individual-phone/search {:zen/quote true})}}}
+       :searches {"phone"
+                  {"http://hl7.org/fhir/SearchParameter/OrganizationAffiliation-phone"
+                   'fhir-r4.search.OrganizationAffiliation-phone/search,
+                   "http://hl7.org/fhir/SearchParameter/individual-phone"
+                   'fhir-r4.search.individual-phone/search}}}}
 
      'us-core
      {'ns 'us-core
@@ -414,9 +428,9 @@
                  'fhir-r4.Patient]))
 
   (-> (zen.core/get-symbol zctx 'fhir-r4/ig)
-      :profiles
+      :base-schemas
       (->> (zen.core/get-symbol zctx) :schemas)
-      (get "http://hl7.org/fhir/StructureDefinition/Patient")
+      (get-in ["Patient" "http://hl7.org/fhir/StructureDefinition/Patient"])
       namespace
       symbol
       (#(zen.core/load-ns zctx (get-in @zctx [:memory-store %]))))
@@ -424,7 +438,7 @@
   (-> (zen.core/get-symbol zctx 'us-core/ig)
       :profiles
       (->> (zen.core/get-symbol zctx) :schemas)
-      (get "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient")
+      (get-in ["Patient" "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"])
       namespace
       symbol
       (#(zen.core/load-ns zctx (get-in @zctx [:memory-store %]))))

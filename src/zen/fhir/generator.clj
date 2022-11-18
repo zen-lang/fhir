@@ -396,32 +396,64 @@
                   inter-by-package)))
 
 
+(defn create-resource-quoted-symbol [resource rt]
+  (with-meta
+    (symbol (name (:zen.fhir/schema-ns resource))
+            (case rt
+              "StructureDefinition" "schema"
+              "ValueSet"            "value-set"
+              "SearchParameter"     "search"))
+    {:zen/quote true}))
+
+
+(defn ig-entrypoint-resource-path [url rt resource]
+  (let [schema-resource-type (:type resource)
+
+        ig-artifact-type
+        (case rt #_"NOTE: if unknown RT then generator will throw exception here. This is intended behavior"
+          "ValueSet"        :value-sets
+          "SearchParameter" :searches
+          "StructureDefinition"
+          (cond
+            (and (= "Extension" schema-resource-type)
+                 (= "constraint" (:derivation resource)))
+            :extensions
+
+            (and (= "resource" (:kind resource))
+                 (= "constraint" (:derivation resource)))
+            :profiles
+
+            (and (= "resource" (:kind resource))
+                 (= "specialization" (:derivation resource)))
+            :base-schemas
+
+            :else
+            :structures))]
+
+    (cond
+      (contains? #{:profiles :base-schemas} ig-artifact-type)
+      [ig-artifact-type schema-resource-type url]
+
+      (= :searches ig-artifact-type)
+      [ig-artifact-type (:name resource) url]
+
+      :else
+      [ig-artifact-type url])))
+
+
 (defn symbols-by-package [fhir-inter]
   (reduce-kv (fn [acc rt resources]
                (reduce-kv (fn [acc url resource]
-                            (cond-> acc
-                              (contains? resource :zen.fhir/schema-ns)
-                              (assoc-in
-                                [(:zen.fhir/package-ns resource)
-                                 (case rt
-                                   "StructureDefinition" (if (and (= "Extension" (:type resource))
-                                                                  (= "constraint" (:derivation resource)))
-                                                           :extensions
-                                                           :profiles)
-                                   "ValueSet"            :value-sets
-                                   "SearchParameter"     :searches)
-                                 url]
-                                (with-meta
-                                  (symbol (name (:zen.fhir/schema-ns resource))
-                                          (case rt
-                                            "StructureDefinition" "schema"
-                                            "ValueSet"            "value-set"
-                                            "SearchParameter"     "search"))
-                                  {:zen/quote true}))))
-                          acc
-                          resources))
-             {}
-             fhir-inter))
+                                (cond-> acc
+                                  (contains? resource :zen.fhir/schema-ns)
+                                  (assoc-in acc
+                                            (cons (:zen.fhir/package-ns resource)
+                                                  (ig-entrypoint-resource-path url rt resource))
+                                            (create-resource-quoted-symbol resource rt))))
+                              acc
+                              resources))
+                 {}
+                 fhir-inter))
 
 
 (defn root-package-ns [fhir-inter package-ns package-symbols]
@@ -430,36 +462,49 @@
                                     fhir-inter)
                                   package-ns)))
 
-        profile-symbols   (:profiles package-symbols)
-        extension-symbols (:extensions package-symbols)
-        value-set-symbols (:value-sets package-symbols)
-        search-symbols    (:searches package-symbols)]
+        base-schema-symbols (:base-schemas package-symbols)
+        profile-symbols     (:profiles package-symbols)
+        extension-symbols   (:extensions package-symbols)
+        structure-symbols   (:structures package-symbols)
+        value-set-symbols   (:value-sets package-symbols)
+        search-symbols      (:searches package-symbols)]
 
     {package-ns
-     (cond-> {'ns     package-ns
-              'import dep-nss
+     (merge-with merge
+       {'ns     package-ns
+        'import dep-nss
 
-              'ig {:zen/tags   #{'zen.fhir/ig}}}
+        'ig {:zen/tags #{'zen.fhir/ig}}}
 
-       (seq profile-symbols)
-       (-> (assoc-in ['ig :profiles] 'profiles)
-           (assoc-in ['profiles] {:zen/tags #{'zen.fhir/profiles}
-                                  :schemas profile-symbols}))
+       (when (seq base-schema-symbols)
+         {'ig {:base-schemas 'base-schemas}
+          'base-schemas {:zen/tags #{'zen.fhir/base-schemas}
+                         :schemas base-schema-symbols}})
 
-       (seq extension-symbols)
-       (-> (assoc-in ['ig :extensions] 'extensions)
-           (assoc-in ['extensions] {:zen/tags #{'zen.fhir/extensions}
-                                    :schemas extension-symbols}))
+       (when (seq profile-symbols)
+         {'ig {:profiles 'profiles}
+          'profiles {:zen/tags #{'zen.fhir/profiles}
+                     :schemas profile-symbols}})
 
-       (seq value-set-symbols)
-       (-> (assoc-in ['ig :value-sets] 'value-sets)
-           (assoc-in ['value-sets] {:zen/tags #{'zen.fhir/value-sets}
-                                    :value-sets value-set-symbols}))
+       (when (seq extension-symbols)
+         {'ig {:extensions 'extensions}
+          'extensions {:zen/tags #{'zen.fhir/extensions}
+                       :schemas extension-symbols}})
 
-       (seq search-symbols)
-       (-> (assoc-in ['ig :searches] 'searches)
-           (assoc-in ['searches] {:zen/tags #{'zen.fhir/searches}
-                                  :searches search-symbols})))}))
+       (when (seq structure-symbols)
+         {'ig {:structures 'structures}
+          'structures {:zen/tags #{'zen.fhir/structures}
+                       :schemas structure-symbols}})
+
+       (when (seq value-set-symbols)
+         {'ig {:value-sets 'value-sets}
+          'value-sets {:zen/tags #{'zen.fhir/value-sets}
+                       :value-sets value-set-symbols}})
+
+       (when (seq search-symbols)
+         {'ig {:searches 'searches}
+          'searches {:zen/tags #{'zen.fhir/searches}
+                     :searches search-symbols}}))}))
 
 
 (defn generate-root-package-nses [fhir-inter]
