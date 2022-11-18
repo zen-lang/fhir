@@ -445,8 +445,7 @@
                (reduce-kv (fn [acc url resource]
                                 (cond-> acc
                                   (contains? resource :zen.fhir/schema-ns)
-                                  (assoc-in acc
-                                            (cons (:zen.fhir/package-ns resource)
+                                  (assoc-in (cons (:zen.fhir/package-ns resource)
                                                   (ig-entrypoint-resource-path url rt resource))
                                             (create-resource-quoted-symbol resource rt))))
                               acc
