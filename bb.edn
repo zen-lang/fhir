@@ -46,10 +46,17 @@
                                            (println (str "Version: " bold current-git-repo-tag bold-end))
                                            (spit "resources/zen-fhir-lib-version" current-git-repo-tag))}
 
-         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
-               :task (do
-                       (shell "npm --registry=https://packages.simplifier.net install")
-                       (shell "npm --registry=https://packages.simplifier.net install"))}
+         install-npm
+         {:task (do
+                  (shell "npm --registry=https://packages.simplifier.net install")
+                  (shell "npm --registry=https://packages.simplifier.net install"))}
+
+         pull-nz-base-ig
+         {:task (do
+                  (shell "mkdir -p node_modules")
+                  (clojure "-X zen.fhir.igs-etl.nz-base/etl! :package-dir-dest '\"node_modules\"'"))}
+
+         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm pull-nz-base-ig]}
 
          repl {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                :task (clojure "-M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]")}
