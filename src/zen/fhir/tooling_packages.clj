@@ -41,8 +41,10 @@
                                                               :zen-fhir-lib-url     zen-fhir-lib-url
                                                               :blacklisted-packages blacklisted-packages
                                                               :node-modules-folder  node-modules-folder})]
-    (->> (map :package-git-url release-result)
-         (clojure.string/join "\n"))))
+    (if-let [error (:error (last release-result))]
+      (throw (ex-info "Release error" {:error error}))
+      (->> (map :package-git-url release-result)
+           (clojure.string/join "\n")))))
 
 
 (defn -main [return-path node-modules-folder out-dir & [zen-fhir-lib-url git-url-format git-auth-url-format package-name]]

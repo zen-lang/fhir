@@ -300,19 +300,32 @@
   config)
 
 
+(defn reduced-shortcircuit-xf []
+  (fn [rf]
+    (fn
+      ([] (rf))
+      ([result] (rf result))
+      ([result input]
+       (if (reduced? input)
+         (reduced (rf result (unreduced input)))
+         (rf result input))))))
+
+
 (defn release-xform [ztx config]
-  (comp
-    (filter (partial filter-zen-packages ztx config))
-    (map (partial generate-package-config ztx config))
-    (map clone-zen-package)
-    (map (partial init-zen-repo! ztx))
-    (map (partial create-remote! ztx))
-    (map clean-up-clonned-repo!)
-    (map (partial produce-ftr-manifests ztx))
-    (map (partial spit-data ztx))
-    (map commit-zen-changes)
-    (map release-zen-package)
-    (map rm-local-repo!)))
+  (let [xforms [(filter (partial filter-zen-packages ztx config))
+                (map (partial generate-package-config ztx config))
+                (map clone-zen-package)
+                (map (partial init-zen-repo! ztx))
+                (map (partial create-remote! ztx))
+                (map clean-up-clonned-repo!)
+                (map (partial produce-ftr-manifests ztx))
+                (map (partial spit-data ztx))
+                (map commit-zen-changes)
+                (map release-zen-package)
+                (map rm-local-repo!)]]
+    (apply comp (interleave xforms
+                            (repeat (reduced-shortcircuit-xf))
+                            #_"NOTE: this interleave is ugly, maybe there's a better way to somehow break into/transduce?"))))
 
 
 (defn release-packages [ztx config]
