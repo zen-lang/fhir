@@ -1,7 +1,22 @@
 (ns zen.fhir.igs-etl.nz-base
   (:require [zen.utils]
             [cheshire.core]
-            [clojure.java.shell]))
+            [clojure.java.shell]
+            [clojure.java.io :as io]))
+
+
+(defn add-fhir-core-dependency-to-manifest! [path-to-manifest]
+  (let [{:as parsed-manifest,
+         :keys [fhirVersion]}
+        (cheshire.core/parse-stream (io/reader path-to-manifest) keyword)
+
+        manifest-with-specified-fhir-dep
+        (update parsed-manifest :dependencies (fnil conj {}) ["hl7.fhir.r4.core" fhirVersion])
+
+        updated-manifest
+        (cheshire.core/generate-string manifest-with-specified-fhir-dep)]
+    (spit path-to-manifest updated-manifest)
+    {:manifest updated-manifest}))
 
 
 (defn fhir-ig->fhir-package! [{:keys [ig-path package-dir-dest]}]
@@ -16,7 +31,8 @@
      (clojure.java.shell/sh "rm" "canonicals.json" "expansions.json" "usage-stats.json"
                             :dir package-dest)
      (clojure.java.shell/sh "mv" "package.manifest.json" "package.json"
-                            :dir package-dest)]))
+                            :dir package-dest)
+     (add-fhir-core-dependency-to-manifest! (str package-dest \/ "package.json"))]))
 
 
 (defn etl! [{:keys [package-dir-dest]}]
