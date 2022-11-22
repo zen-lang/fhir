@@ -119,8 +119,9 @@
                          (update :recur-refs #(conj (set %) (:recur el)))
 
                          (= :poly (:type last-part))
-                         (assoc-in (conj el-parent-path :fhir-poly-keys)
-                                   (build-fhir-poly-keys-mapping (:key last-part) (:types el)))
+                         (update-in (conj el-parent-path :fhir-poly-keys)
+                                    merge
+                                    (build-fhir-poly-keys-mapping (:key last-part) (:types el)))
 
                          :always
                          (assoc-in el-path (dissoc el :id :path :example) #_(select-keys el [:id :| :polymorphic])))))))

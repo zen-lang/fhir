@@ -397,11 +397,58 @@
        :keys {:specialty
               {:every {:zen.fhir/value-set
                        {:symbol 'hl7-fhir-us-davinci-pdex-plan-net.value-set.SpecialtiesVS/value-set
-                        :strength :required}}}}}}})
+                        :strength :required}}}}}}
 
-  (matcho/match
-   (select-keys (:fhir.zen/ns @ztx) (keys schemas-match))
-    schemas-match))
+     'us-core.us-core-smokingstatus
+     {'schema
+      {:zen/tags #{'zen/schema 'zen.fhir/profile-schema}
+       :keys     {:effective
+                  {:type    'zen/map,
+                   :keys
+                   {:dateTime  {:confirms #{'fhir-r4.dateTime/schema}, :fhir/flags #{:MS}},
+                    :_dateTime {:confirms #{'fhir-r4.Element/schema}}},
+                   :require #{:dateTime}}}}}})
+
+  (t/testing "Intermediate representation of polymorphic keys is correct"
+    (matcho/match
+     (get-in (:fhir/inter @ztx)
+             ["StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Observation"])
+     {:fhir-poly-keys
+      {:valueTime {:key :value, :type "time"},
+       :valueQuantity {:key :value, :type "Quantity"},
+       :valueString {:key :value, :type "string"},
+       :valueRatio {:key :value, :type "Ratio"},
+       :valueBoolean {:key :value, :type "boolean"},
+       :valueDateTime {:key :value, :type "dateTime"},
+       :valueSampledData {:key :value, :type "SampledData"},
+       :effectiveDateTime {:key :effective, :type "dateTime"},
+       :effectiveTiming {:key :effective, :type "Timing"},
+       :valueCodeableConcept {:key :value, :type "CodeableConcept"},
+       :valuePeriod {:key :value, :type "Period"},
+       :effectiveInstant {:key :effective, :type "instant"},
+       :valueRange {:key :value, :type "Range"},
+       :valueInteger {:key :value, :type "integer"},
+       :effectivePeriod {:key :effective, :type "Period"}}}))
+
+  (t/testing "Intermediate representation of inherited polymorphic keys is correct"
+    (matcho/match
+     (get-in (:fhir/inter @ztx)
+             ["StructureDefinition" "http://hl7.org/fhir/us/core/StructureDefinition/us-core-smokingstatus"])
+     {:|
+      {:effective
+       {:|
+        {:dateTime  {:required            true,
+                     :fhir/flags          #{:MS},
+                     :type                "dateTime",
+                     :fhir/primitive-attr true},
+         :_dateTime {:type         "Element",
+                     :original-key :dateTime}}}
+       :effectiveDateTime nil}}))
+
+  (t/testing "Generated schmemas are correct"
+    (matcho/match
+     (select-keys (:fhir.zen/ns @ztx) (keys schemas-match))
+     schemas-match)))
 
 
 (t/deftest zen-schemas-validation
