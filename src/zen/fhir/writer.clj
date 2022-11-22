@@ -192,7 +192,7 @@
       (zen.package/zen-init! package-dir)
       (zen.package/sh! "git" "add" "--all" :dir package-dir)
       (zen.package/sh! "git" "commit" "-m" "'Init commit'" :dir package-dir)
-      (zen.package/sh! "git" "branch" "-M" "main")
+      (zen.package/sh! "git" "branch" "-M" "main" :dir package-dir)
       config)))
 
 
