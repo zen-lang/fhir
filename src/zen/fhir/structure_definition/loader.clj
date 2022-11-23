@@ -177,7 +177,10 @@
 ;; Base.element
 (defn walk-with-bases [ztx ctx subj bases]
   (letfn [(walk-with-bases-recursive [acc [k el]]
-            (let [{:keys [el-key element base-elements]
+            (let [required?
+                  (get-in subj [:| k :required])
+
+                  {:keys [el-key element base-elements]
                    :or   {el-key k, element el, base-elements []}}
                   (find-base-els ztx subj k el bases)
 
@@ -186,7 +189,12 @@
               (when (and (not= "specialization" (:derivation ctx))
                          (empty? base-elements))
                 (println :no-base-for-element (conj (:path ctx) k) el))
-              (assoc acc el-key (walk-with-bases ztx new-ctx element base-elements))))
+
+              (let [walked-el-schema (walk-with-bases ztx new-ctx element base-elements)
+                    #_"NOTE: assoc of :required is needed because otherwise it is lost for polymorphic keys"
+                    el-schema (cond-> walked-el-schema
+                                required? (assoc :required true))]
+                (assoc acc el-key el-schema))))
 
           (add-primitive-element-attrs [acc [k el]]
             (if (:fhir/primitive-attr el)

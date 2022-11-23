@@ -402,6 +402,7 @@
      'us-core.us-core-smokingstatus
      {'schema
       {:zen/tags #{'zen/schema 'zen.fhir/profile-schema}
+       :require  #{:category :effective :subject :value}
        :keys     {:effective
                   {:type    'zen/map,
                    :keys
@@ -442,7 +443,8 @@
                      :type                "dateTime",
                      :fhir/primitive-attr true},
          :_dateTime {:type         "Element",
-                     :original-key :dateTime}}}
+                     :original-key :dateTime}}
+        :required   true}
        :effectiveDateTime nil}}))
 
   (t/testing "Generated schmemas are correct"
