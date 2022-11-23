@@ -410,42 +410,43 @@
                     :_dateTime {:confirms #{'fhir-r4.Element/schema}}},
                    :require #{:dateTime}}}}}})
 
-  (t/testing "Intermediate representation of polymorphic keys is correct"
-    (matcho/match
-     (get-in (:fhir/inter @ztx)
-             ["StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Observation"])
-     {:fhir-poly-keys
-      {:valueTime {:key :value, :type "time"},
-       :valueQuantity {:key :value, :type "Quantity"},
-       :valueString {:key :value, :type "string"},
-       :valueRatio {:key :value, :type "Ratio"},
-       :valueBoolean {:key :value, :type "boolean"},
-       :valueDateTime {:key :value, :type "dateTime"},
-       :valueSampledData {:key :value, :type "SampledData"},
-       :effectiveDateTime {:key :effective, :type "dateTime"},
-       :effectiveTiming {:key :effective, :type "Timing"},
-       :valueCodeableConcept {:key :value, :type "CodeableConcept"},
-       :valuePeriod {:key :value, :type "Period"},
-       :effectiveInstant {:key :effective, :type "instant"},
-       :valueRange {:key :value, :type "Range"},
-       :valueInteger {:key :value, :type "integer"},
-       :effectivePeriod {:key :effective, :type "Period"}}}))
+  (t/testing "Intermediate representation is correct for"
+    (t/testing "polymorphic keys defined on an element"
+      (matcho/match
+       (get-in (:fhir/inter @ztx)
+               ["StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Observation"])
+       {:fhir-poly-keys
+        {:valueTime            {:key :value, :type "time"},
+         :valueQuantity        {:key :value, :type "Quantity"},
+         :valueString          {:key :value, :type "string"},
+         :valueRatio           {:key :value, :type "Ratio"},
+         :valueBoolean         {:key :value, :type "boolean"},
+         :valueDateTime        {:key :value, :type "dateTime"},
+         :valueSampledData     {:key :value, :type "SampledData"},
+         :effectiveDateTime    {:key :effective, :type "dateTime"},
+         :effectiveTiming      {:key :effective, :type "Timing"},
+         :valueCodeableConcept {:key :value, :type "CodeableConcept"},
+         :valuePeriod          {:key :value, :type "Period"},
+         :effectiveInstant     {:key :effective, :type "instant"},
+         :valueRange           {:key :value, :type "Range"},
+         :valueInteger         {:key :value, :type "integer"},
+         :effectivePeriod      {:key :effective, :type "Period"}}}))
 
-  (t/testing "Intermediate representation of inherited polymorphic keys is correct"
-    (matcho/match
-     (get-in (:fhir/inter @ztx)
-             ["StructureDefinition" "http://hl7.org/fhir/us/core/StructureDefinition/us-core-smokingstatus"])
-     {:|
-      {:effective
+    (t/testing "inherited polymorphic keys"
+      (matcho/match
+       (get-in (:fhir/inter @ztx)
+               ["StructureDefinition" "http://hl7.org/fhir/us/core/StructureDefinition/us-core-smokingstatus"])
        {:|
-        {:dateTime  {:required            true,
-                     :fhir/flags          #{:MS},
-                     :type                "dateTime",
-                     :fhir/primitive-attr true},
-         :_dateTime {:type         "Element",
-                     :original-key :dateTime}}
-        :required   true}
-       :effectiveDateTime nil}}))
+        {:effective
+         {:|
+          {:dateTime  {:required            true,
+                       :fhir/flags          #{:MS},
+                       :type                "dateTime",
+                       :fhir/primitive-attr true},
+           :_dateTime {:type         "Element",
+                       :original-key :dateTime}}
+          :required true}
+         :effectiveDateTime nil}})))
 
   (t/testing "Generated schmemas are correct"
     (matcho/match
