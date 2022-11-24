@@ -48,8 +48,12 @@
 
          install-npm
          {:task (do
+                  (when (.exists (io/file "node_modules/fhir.org.nz.ig.base"))
+                    (shell "mv node_modules/fhir.org.nz.ig.base ."))
                   (shell "npm --registry=https://packages.simplifier.net install")
-                  (shell "npm --registry=https://packages.simplifier.net install"))}
+                  (shell "npm --registry=https://packages.simplifier.net install")
+                  (when (.exists (io/file "fhir.org.nz.ig.base"))
+                    (shell "mv fhir.org.nz.ig.base node_modules")))}
 
          pull-nz-base-ig
          {:task (do
