@@ -28,9 +28,11 @@
       (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
       (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
       (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
+      (def multiple-same-url-includes-excludes-vs (-> "zen/fhir/ig-fiction_multiple-same-url-includes-excludes.edn" io/resource slurp read-string))
       (zen.fhir.core/load-definiton ztx {:url (:url practitioner-role-profile)} (assoc practitioner-role-profile :zen.fhir/package-ns "plannet"))
       (zen.fhir.core/load-definiton ztx {:url (:url new-patients-extension)} (assoc new-patients-extension :zen.fhir/package-ns "plannet"))
-      (zen.fhir.core/load-definiton ztx {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet")))
+      (zen.fhir.core/load-definiton ztx {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet"))
+      (zen.fhir.core/load-definiton ztx {:url (:url multiple-same-url-includes-excludes-vs)} (assoc multiple-same-url-includes-excludes-vs :zen.fhir/package-ns "ig-fiction")))
 
     (zen.fhir.core/load-all ztx nil
                             {:params {"hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
@@ -408,7 +410,17 @@
                    :keys
                    {:dateTime  {:confirms #{'fhir-r4.dateTime/schema}, :fhir/flags #{:MS}},
                     :_dateTime {:confirms #{'fhir-r4.Element/schema}}},
-                   :require #{:dateTime}}}}}})
+                   :require #{:dateTime}}}}}
+
+     ;; Check that a CodeSystem present multiple times
+     ;; in compose.include and compose.exclude
+     ;; is not duplicated.
+     'ig-fiction.value-set.multiple-same-url-includes-excludes
+     {'value-set
+      {:zen/tags #{'zen.fhir/value-set}
+       :fhir/code-systems
+       #{{:fhir/url "http://example.com",
+          :zen.fhir/content :not-present}}}}})
 
   (t/testing "Intermediate representation is correct for"
     (t/testing "polymorphic keys defined on an element"

@@ -1,0 +1,25 @@
+{:resourceType "ValueSet"
+ :id "multiple-same-url-includes-excludes"
+ :url "ig-fiction/multiple-same-url-includes-excludes"
+ :version "4.0.1"
+ :status "active"
+ :compose
+ {:include
+  [{:system "http://example.com"
+    :concept
+    [{:code "1"}
+     {:code "2"}
+     {:code "3"}]}
+   {:system "http://example.com"
+    :concept
+    [{:code "4"}
+     {:code "5"}]}
+   ;; Concepts for this element are not present on purpose
+   {:system "http://example.com"}]
+  :exclude
+  [{:system "http://example.com"
+    :concept
+    [{:code "6"}
+     {:code "7"}]}
+   ;; Concepts for this element are not present on purpose
+   {:system "http://example.com"}]}}

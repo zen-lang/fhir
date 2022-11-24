@@ -281,9 +281,22 @@
                (if (= inclusion-status :exclude)
                  (filter #(not= :bundled (:zen.fhir/content %)) nested-systems)
                  nested-systems))))
-         compose-elements)]
+         compose-elements)
+
+        code-systems-by-url
+        (group-by :fhir/url code-systems)]
     (into #{}
-          code-systems)))
+          (mapcat
+           (fn [[_url css-for-url]]
+             ;; Filter so that there is only one entry per URL
+             (let [unique-css (set css-for-url)]
+               (case (count unique-css)
+                 1 unique-css
+                 ;; When count is 2, CodeSystem comes as both :bundled and :not-present.
+                 ;; In this case only :not-present variant is kept
+                 ;; as :bundled implies that entire CodeSystem is present (i.e. it can’t be :not-bundled)
+                 2 (filter #(= :not-present (:zen.fhir/content %)) unique-css)))))
+          code-systems-by-url)))
 
 
 (defmethod generate-zen-schema :ValueSet [rt fhir-inter [url inter-res]]
