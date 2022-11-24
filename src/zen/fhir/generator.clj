@@ -249,31 +249,41 @@
 
 
 (defn find-value-set-systems [rt fhir-inter [url inter-res]]
-  (-> (:compose inter-res)
-      (select-keys [:include :exclude])
-      (->> (into #{}
-                 (mapcat (fn [[inclusion-status compose-elements]]
-                           (mapcat (fn [compose-elem]
-                                     (let [nested-systems
-                                           (mapcat (fn [nested-vs-url]
-                                                     (when-let [nested-vs (get-in fhir-inter ["ValueSet" nested-vs-url])]
-                                                       (find-value-set-systems rt fhir-inter [nested-vs-url nested-vs])))
-                                                   (:valueSet compose-elem))]
-                                       (if-let [system (:system compose-elem)]
-                                         (let [content     (if (or (contains? compose-elem :concept)
-                                                               (= "complete" (get-in fhir-inter ["CodeSystem" system :content])))
-                                                         :bundled
-                                                         :not-present)
-                                               code-system {:fhir/url         system
-                                                            :zen.fhir/content content}]
-                                           ;; We don’t want to bundle CodeSystem if its every concept is excluded
-                                           (if (and (= inclusion-status :exclude) (= content :bundled))
-                                             nested-systems
-                                             (cons code-system nested-systems)))
-                                         (if (= inclusion-status :exclude)
-                                           (filter #(not= :bundled (:zen.fhir/content %)) nested-systems)
-                                           nested-systems))))
-                                   compose-elements)))))))
+  (let [include-exclude
+        (select-keys (:compose inter-res) [:include :exclude])
+
+        compose-elements
+        (mapcat (fn [[inclusion-status compose-elements]]
+                  (for [el compose-elements]
+                    [inclusion-status el]))
+                include-exclude)
+
+        code-systems
+        (mapcat
+         (fn [[inclusion-status compose-elem]]
+           (let [nested-systems
+                 (mapcat (fn [nested-vs-url]
+                           (when-let [nested-vs (get-in fhir-inter ["ValueSet" nested-vs-url])]
+                             (find-value-set-systems rt fhir-inter [nested-vs-url nested-vs])))
+                         (:valueSet compose-elem))]
+             (if-let [system (:system compose-elem)]
+               (let [content     (if (or (contains? compose-elem :concept)
+                                         (= "complete" (get-in fhir-inter ["CodeSystem" system :content])))
+                                   :bundled
+                                   :not-present)
+                     code-system {:fhir/url         system
+                                  :zen.fhir/content content}]
+                 ;; Do not bundle CodeSystem if its every concept is known (i.e. bundled) and excluded
+                 (if (and (= inclusion-status :exclude) (= content :bundled))
+                   nested-systems
+                   (cons code-system nested-systems)))
+               ;; Do not bundle CodeSystem if its every concept is known (i.e. bundled) and excluded
+               (if (= inclusion-status :exclude)
+                 (filter #(not= :bundled (:zen.fhir/content %)) nested-systems)
+                 nested-systems))))
+         compose-elements)]
+    (into #{}
+          code-systems)))
 
 
 (defmethod generate-zen-schema :ValueSet [rt fhir-inter [url inter-res]]
