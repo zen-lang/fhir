@@ -46,8 +46,12 @@
                                            (println (str "Version: " bold current-git-repo-tag bold-end))
                                            (spit "resources/zen-fhir-lib-version" current-git-repo-tag))}
 
+         clean-up-npm {:doc "Deletes node_module directory to prevent npm fail because of custom-populated node_modules directory."
+                       :task (shell "rm -rf node_modules")}
+
          install-npm
-         {:task (do
+         {:depends [clean-up-npm]
+          :task (do
                   (when (.exists (io/file "node_modules/fhir.org.nz.ig.base"))
                     (shell "mv node_modules/fhir.org.nz.ig.base ."))
                   (shell "npm --registry=https://packages.simplifier.net install")

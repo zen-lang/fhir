@@ -290,11 +290,11 @@
                                   :fhir/extensionUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex"}
                       :identifier {:type     'zen/vector
                                    :minItems 1
-                                   :every    {:confirms #{'fhir-r4.Identifier/schema}
+                                   :every    {:confirms nil?
                                               :type 'zen/map
-                                              :keys {:system {:confirms #{'fhir-r4.uri/schema}}
+                                              :keys {:system {:confirms nil?}
                                                      :value  {:zen/desc "The value that is unique within the system."
-                                                              :confirms #{'fhir-r4.string/schema}}}}}}}}
+                                                              :confirms nil?}}}}}}}
 
      'us-core.value-set.birthsex
      {'ns 'us-core.value-set.birthsex
@@ -408,8 +408,8 @@
        :keys     {:effective
                   {:type    'zen/map,
                    :keys
-                   {:dateTime  {:confirms #{'fhir-r4.dateTime/schema}, :fhir/flags #{:MS}},
-                    :_dateTime {:confirms #{'fhir-r4.Element/schema}}},
+                   {:dateTime  {:confirms nil?, :fhir/flags #{:MS}},
+                    :_dateTime nil?},
                    :require #{:dateTime}}}}}
 
      ;; Check that a CodeSystem present multiple times

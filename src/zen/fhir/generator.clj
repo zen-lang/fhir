@@ -139,6 +139,17 @@
                                       set)
                                    pattern)}))
 
+(defn get-schema-type-by-url [fhir-inter url]
+  (let [inter-res (get-in fhir-inter ["StructureDefinition" url])
+        instantiated-resource?
+        (and (not (:abstract inter-res))
+             (= "resource" (:kind inter-res)))]
+    (case (and instantiated-resource?
+               (:derivation inter-res))
+      "constraint"     'zen.fhir/profile-schema
+      "specialization" 'zen.fhir/base-schema
+      'zen.fhir/structure-schema)))
+
 
 (defn el-schema [fhir-inter [url el]]
   (let [sch (merge-with
@@ -152,7 +163,9 @@
                                        (url->symbol fhir-inter
                                                     (str "http://hl7.org/fhir/StructureDefinition/" tp)
                                                     {:type :element-type :e el :url url}))))]
-               {:confirms #{type-sym}})
+               (when (not= (get-schema-type-by-url fhir-inter url)
+                           'zen.fhir/profile-schema)
+                 {:confirms #{type-sym}}))
              (when-let [ext-sym (when-let [ext (:fhir/extension el)]
                                   (url->symbol fhir-inter ext {:type :extension :el el :url url}))]
                {:confirms #{ext-sym}})
@@ -198,18 +211,20 @@
 
 
 (defn els-schema [fhir-inter [url inter-res]]
-  (merge (when-let [els (not-empty (:| inter-res))]
-           {:type 'zen/map
-            :keys (sp/transform [sp/MAP-VALS]
-                                #(el-schema fhir-inter [url %])
-                                els)})
-         (when-let [requires (->> (:| inter-res)
-                                  (into #{}
-                                        (comp
-                                          (filter (comp :required val))
-                                          (map key)))
-                                  not-empty)]
-           {:require requires})))
+  (when-let [schema (not-empty
+                      (merge (when-let [els (not-empty (:| inter-res))]
+                               (not-empty
+                                 (utils/strip-nils
+                                   {:keys (->> (update-vals els #(not-empty (el-schema fhir-inter [url %])))
+                                               (utils/strip-nils))})))
+                             (when-let [requires (->> (:| inter-res)
+                                                      (into #{}
+                                                            (comp
+                                                              (filter (comp :required val))
+                                                              (map key)))
+                                                      not-empty)]
+                               {:require requires})))]
+    (merge {:type 'zen/map} schema)))
 
 
 (defmethod generate-kind-schema :complex-type [fhir-inter [url inter-res]]
