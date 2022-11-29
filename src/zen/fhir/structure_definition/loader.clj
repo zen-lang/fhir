@@ -121,6 +121,11 @@
                                                     (not (= "Element" tp)))))
                       (some :type)))]
       (cond-> el
+        (and (:polymorphic el)
+             (not (:required el)) #_"NOTE: if polymorphic root is not yet reqired, then deduce require from polymorphic vals"
+             (some :required (vals (:| el))))
+        (assoc :required true)
+
         v?                            (assoc :vector true)
         (not v?)                      (dissoc :minItems :maxItems)
         tp                            (assoc :type tp)
@@ -178,7 +183,7 @@
 (defn walk-with-bases [ztx ctx subj bases]
   (letfn [(walk-with-bases-recursive [acc [k el]]
             (let [required?
-                  (get-in subj [:| k :required])
+                  (get-in subj [:| k :required]) #_"NOTE: why not (:required el)?"
 
                   {:keys [el-key element base-elements]
                    :or   {el-key k, element el, base-elements []}}
