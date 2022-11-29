@@ -218,19 +218,18 @@
 
 
 (defn els-schema [fhir-inter [url inter-res]]
-  (when-let [schema (not-empty
-                      (merge (when-let [els (not-empty (:| inter-res))]
-                               (not-empty
-                                 (utils/strip-nils
-                                   {:keys (->> (update-vals els #(not-empty (el-schema fhir-inter [url %])))
-                                               (utils/strip-nils))})))
-                             (when-let [requires (->> (:| inter-res)
-                                                      (into #{}
-                                                            (comp
-                                                              (filter (comp :required val))
-                                                              (map key)))
-                                                      not-empty)]
-                               {:require requires})))]
+  (when-let [schema (not-empty-merge
+                      (when-let [els (not-empty (:| inter-res))]
+                        (utils/strip-nils
+                          {:keys (->> (update-vals els #(not-empty (el-schema fhir-inter [url %])))
+                                      (utils/strip-nils))}))
+                      (when-let [requires (->> (:| inter-res)
+                                               (into #{}
+                                                     (comp
+                                                       (filter (comp :required val))
+                                                       (map key)))
+                                               not-empty)]
+                        {:require requires}))]
     (merge {:type 'zen/map} schema)))
 
 

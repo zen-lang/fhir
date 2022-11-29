@@ -80,7 +80,8 @@
    (cond-> m
      (and (contains? m k)
           (pred (get m k)))
-     (dissoc k)))
+     (-> (dissoc k)
+         not-empty)))
   ([pred m k & ks]
    (reduce (partial dissoc-when pred)
            (dissoc-when pred m k)
