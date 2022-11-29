@@ -4,7 +4,8 @@
             [zen.fhir.writer]
             [com.rpl.specter :as sp]
             [clojure.walk]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [zen.core :as zen]))
 
 
 (def order-zen-ns            zen.fhir.writer/order-zen-ns)
@@ -95,11 +96,7 @@
 
 
 (defn slice-schema [fhir-inter url [slice-k slice]]
-  (let [confirms (when-let [tp (:type slice)]
-                   (url->symbol fhir-inter
-                                (str "http://hl7.org/fhir/StructureDefinition/" tp)
-                                {:type :slice-type :e slice :url url}))
-        slice-filter (cond
+  (let [slice-filter (cond
                        (some? (:match slice))
                        {:engine :match
                         :match (:match slice)})
@@ -109,9 +106,7 @@
                             (when-let [max-items (:maxItems slice)]
                               {:maxItems max-items})
                             (when (seq (:| slice))
-                              {:every (merge (when confirms
-                                               {:confirms #{confirms}})
-                                             (els-schema fhir-inter [url slice]))}))]
+                              {:every (els-schema fhir-inter [url slice])}))]
     (if (not slice-filter)
       (prn "WARN: omitting slice without any filter: " url " " slice)
       [slice-k
@@ -121,7 +116,8 @@
 
 (defn slicing-schema [fhir-inter [url inter-res]]
   (when-let [slicing (not-empty (:fhir/slicing inter-res))]
-    {:slicing {:slices (into {}
+    {:type 'zen/vector
+     :slicing {:slices (into {}
                              (keep #(slice-schema fhir-inter url %))
                              (:slices slicing))}}))
 
@@ -141,14 +137,12 @@
 
 (defn get-schema-type-by-url [fhir-inter url]
   (let [inter-res (get-in fhir-inter ["StructureDefinition" url])
-        instantiated-resource?
-        (and (not (:abstract inter-res))
-             (= "resource" (:kind inter-res)))]
-    (case (and instantiated-resource?
-               (:derivation inter-res))
-      "constraint"     'zen.fhir/profile-schema
-      "specialization" 'zen.fhir/base-schema
-      'zen.fhir/structure-schema)))
+        extension? (and (= "complex-type" (:kind inter-res))
+                        (= "Extension" (:type inter-res)))]
+    (case (:derivation inter-res)
+      "constraint"     (if extension? :extension :profile)
+      "specialization" :base
+      :structure)))
 
 
 (def not-empty-merge
@@ -167,8 +161,7 @@
                                        (url->symbol fhir-inter
                                                     (str "http://hl7.org/fhir/StructureDefinition/" tp)
                                                     {:type :element-type :e el :url url}))))]
-               (when (not= (get-schema-type-by-url fhir-inter url)
-                           'zen.fhir/profile-schema)
+               (when (not= :profile (get-schema-type-by-url fhir-inter url))
                  {:confirms #{type-sym}}))
              (when-let [ext-sym (when-let [ext (:fhir/extension el)]
                                   (url->symbol fhir-inter ext {:type :extension :el el :url url}))]

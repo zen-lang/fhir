@@ -556,7 +556,7 @@
 
         'schema {:zen/tags          #{'zen/schema 'zen.fhir/structure-schema}
                  :zen/desc          "A reference to a healthcare provider insurance network (plannet-Network) for which the entity is/isn’t accepting new patients. This is a component of the NewPatients extension."
-                 :confirms          #{'fhir-r4.Reference/schema 'zen.fhir/Reference}
+                 :confirms          #{'zen.fhir/Reference}
                  :zen.fhir/version zen-fhir-version
                  :zen.fhir/type       "Reference"
                  :zen.fhir/profileUri "http://hl7.org/test-plannet/StructureDefinition/plannet-FromNetwork-extension"
