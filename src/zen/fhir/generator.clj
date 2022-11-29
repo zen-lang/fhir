@@ -151,6 +151,10 @@
       'zen.fhir/structure-schema)))
 
 
+(def not-empty-merge
+  (comp not-empty merge))
+
+
 (defn el-schema [fhir-inter [url el]]
   (let [sch (merge-with
              into
@@ -202,12 +206,15 @@
                {:zen/desc text}))
         slicing (when (seq (:fhir/slicing el))
                   (slicing-schema fhir-inter [url el]))]
-    (merge slicing
-           (if (:vector el)
-             (merge {:type 'zen/vector
-                     :every sch}
-                    (select-keys el [:minItems :maxItems]))
-             sch))))
+    (not-empty-merge
+      slicing
+      (if (:vector el)
+        (when-let [vec-sch (not-empty-merge
+                             (when (seq sch) {:every sch})
+                             (select-keys el [:minItems :maxItems]))]
+          (merge {:type 'zen/vector}
+                 vec-sch))
+        sch))))
 
 
 (defn els-schema [fhir-inter [url inter-res]]
