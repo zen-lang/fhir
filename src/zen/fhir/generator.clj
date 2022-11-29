@@ -498,9 +498,10 @@
                  fhir-inter))
 
 
-(defn root-package-ns [fhir-inter package-ns package-symbols]
+(defn root-package-ns [zen-nses fhir-inter package-ns package-symbols]
   (let [dep-nss (set (concat #{'zen.fhir}
                              (get (zen.fhir.inter-utils/packages-deps-nses
+                                    zen-nses
                                     fhir-inter)
                                   package-ns)))
 
@@ -549,9 +550,9 @@
                      :searches search-symbols}}))}))
 
 
-(defn generate-root-package-nses [fhir-inter]
+(defn generate-root-package-nses [zen-nses fhir-inter]
   (into {}
-        (map #(apply root-package-ns fhir-inter %))
+        (map #(apply root-package-ns zen-nses fhir-inter %))
         (symbols-by-package fhir-inter)))
 
 
@@ -569,12 +570,13 @@
 
 
 (defn generate-zen-schemas* [fhir-inter]
-  (into (generate-root-package-nses fhir-inter)
-        (for [[rt inters] fhir-inter
-              inter       inters]
-          (sp/transform [sp/MAP-VALS]
-                        collect-deps
-                        (generate-zen-schema rt fhir-inter inter)))))
+  (let [zen-nses (into {}
+                       (for [[rt inters] fhir-inter
+                             inter       inters]
+                         (sp/transform [sp/MAP-VALS]
+                                       collect-deps
+                                       (generate-zen-schema rt fhir-inter inter))))]
+    (into zen-nses (generate-root-package-nses zen-nses fhir-inter))))
 
 
 (defn generate-zen-schemas [ztx]

@@ -14,7 +14,7 @@
    (let [ztx (zen-core/new-context {})]
      (load-all ztx nil {:node-modules-folder node-modules-folder})
      (generate-zen-schemas ztx)
-     (let [packages-deps (packages-deps-nses (:fhir/inter @ztx))]
+     (let [packages-deps (packages-deps-nses (:fhir.zen/ns @ztx) (:fhir/inter @ztx))]
        (doseq [[package-name deps] packages-deps
                :let [standalone-dir (str zrc-dir "/" package-name "/")]]
          (if omit-deps?

@@ -96,7 +96,7 @@
   (let [packages (cond->> (collect-packages ztx)
                    (some? package-name)
                    (filter #{(name package-name)}))
-        packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir/inter @ztx))]
+        packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir.zen/ns @ztx) (:fhir/inter @ztx))]
     (doseq [package packages
             :let [package-dir (str zrc-node-modules-dir \/ package \/)
                   package-file-path (str package-dir "/package.json")
@@ -124,7 +124,7 @@
                                {:keys [out-dir git-url-format zen-fhir-lib-url git-auth-url-format node-modules-folder ftr-context]}
                                package]
   (let [package-dir (str out-dir \/ package \/)
-        packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir/inter @ztx))
+        packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir.zen/ns @ztx) (:fhir/inter @ztx))
         package-git-url (format git-url-format package)
         package-file-path (str package-dir "zen-package.edn")
         package-deps (into {'zen.fhir zen-fhir-lib-url}
