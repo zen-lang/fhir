@@ -100,8 +100,11 @@
     (doseq [package packages
             :let [package-dir (str zrc-node-modules-dir \/ package \/)
                   package-file-path (str package-dir "/package.json")
-                  package-deps (into {"@zen-lang/zen.fhir" zen-fhir-lib-version}
-                                     (map #(-> {(str "@zen-lang/" %) ver}))
+                  package-deps (into {}
+                                     (map #(-> {(str "@zen-lang/" %)
+                                                (if (= "zen.fhir" %)
+                                                  zen-fhir-lib-version
+                                                  ver)}))
                                      (get packages-deps (symbol package)))
                   package-file {:name    (str "@zen-lang/" package)
                                 :version ver
