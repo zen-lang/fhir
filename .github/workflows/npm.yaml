@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     name: Generate FHIR profiles
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3.0.2

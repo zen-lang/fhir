@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     name:  Release standalone zen FHIR profiles with terminology bundles
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3.0.2
