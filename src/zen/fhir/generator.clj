@@ -151,7 +151,17 @@
 
 (defn el-schema [fhir-inter [url el]]
   (let [sch (merge-with
-             into
+              (fn [x y]
+                (cond
+                  (and (coll? x) (coll? y))
+                  (into x y)
+
+                  (= x y)
+                  y
+
+                  :else
+                  (throw (ex-info "don't know how to merge el-schema parts"
+                                  {:x x :y y :url url}))))
              {}
              (fixed-schema fhir-inter [url el])
              (pattern-schema fhir-inter [url el])
@@ -173,6 +183,7 @@
                (let [types (into #{} (map keyword) (:types el))]
                  (utils/strip-nils
                   {:fhir/polymorphic true
+                   :type 'zen/map
                    :exclusive-keys (when (<= 2 (count types))
                                      #{types})})))
              (when (seq (:| el))
