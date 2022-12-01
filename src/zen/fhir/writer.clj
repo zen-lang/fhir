@@ -102,7 +102,7 @@
                   package-file-path (str package-dir "/package.json")
                   package-deps (into {}
                                      (map #(-> {(str "@zen-lang/" %)
-                                                (if (= "zen.fhir" %)
+                                                (if (= "zen.fhir" (str %))
                                                   zen-fhir-lib-version
                                                   ver)}))
                                      (get packages-deps (symbol package)))
