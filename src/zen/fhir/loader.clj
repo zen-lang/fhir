@@ -2,7 +2,7 @@
   (:require [zen.fhir.search-parameter.loader :as search-parameter.loader]
             [zen.fhir.structure-definition.loader :as structure-definition.loader]
             [zen.core :as zen]
-            [zen.fhir.value-set-expand]
+            [ftr.extraction.ig.value-set-expand]
             [cheshire.core]
             [clojure.java.io :as io]
             [fipp.edn]
@@ -728,7 +728,8 @@
 
 (defn process-concepts [ztx]
   (collect-concepts ztx)
-  (zen.fhir.value-set-expand/denormalize-value-sets-into-concepts ztx)
+  (ftr.extraction.ig.value-set-expand/denormalize-value-sets-into-concepts
+    ztx)
   (swap! ztx update-in [:fhir/inter "Concept"]
          #(sp/transform [sp/MAP-VALS]
                         (partial process-concept ztx)
