@@ -35,3 +35,22 @@
               package-namespaces&package-deps)]
 
     packages-deps))
+
+
+(defn get-all-deps [package packages-deps]
+  (let [package-deps (get packages-deps package)]
+    (loop [[package-name & package-queue] package-deps
+           visited      #{package}
+           deps-acc     package-deps]
+      (cond
+        (nil? package-name)
+        deps-acc
+
+        (visited package-name)
+        (recur package-queue visited deps-acc)
+
+        :else
+        (let [transitive-deps (get packages-deps package-name)]
+          (recur (into package-queue transitive-deps)
+                 (conj visited package-name)
+                 (into deps-acc transitive-deps)))))))
