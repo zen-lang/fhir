@@ -270,6 +270,7 @@
                         :zen.fhir/header nil?
                         :zen.fhir/package nil?
                         :zen.fhir/package-ns nil?
+                        :zen.fhir/packages nil?
                         :zen.fhir/schema-ns nil?}]
 
                       ["CodeSystem" "administrative-gender"]
@@ -280,6 +281,7 @@
                         :zen.fhir/header nil?
                         :zen.fhir/package nil?
                         :zen.fhir/package-ns nil?
+                        :zen.fhir/packages nil?
                         :zen.fhir/schema-ns nil?}]
 
                       ["Concept" "http:--hl7.org-fhir-administrative-gender-other"]
@@ -291,6 +293,7 @@
                         :_source "zen.fhir"
                         :zen.fhir/header nil?
                         :zen.fhir/package nil?
+                        :zen.fhir/packages nil?
                         :zen.fhir/package-ns nil?
                         :zen.fhir/schema-ns nil?}]}))))))
 

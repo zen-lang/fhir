@@ -7,6 +7,41 @@
             [matcho.core :as matcho]))
 
 
+(t/deftest collect-concepts-uri-data-loss-prevention
+  (def state
+    (atom {:fhir/inter
+           {"CodeSystem"
+            {"sys"
+             {:fhir/concepts [{:code                "1"
+                               :system              "sys"
+                               :id                  "sys-1"
+                               :zen.fhir/package-ns 'pkg1}
+                              {:code                "2"
+                               :system              "sys"
+                               :id                  "sys-2"
+                               :zen.fhir/package-ns 'pkg1}]}}
+            "ValueSet"
+            {"vs1"
+             {:fhir/concepts [{:code                "1"
+                               :system              "sys"
+                               :id                  "sys-1"
+                               :zen.fhir/package-ns 'pkg2}]}
+             "vs2"
+             {:fhir/concepts [{:code                "1"
+                               :system              "sys"
+                               :id                  "sys-1"
+                               :zen.fhir/package-ns 'pkg3}]}}}}))
+
+  (sut/collect-concepts state)
+
+  (matcho/match @state
+                {:fhir/inter
+                 {"Concept"
+                  {"sys"
+                   {"sys-1" {:zen.fhir/packages #{'pkg1 'pkg2 'pkg3}}
+                    "sys-2" {:zen.fhir/packages #{'pkg1}}}}}}))
+
+
 (defmacro match-definition [ztx url pattern]
   `(let [res# (sut/get-definition ~ztx ~url)]
      (matcho/match res# ~pattern)

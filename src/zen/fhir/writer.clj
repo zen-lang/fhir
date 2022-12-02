@@ -65,7 +65,8 @@
         resources (->> (select-keys fhir-inter ["ValueSet" "Concept" "CodeSystem"])
                        vals
                        (mapcat vals))
-        package-resources (map :zen.fhir/resource (filter #(= package-ns (name (:zen.fhir/package-ns %))) resources))
+        package-resources (map :zen.fhir/resource (filter #(or (= package-ns (name (:zen.fhir/package-ns %)))
+                                                               (contains? (:zen.fhir/packages %) (symbol package-ns))) resources))
         filename (str package-ns "-terminology-bundle")]
     (clojure.java.io/make-parents (str package-dir \/ filename))
     (spit-ndjson-gz-bundle! package-dir filename package-resources)))
