@@ -24,6 +24,13 @@
 
    :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]}
 
+  :profile {:extra-paths ["test"]
+            :jvm-opts ["-Djdk.attach.allowAttachSelf"
+                       "-XX:+UnlockDiagnosticVMOptions"
+                       "-XX:+DebugNonSafepoints"]
+            :extra-deps {criterium/criterium {:mvn/version "0.4.6"}
+                         com.clojure-goes-fast/clj-async-profiler {:mvn/version "1.0.1"}}}
+
   :test {:extra-paths ["test" "inspect"]
          :extra-deps {healthsamurai/matcho {:mvn/version "0.3.9"}
                       hiccup/hiccup {:mvn/version "2.0.0-alpha2"}}

@@ -1,2 +1,2 @@
 ((nil
-  (cider-clojure-cli-aliases . "-A:test:build")))
+  (cider-clojure-cli-aliases . "-A:test:profile:build")))

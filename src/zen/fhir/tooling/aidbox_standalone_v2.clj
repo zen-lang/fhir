@@ -9,6 +9,29 @@
             [clojure.java.shell :as shell]
             [clojure.string :as str]))
 
+(comment
+  (require '[clj-async-profiler.core :as prof])
+
+  (prof/profile
+    #_{:event :alloc}
+    (time
+      (-main "node_modules2"
+             "tmp-zrc2")))
+
+  ;; With zen ns pprint Elapsed time: 66711.658208 msecs
+  ;; Without pprint Elapsed time: 15276.263458 msecs
+  ;; nlm vsac + r4 core + r4 terminology "Elapsed time: 1662008.051333 msecs"
+
+  (prof/profile
+    #_{:event :alloc}
+    (time
+      (-main "node_modules3"
+             "tmp-zrc3")))
+
+  (prof/list-event-types)
+
+  (def srv (prof/serve-ui 8081)))
+
 
 (defn coerce-to-internal-package-name [s]
   (-> s
