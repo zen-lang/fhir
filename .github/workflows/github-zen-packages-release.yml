@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     name: Release zen FHIR Github packages with profiles and FTR
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v3.0.2
