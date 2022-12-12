@@ -8,6 +8,7 @@
             [org.httpkit.client :as client]
             [zen.package]
             [ftr.core]
+            [fipp.edn]
             [clojure.java.io :as io]))
 
 
@@ -39,6 +40,14 @@
                         :stream nil))
 
 
+(defn spit-formatted-zen-ns [zen-ns-map file]
+  (let [formatted (-> zen-ns-map
+                      add-zen-quote-reader-tag
+                      order-zen-ns)]
+    (with-open [^java.io.Writer w (clojure.java.io/writer file)]
+      (fipp.edn/pprint formatted {:writer w}))))
+
+
 (defn spit-zen-schemas [ztx zrc-dir & [{:keys [package]}]]
   (doseq [[zen-ns ns-content] (get-in @ztx [:fhir.zen/ns])
           :let [nss  (name zen-ns)
@@ -46,7 +55,7 @@
                 package-name (first (str/split nss #"\." 2))]
           :when (or (nil? package) (= package package-name))]
     (clojure.java.io/make-parents file)
-    (spit file (format-zen-ns ns-content)))
+    (spit-formatted-zen-ns ns-content file))
   :done)
 
 
