@@ -17,17 +17,22 @@
     (time
       (-main "node_modules2"
              "tmp-zrc2")))
+  ;; without refactor "Elapsed time: 1740601.313208 msecs"
+  ;; with refactor "Elapsed time: 518171.360916 msecs"
+  ;; "Elapsed time: 296774.622458 msecs"
 
+  ;; without refactor. old measures
   ;; With zen ns pprint Elapsed time: 66711.658208 msecs
   ;; Without pprint Elapsed time: 15276.263458 msecs
   ;; nlm vsac + r4 core + r4 terminology "Elapsed time: 1662008.051333 msecs"
 
-  (prof/profile
-    #_{:event :alloc}
-    (time
+  (time
+    (prof/profile
       (-main "node_modules3"
              "tmp-zrc3")))
 
+  ;; with refactor "Elapsed time: 3290.484459 msecs"
+  ;; without refactor "Elapsed time: 5271.97525 msecs"
   (prof/list-event-types)
 
   (def srv (prof/serve-ui 8081)))

@@ -38,8 +38,8 @@
                 {:fhir/inter
                  {"Concept"
                   {"sys"
-                   {"sys-1" {:zen.fhir/packages #{'pkg1 'pkg2 'pkg3}}
-                    "sys-2" {:zen.fhir/packages #{'pkg1}}}}}}))
+                   {"1" {:zen.fhir/packages #{'pkg1 'pkg2 'pkg3}}
+                    "2" {:zen.fhir/packages #{'pkg1}}}}}}))
 
 
 (defmacro match-definition [ztx url pattern]

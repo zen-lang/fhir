@@ -290,7 +290,7 @@
                     :display "Unknown"
                     :definition "Unknown."}]})
 
-    (match-inter ztx "Concept" "http:--hl7.org-fhir-administrative-gender-other"
+    (match-inter ztx "Concept" "http://hl7.org/fhir/administrative-gender-other"
                  {:id         "http:--hl7.org-fhir-administrative-gender-other"
                   :code       "other"
                   :system     "http://hl7.org/fhir/administrative-gender"
@@ -313,13 +313,13 @@
                    :zen.fhir/schema-ns  nil?}})
 
     (t/testing "hierarchy & property extract"
-      (match-inter ztx "Concept" "http:--terminology.hl7.org-CodeSystem-v3-ActMood-EXPEC"
+      (match-inter ztx "Concept" "http://terminology.hl7.org/CodeSystem/v3-ActMood-EXPEC"
                    {:code      "EXPEC"
                     :system    "http://terminology.hl7.org/CodeSystem/v3-ActMood"
                     :hierarchy ["_ActMoodPredicate" nil]
                     :property  {"status" "active"}})
 
-      (match-inter ztx "Concept" "http:--terminology.hl7.org-CodeSystem-v3-ActMood-GOL.CRT"
+      (match-inter ztx "Concept" "http://terminology.hl7.org/CodeSystem/v3-ActMood-GOL.CRT"
                    {:code      "GOL.CRT"
                     :system    "http://terminology.hl7.org/CodeSystem/v3-ActMood"
                     :hierarchy ["_ActMoodPredicate" "CRT" nil]
@@ -341,7 +341,7 @@
                    {:fhir/concepts #(some (fn [c] (= "seealso" (:code c)))
                                           %)})
 
-      (match-inter ztx "Concept" "http:--hl7.org-fhir-link-type-seealso"
+      (match-inter ztx "Concept" "http://hl7.org/fhir/link-type-seealso"
                    {:id       "http:--hl7.org-fhir-link-type-seealso"
                     :valueset #{"http://hl7.org/fhir/ValueSet/link-type"}}))
 
@@ -350,7 +350,7 @@
                 :fhir/inter
                 (get "Concept")))
 
-      (match-inter ztx "Concept" "http:--unitsofmeasure.org-cm"
+      (match-inter ztx "Concept" "http://unitsofmeasure.org-cm"
                    {:id       "http:--unitsofmeasure.org-cm"
                     :code     "cm"
                     :display  nil?
@@ -358,7 +358,7 @@
                     :valueset #{"http://hl7.org/fhir/ValueSet/ucum-bodylength"}
                     :zen.fhir/resource {:valueset ["http://hl7.org/fhir/ValueSet/ucum-bodylength"]}})
 
-      (match-inter ztx "Concept" "http:--unitsofmeasure.org-[in_i]"
+      (match-inter ztx "Concept" "http://unitsofmeasure.org-[in_i]"
                    {:id       "http:--unitsofmeasure.org-[in_i]" #_"Fix square bracets in id"
                     :code     "[in_i]"
                     :display  nil?
@@ -381,7 +381,7 @@
       (match-inter ztx "CodeSystem" "http://hl7.org/fhir/practitioner-specialty"
                    {:fhir/concepts #(every? (set (map :code %)) #{"dietary"})})
 
-      (match-inter ztx "Concept" "http:--hl7.org-fhir-practitioner-specialty-dietary"
+      (match-inter ztx "Concept" "http://hl7.org/fhir/practitioner-specialty-dietary"
                    {:valueset #{"http://hl7.org/fhir/ValueSet/practitioner-specialty"
                                 "http://hl7.org/fhir/ValueSet/use-context"}}))
 
@@ -403,5 +403,5 @@
                                             (set (map :code %)))})
 
         (doseq [code ["RSK" "GOL" "CRT" "OPT" "EXPEC" "EVN.CRT" "PRMS.CRT" "RQO.CRT" "RSK.CRT" "GOL.CRT" "INT.CRT"]]
-          (match-inter ztx "Concept" (str "http:--terminology.hl7.org-CodeSystem-v3-ActMood-" code)
+          (match-inter ztx "Concept" (str "http://terminology.hl7.org/CodeSystem/v3-ActMood-" code)
                        {:valueset #(contains? % "http://hl7.org/fhir/ValueSet/inactive")}))))))
