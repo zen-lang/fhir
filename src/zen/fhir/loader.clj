@@ -668,17 +668,15 @@
         url (or (:url res) (:url opts))]
     (if (or (nil? url) (nil? rt))
       (println :skip-resource "no url or rt" (get-in res [:zen/loader :file]))
-      (let [processed-res (process-on-load res)
-            processed-res (cond-> processed-res
-                            (and processed-res
-                                 (comp #{"CodeSystem" "ValueSet"} :resourceType)
-                                 skip-concept-processing)
-                            (assoc :fhir/concepts '()))
-            processed-res (merge processed-res
-                                 {:_source          "zen.fhir"
-                                  :zen.fhir/version (:zen.fhir/version @ztx)}
-                                 (select-keys res (conj loader-keys :_source)))]
-        (when processed-res
+      (when-let [processed-res (process-on-load res)]
+        (let [processed-res (cond-> processed-res
+                              (and (comp #{"CodeSystem" "ValueSet"} :resourceType)
+                                   skip-concept-processing)
+                              (assoc :fhir/concepts '()))
+              processed-res (merge processed-res
+                                   {:_source          "zen.fhir"
+                                    :zen.fhir/version (:zen.fhir/version @ztx)}
+                                   (select-keys res (conj loader-keys :_source)))]
           (swap! ztx update-in [:fhir/inter rt url] ensure-no-clash processed-res))))))
 
 
