@@ -615,47 +615,66 @@
   (load-intermidiate res))
 
 
+#_"NOTE: We know that hl7.fhir.r4.core ValueSet resources are clashing by url with hl7.terminology.r4 ValueSets resources.
+   Currently we always choose hl7.terminology.r4 ValueSets over those from hl7.fhir.r4.core.
+   We assume that there are no other ValueSets clashing.
+   If we find such a clash, we throw an exception to make it noticeable."
+(def url-clash-higher-priority
+  {:ValueSet   {:hl7.terminology.r4 #{:hl7.fhir.r4.core}}
+   :CodeSystem {:hl7.terminology.r4 #{:hl7.fhir.r4.core}}})
+
+
+(defn check-priority [inter-old inter-new]
+  (let [rt-kw          (keyword (:resourceType inter-old))
+        package-kw-old (keyword (get-in inter-old [:zen/loader :package :name]))
+        package-kw-new (keyword (get-in inter-new [:zen/loader :package :name]))]
+    (cond
+      (nil? inter-old)
+      :no-clash
+
+      (get-in url-clash-higher-priority [rt-kw package-kw-new package-kw-old])
+      :override-with-higher-priority
+
+      (get-in url-clash-higher-priority [rt-kw package-kw-old package-kw-new])
+      :skip-lower-priority
+
+      :else
+      :unresolved-clash)))
+
+
+(defn ensure-no-clash [old new]
+  (case (check-priority old new)
+    (:no-clash :override-with-higher-priority)
+    new
+
+    :skip-lower-priority
+    old
+
+    :unresolved-clash
+    (throw (Exception. (str {:resourceType (:resourceType old)
+                             :url          (:url old)
+                             :old-package  (get-in old [:zen/loader :package :name])
+                             :new-package  (get-in new [:zen/loader :package :name])})))))
+
+
 ;; TODO filter by resource type
 (defn load-definiton [ztx {:as opts, :keys [skip-concept-processing]} res]
-  (let [rt (:resourceType res)
-        url (or (:url res) (:url opts))
-        npm-package (get-in res [:zen/loader :package :name])
-        vs-url-clash (and (= rt "ValueSet")
-                          (not-empty (get-in @ztx [:fhir/inter "ValueSet" url])))
-        vs-url-clash-npm-package (get-in vs-url-clash [:zen/loader :package :name])]
-    (cond
-      ;; We know that hl7.fhir.r4.core ValueSet resources are clashing by url with hl7.terminology.r4 ValueSets resources.
-      ;; Currently we always choose hl7.terminology.r4 ValueSets over those from hl7.fhir.r4.core.
-      ;; We assume that there are no other ValueSets clashing.
-      ;; If we find such a clash, we throw an exception to make it noticeable.
-      (and vs-url-clash
-           (= npm-package "hl7.fhir.r4.core")
-           (= vs-url-clash-npm-package "hl7.terminology.r4"))
-      (println :skip-resource "hl7.fhir.r4.core ValueSet is skipped because it clashes by url with hl7.terminology.r4 ValueSet")
-
-      (and vs-url-clash
-           (not= npm-package "hl7.terminology.r4")
-           (not= vs-url-clash-npm-package "hl7.fhir.r4.core"))
-      (throw
-       (ex-info "Multiple ValueSet resoources with the same URL"
-                {:vs-url-clash vs-url-clash}))
-
-      (and rt url)
+  (let [rt  (:resourceType res)
+        url (or (:url res) (:url opts))]
+    (if (or (nil? url) (nil? rt))
+      (println :skip-resource "no url or rt" (get-in res [:zen/loader :file]))
       (let [processed-res (process-on-load res)
             processed-res (cond-> processed-res
                             (and processed-res
                                  (comp #{"CodeSystem" "ValueSet"} :resourceType)
                                  skip-concept-processing)
-                            (assoc :fhir/concepts '()))]
+                            (assoc :fhir/concepts '()))
+            processed-res (merge processed-res
+                                 {:_source          "zen.fhir"
+                                  :zen.fhir/version (:zen.fhir/version @ztx)}
+                                 (select-keys res (conj loader-keys :_source)))]
         (when processed-res
-          (swap! ztx update-in [:fhir/inter rt url]
-                 (fn [x] (when x (println :override-resource url))
-                   (merge processed-res
-                          {:_source "zen.fhir"
-                           :zen.fhir/version (:zen.fhir/version @ztx)}
-                          (select-keys res (conj loader-keys :_source)))))))
-
-      :else (println :skip-resource "no url or rt" (get-in res [:zen/loader :file])))))
+          (swap! ztx update-in [:fhir/inter rt url] ensure-no-clash))))))
 
 
 (def read-json ftr.extraction.ig.core/read-json)
