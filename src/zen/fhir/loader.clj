@@ -624,6 +624,45 @@
    :CodeSystem {:hl7.terminology.r4 #{:hl7.fhir.r4.core}}})
 
 
+(defn resolve-clash-dispatch [rt old new]
+  (keyword rt))
+
+
+(defmulti resolve-clash #'resolve-clash-dispatch)
+
+
+(defn clash-ex-data [code old new]
+  {:code code
+   :old  {:rt      (:resourceType old)
+          :url     (:url old)
+          :package (get-in old [:zen/loader :package :name])
+          :file    (get-in old [:zen/loader :file])}
+   :new  {:rt      (:resourceType new)
+          :url     (:url new)
+          :package (get-in new [:zen/loader :package :name])
+          :file    (get-in new [:zen/loader :file])}})
+
+
+(defmethod resolve-clash :default [_rt old new]
+  (throw (Exception. (clash-ex-data ::no-resolve-clash-rules-defined old new))))
+
+
+(defmethod resolve-clash :CodeSystem [_ old new]
+  (let [status-weight  {:active  -0
+                        :draft   -10
+                        :unknown -20
+                        :retired -30}
+        compare-key    (juxt (comp status-weight keyword :status)
+                             :date
+                             :version)
+        compare-res    (compare (compare-key old)
+                                (compare-key new))]
+    (cond
+      (neg? compare-res)  :new
+      (zero? compare-res) :same
+      (pos? compare-res)  :old)))
+
+
 (defn check-priority [inter-old inter-new]
   (let [rt-kw          (keyword (:resourceType inter-old))
         package-kw-old (keyword (get-in inter-old [:zen/loader :package :name]))
@@ -631,6 +670,9 @@
     (cond
       (nil? inter-old)
       :no-clash
+
+      (= package-kw-new package-kw-old)
+      (resolve-clash rt-kw inter-old inter-new)
 
       (get-in url-clash-higher-priority [rt-kw package-kw-new package-kw-old])
       :override-with-higher-priority
@@ -651,15 +693,7 @@
     old
 
     :unresolved-clash
-    (throw (Exception. (str {:code :unresolved-clash
-                             :old {:rt      (:resourceType old)
-                                   :url     (:url old)
-                                   :package (get-in old [:zen/loader :package :name])
-                                   :file    (get-in old [:zen/loader :file])}
-                             :new {:rt      (:resourceType new)
-                                   :url     (:url new)
-                                   :package (get-in new [:zen/loader :package :name])
-                                   :file    (get-in new [:zen/loader :file])}})))))
+    (throw (Exception. (str (clash-ex-data ::unresolved-clash old new))))))
 
 
 ;; TODO filter by resource type
