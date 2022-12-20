@@ -643,7 +643,7 @@
 
 
 (defmethod resolve-clash :default [_rt old new]
-  (throw (Exception. (clash-ex-data ::no-resolve-clash-rules-defined old new))))
+  (throw (Exception. (str (clash-ex-data ::no-resolve-clash-rules-defined old new)))))
 
 
 (defn get-package-priority [rt priority-map old new]
