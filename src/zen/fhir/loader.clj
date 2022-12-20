@@ -674,7 +674,7 @@
                                   :zen.fhir/version (:zen.fhir/version @ztx)}
                                  (select-keys res (conj loader-keys :_source)))]
         (when processed-res
-          (swap! ztx update-in [:fhir/inter rt url] ensure-no-clash))))))
+          (swap! ztx update-in [:fhir/inter rt url] ensure-no-clash processed-res))))))
 
 
 (def read-json ftr.extraction.ig.core/read-json)
