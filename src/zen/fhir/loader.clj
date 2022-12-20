@@ -627,6 +627,13 @@
                           (not-empty (get-in @ztx [:fhir/inter "CodeSystem" url])))
 
         cs-url-clash-npm-package (get-in cs-url-clash [:zen/loader :package :name])]
+    (when (and cs-url-clash
+               (= npm-package "hl7.fhir.r4.core")
+               (= cs-url-clash-npm-package "hl7.terminology.r4"))
+      (throw (Exception.
+               (format "Multiple CodeSystem resources with the same URL\n%s\n%s"
+                       cs-url-clash
+                       npm-package))))
     (cond
       ;; We know that hl7.fhir.r4.core ValueSet resources are clashing by url with hl7.terminology.r4 ValueSets resources.
       ;; Currently we always choose hl7.terminology.r4 ValueSets over those from hl7.fhir.r4.core.
@@ -636,15 +643,6 @@
            (= npm-package "hl7.fhir.r4.core")
            (= vs-url-clash-npm-package "hl7.terminology.r4"))
       (println :skip-resource "hl7.fhir.r4.core ValueSet is skipped because it clashes by url with hl7.terminology.r4 ValueSet")
-
-      (and cs-url-clash
-           (= npm-package "hl7.fhir.r4.core")
-           (= cs-url-clash-npm-package "hl7.terminology.r4"))
-      (throw (ex-info "Multiple CodeSystem resources with the same URL"
-                      {:vs-url-clash cs-url-clash
-                       :npm-package npm-package
-                       :cs-url-clash-npm-package
-                       cs-url-clash-npm-package}))
 
       (and vs-url-clash
            (not= npm-package "hl7.terminology.r4")
