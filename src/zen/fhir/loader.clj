@@ -826,7 +826,8 @@
                        :whitelist whitelist
                        :blacklist (merge-with merge
                                               {"StructureDefinition" #{"http://hl7.org/fhir/StructureDefinition/familymemberhistory-genetic"
-                                                                       "http://hl7.org/fhir/uv/sdc/StructureDefinition/parameters-questionnaireresponse-extract-in"}}
+                                                                       "http://hl7.org/fhir/uv/sdc/StructureDefinition/parameters-questionnaireresponse-extract-in"}
+                                               "SearchParameter" #{"http://hl7.org/fhir/SearchParameter/example"}}
                                               blacklist)}
                       package
                       f)))))
