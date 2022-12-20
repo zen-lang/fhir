@@ -654,10 +654,12 @@
     (throw (Exception. (str {:code :unresolved-clash
                              :old {:rt      (:resourceType old)
                                    :url     (:url old)
-                                   :package (get-in old [:zen/loader :package :name])}
+                                   :package (get-in old [:zen/loader :package :name])
+                                   :file    (get-in old [:zen/loader :file])}
                              :new {:rt      (:resourceType new)
                                    :url     (:url new)
-                                   :package (get-in new [:zen/loader :package :name])}})))))
+                                   :package (get-in new [:zen/loader :package :name])
+                                   :file    (get-in old [:zen/loader :file])}})))))
 
 
 ;; TODO filter by resource type
