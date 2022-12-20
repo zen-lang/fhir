@@ -619,16 +619,8 @@
    Currently we always choose hl7.terminology.r4 ValueSets over those from hl7.fhir.r4.core.
    We assume that there are no other ValueSets clashing.
    If we find such a clash, we throw an exception to make it noticeable."
-(def url-clash-higher-priority
-  {:ValueSet   {:hl7.terminology.r4 #{:hl7.fhir.r4.core}}
-   :CodeSystem {:hl7.terminology.r4 #{:hl7.fhir.r4.core}}})
-
-
-(defn resolve-clash-dispatch [rt old new]
-  (keyword rt))
-
-
-(defmulti resolve-clash #'resolve-clash-dispatch)
+(def package-priority
+  {:hl7.terminology.r4 #{:hl7.fhir.r4.core :hl7.fhir.us.carin-bb :hl7.fhir.us.davinci-pdex}})
 
 
 (defn clash-ex-data [code old new]
@@ -643,56 +635,83 @@
           :file    (get-in new [:zen/loader :file])}})
 
 
+(defn resolve-clash-dispatch [rt old new]
+  (keyword rt))
+
+
+(defmulti resolve-clash #'resolve-clash-dispatch)
+
+
 (defmethod resolve-clash :default [_rt old new]
   (throw (Exception. (clash-ex-data ::no-resolve-clash-rules-defined old new))))
 
 
-(defmethod resolve-clash :CodeSystem [_ old new]
-  (let [status-weight  {:active  -0
+(defn get-package-priority [rt priority-map old new]
+  (let [old-package  (keyword (get-in old [:zen/loader :package :name]))
+        new-package  (keyword (get-in new [:zen/loader :package :name]))]
+    {:old (get-in priority-map [old-package new-package])
+     :new (get-in priority-map [new-package old-package])}))
+
+
+(defn decide-on-clash [compare-key old new]
+  (let [compare-res (compare (compare-key old)
+                             (compare-key new))]
+    (cond
+      (neg? compare-res)  ::override-with-higher-priority
+      (zero? compare-res) ::unresolved-clash
+      (pos? compare-res)  ::skip-lower-priority)))
+
+
+(defmethod resolve-clash :CodeSystem [rt old new]
+  (let [status-weight  {:active  0
                         :draft   -10
                         :unknown -20
                         :retired -30}
-        compare-key    (juxt (comp status-weight keyword :status)
-                             :date
-                             :version)
-        compare-res    (compare (compare-key old)
-                                (compare-key new))]
-    (cond
-      (neg? compare-res)  :new
-      (zero? compare-res) :same
-      (pos? compare-res)  :old)))
+        content-weight {:complete    0
+                        :fragment    -10
+                        :supplement  -20
+                        :example     -30
+                        :not-present -40}
+
+        {old-priority :old, new-priority :new}
+        (get-package-priority rt package-priority old new)
+
+        result (decide-on-clash (juxt #(get status-weight (keyword (:status %)))
+                                      #(get content-weight (keyword (:content %)))
+                                      :priority)
+                                (assoc old :priority old-priority)
+                                (assoc new :priority new-priority))]
+    (if (and (= ::unresolved-clash result)
+             (= "not-present" (:content new) (:content old)))
+      (decide-on-clash (juxt :date :version #_#(get-in % [:zen/loader :package :name]))
+                       old
+                       new)
+      result)))
+
+
+(defmethod resolve-clash :ValueSet [rt old new]
+  (let [{old-priority :old, new-priority :new} (get-package-priority rt package-priority old new)]
+    (decide-on-clash (juxt :priority)
+                     (assoc old :priority old-priority)
+                     (assoc new :priority new-priority))))
 
 
 (defn check-priority [inter-old inter-new]
-  (let [rt-kw          (keyword (:resourceType inter-old))
-        package-kw-old (keyword (get-in inter-old [:zen/loader :package :name]))
-        package-kw-new (keyword (get-in inter-new [:zen/loader :package :name]))]
-    (cond
-      (nil? inter-old)
-      :no-clash
-
-      (= package-kw-new package-kw-old)
-      (resolve-clash rt-kw inter-old inter-new)
-
-      (get-in url-clash-higher-priority [rt-kw package-kw-new package-kw-old])
-      :override-with-higher-priority
-
-      (get-in url-clash-higher-priority [rt-kw package-kw-old package-kw-new])
-      :skip-lower-priority
-
-      :else
-      :unresolved-clash)))
+  (let [rt-kw (keyword (:resourceType inter-old))]
+    (if (nil? inter-old)
+      ::no-clash
+      (resolve-clash rt-kw inter-old inter-new))))
 
 
 (defn ensure-no-clash [old new]
   (case (check-priority old new)
-    (:no-clash :override-with-higher-priority)
+    (::no-clash ::override-with-higher-priority)
     new
 
-    :skip-lower-priority
+    ::skip-lower-priority
     old
 
-    :unresolved-clash
+    ::unresolved-clash
     (throw (Exception. (str (clash-ex-data ::unresolved-clash old new))))))
 
 
