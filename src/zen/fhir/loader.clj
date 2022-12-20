@@ -659,7 +659,7 @@
                              :new {:rt      (:resourceType new)
                                    :url     (:url new)
                                    :package (get-in new [:zen/loader :package :name])
-                                   :file    (get-in old [:zen/loader :file])}})))))
+                                   :file    (get-in new [:zen/loader :file])}})))))
 
 
 ;; TODO filter by resource type
