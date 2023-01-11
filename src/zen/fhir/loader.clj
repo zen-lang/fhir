@@ -637,7 +637,7 @@
 (def init-ztx ftr.extraction.ig.core/init-ztx)
 
 
-(def preload-all ftr.extraction.ig.core/load-all)
+(def preload-all ftr.extraction.ig.core/preload-all)
 
 
 (def load-all ftr.extraction.ig.core/load-all)
