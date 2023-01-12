@@ -4,8 +4,8 @@
             [zen.fhir.search-parameter.template :as template]
             [zen.fhir.search-parameter.fhirpath :as fhirpath]
 
+            #_[clojure.string :as str]
             [com.rpl.specter :as sp]))
-
 
 (defn process-on-load [res]
   (cond
@@ -26,8 +26,6 @@
             :base-resource-types (:base res)
             :expression (:expression res)})))
 
-(interleave (repeat :|) [:a :b :c ])
-
 (defn get-type-by-knife [ztx inter base-rt knife]
   (let [inter-path (->> (remove map? knife)
                         (map keyword)
@@ -44,7 +42,6 @@
                                :polymorphic? true}))
             (:types el)))))
 
-
 (defn process-search-parameter [ztx inter]
   (let [knife-paths (fhirpath/fhirpath->knife (:expression inter))
         expr        (into {}
@@ -59,11 +56,11 @@
                                                          knifes)]
                                    {(keyword base-rt)
                                     (utils/strip-nils
-                                      {:knife      all-knifes
-                                       :jsonpath   jsonpath
-                                       :data-types types
-                                       :template   sp-template
-                                       :sql        (template/expand sp-template types jsonpath)})})))
+                                     {:knife      all-knifes
+                                      :jsonpath   jsonpath
+                                      :data-types types
+                                      :template   sp-template
+                                      :sql        (template/expand sp-template types jsonpath)})})))
                           (:base inter))]
     (-> inter
         (dissoc :expression)

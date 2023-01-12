@@ -25,12 +25,11 @@
 (defn extract-where [s]
   (if (str/starts-with? s "where(")
     (if-let [[_ el val] (re-matches where-eq-regex s)]
-      {(keyword el) val}
+      {(keyword (str/trim el)) val}
       (if-let [[_ rt] (re-matches where-ref-regex s)]
         {:resourceType rt}
         (println "ERROR:" s)))
     s))
-
 
 (defn extract-asis [s]
   (if-let [re (re-matches #"^(is|as)\((.*)\)?" s )]
@@ -68,12 +67,16 @@
   (= (subs x 0 1)
      (str/upper-case (subs x 0 1))))
 
-
 (defn unsupported-syntax? [exp]
-  (or (str/includes? exp "extension")
+  (or #_(str/includes? exp "extension")
       (str/includes? exp "hasExtension")
       (str/includes? exp "[")))
 
+(defn split-but-ignore-url
+  "split string by ' as ' and '.', ignore dot in url 
+  (where clause contains url with dots)"
+  [s]
+  (str/split s #"\.\s*(?=([^']*'[^']*')*[^']*$)|\s+as\s+"))
 
 (defn fhirpath->knife [exp]
   (when (and exp (not (unsupported-syntax? exp)))
@@ -83,7 +86,7 @@
       (->>
        (remove-exists exp)
        (split-by-pipe)
-       (mapv #(->> (str/split % #"(\.|\s+as\s+)")
+       (mapv #(->> (split-but-ignore-url %) 
                    (mapv (fn [s] (str/replace s #"(^\(|\)$)" "")))
                    (mapv extract-asis)
                    (mapv extract-where)
