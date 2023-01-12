@@ -241,7 +241,8 @@
 
 
 (defn produce-ftr-manifests [ztx {:as config,
-                                  :keys [package]}]
+                                  :keys [package]
+                                  {ftr-extraction-result :extraction-result} :ftr-context}]
   (let [inter-valuesets (get-in @ztx [:fhir/inter "ValueSet"])
 
         loader-meta
@@ -265,8 +266,11 @@
              (into {}
                    (map (fn [[zen-ns ns-content]]
                           (let [nss  (name zen-ns)
-                                package-name (first (str/split nss #"\." 2))]
-                            (if (and (= package package-name) (get ns-content 'value-set))
+                                package-name (first (str/split nss #"\." 2))
+                                vs-uri (get-in ns-content ['value-set :uri])]
+                            (if (and (= package package-name)
+                                     vs-uri
+                                     (get ftr-extraction-result vs-uri))
                               [zen-ns (assoc-in ns-content ['value-set :ftr] ftr-manifest)]
                               [zen-ns ns-content]))))
                    namespaces)))
