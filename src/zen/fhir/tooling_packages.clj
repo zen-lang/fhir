@@ -57,3 +57,10 @@
            :git-auth-url-format  git-auth-url-format
            :git-url-format       git-url-format
            :blacklisted-packages #{}})))
+
+
+(comment
+
+  (-main "release.txt" "node_modules" "/tmp/output")
+
+  nil)
