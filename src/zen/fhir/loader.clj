@@ -347,6 +347,19 @@
 ;; ADD check by http://www.hl7.org/fhir/elementdefinition.html#interpretation
 
 
+(defn deduce-extension-base-definition [res value]
+  (let [tp (or (first (:types value))
+               (:type value))]
+    (cond
+      (and (some? (:baseDefinition res))
+           (not= "http://hl7.org/fhir/StructureDefinition/Extension"
+                 (:baseDefinition res)))
+      {:baseDefinition (:baseDefinition res)}
+
+      (and (some? tp) (not= "Extension" tp))
+      {:baseDefinition (str "http://hl7.org/fhir/StructureDefinition/" tp)})))
+
+
 (defn *normalize-extension [ext res]
   (cond
     (get-in res [:| :extension :slicing :slices]) ;; slices for different extensions
@@ -359,18 +372,16 @@
                                  (assoc acc k (*normalize-extension ext (dissoc v :sliceName))))
                                {})))
         (dissoc :fhir-poly-keys)
-        (cond->
-          (= "http://hl7.org/fhir/StructureDefinition/Extension" (:baseDefinition res))
-          (dissoc :baseDefinition)))
+        (dissoc :baseDefinition)
+        (merge (deduce-extension-base-definition res nil)))
 
     (= 1 (count (get-in res [:| :value :types]))) ;; value[x] with a single type
-    (let [value (get-in res [:| :value])
-          tp    (first (:types value))]
+    (let [value (get-in res [:| :value])]
       (merge (dissoc res :| :fhir-poly-keys :baseDefinition)
              (dissoc value :| :types :minItems :maxItems :required :polymorphic)
              (dissoc (first (vals (:| value))))
-             {:kind "first-class-extension"
-              :baseDefinition (str "http://hl7.org/fhir/StructureDefinition/" tp)}))
+             {:kind "first-class-extension"}
+             (deduce-extension-base-definition res value)))
 
     (< 1 (count (get-in res [:| :value :types]))) ;; value[x] with multile types
     (merge
@@ -382,8 +393,8 @@
     (let [value (first (vals (get-in res [:| :value :|])))]
       (merge (dissoc res :| :fhir-poly-keys :baseDefinition) ;; baseDefinition here is http://.../Extension, thus dissoc
              (dissoc value :minItems :maxItems :required :polymorphic :sliceName)
-             {:kind "first-class-extension"
-              :baseDefinition (str "http://hl7.org/fhir/StructureDefinition/" (:type value))}))
+             {:kind "first-class-extension"}
+             (deduce-extension-base-definition res value)))
 
     (and (= 1 (count (dissoc (:| res) :url :extension)))
          (< 1 (count (get-in res [:| :value :|]))))
@@ -393,8 +404,8 @@
     (let [value (first (vals (dissoc (:| res) :url :extension)))]
       (merge (dissoc res :| :fhir-poly-keys :baseDefinition) ;; baseDefinition here is http://.../Extension, thus dissoc
              (dissoc value :minItems :maxItems :required :polymorphic)
-             {:kind "first-class-extension"
-              :baseDefinition (str "http://hl7.org/fhir/StructureDefinition/" (:type value))})) ;; making correct baseDefinition
+             {:kind "first-class-extension"}
+             (deduce-extension-base-definition res value)))
 
     (and (get-in res [:| :value]) ;; has value[x], but no types in it
          (empty? (get-in res [:| :value :types])))

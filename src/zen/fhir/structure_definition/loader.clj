@@ -234,20 +234,35 @@
   [ztx url subj]
   subj)
 
+(defn deduce-type [subj bases]
+  (if (or (= "Extension" (:type subj))
+          (nil? (:type subj)))
+    (let [base-types (->> bases
+                          (remove :abstract)
+                          (map :type))]
+      (if (and (seq base-types) (apply = base-types))
+        (assoc subj :type (first base-types))
+        (do (prn "WARN:" "Can't deduce type. Skip. " (:url subj) base-types)
+            subj)))
+    subj))
+
 (defn process-sd [ztx url subj]
-  (if (is-extension? url subj)
-    (process-extension ztx url subj)
-    (let [bases (get-bases ztx subj)]
-      (when (and (= "constraint" (:derivation subj)) (empty? bases))
-        (println :no-base-resource (pr-str url)))
-      (walk-with-bases ztx {:lvl 0
-                            :path [url]
-                            :derivation (:derivation subj)
-                            :do-not-handle-first-class-ext?
-                            (or (= "http://hl7.org/fhir/StructureDefinition/Element" (:url subj))
-                                (= "http://hl7.org/fhir/StructureDefinition/DomainResource" (:url subj)))}
-                       subj
-                       bases))))
+  (let [bases (get-bases ztx subj)
+        subj (deduce-type subj bases)]
+    (if (is-extension? url subj)
+      (process-extension ztx url subj)
+      (do (when (and (= "constraint" (:derivation subj)) (empty? bases))
+            (println :no-base-resource (pr-str url)))
+          (walk-with-bases ztx {:lvl 0
+                                :path [url]
+                                :derivation (:derivation subj)
+                                :do-not-handle-first-class-ext?
+                                (or (= "http://hl7.org/fhir/StructureDefinition/Element"
+                                       (:url subj))
+                                    (= "http://hl7.org/fhir/StructureDefinition/DomainResource"
+                                       (:url subj)))}
+                           subj
+                           bases)))))
 
 (defn process-structure-definitions [ztx]
   (swap! ztx update-in [:fhir/inter "StructureDefinition"]

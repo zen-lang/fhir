@@ -288,6 +288,8 @@
                                   :fhir/extensionUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity"}
                       :birthsex  {:confirms #{'us-core.us-core-birthsex/schema}
                                   :fhir/extensionUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex"}
+                      :genderIdentity {:confirms #{'us-core.us-core-genderIdentity/schema}
+                                       :fhir/extensionUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity"}
                       :identifier {:type     'zen/vector
                                    :minItems 1
                                    :every    {:confirms nil?
@@ -295,6 +297,11 @@
                                               :keys {:system {:confirms nil?}
                                                      :value  {:zen/desc "The value that is unique within the system."
                                                               :confirms nil?}}}}}}}
+
+     'us-core.us-core-genderIdentity
+     {'ns 'us-core.us-core-genderIdentity
+      'schema {:zen.fhir/type "CodeableConcept"
+               :zen.fhir/profileUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity"}}
 
      'us-core.value-set.birthsex
      {'ns 'us-core.value-set.birthsex
