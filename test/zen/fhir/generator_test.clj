@@ -298,9 +298,16 @@
                                                      :value  {:zen/desc "The value that is unique within the system."
                                                               :confirms nil?}}}}}}}
 
+     'fhir-r4.patient-genderIdentity
+     {'ns 'fhir-r4.patient-genderIdentity
+      'schema {:zen.fhir/type "CodeableConcept"
+               :confirms #{'fhir-r4.CodeableConcept/schema}
+               :zen.fhir/profileUri "http://hl7.org/fhir/StructureDefinition/patient-genderIdentity"}}
+
      'us-core.us-core-genderIdentity
      {'ns 'us-core.us-core-genderIdentity
       'schema {:zen.fhir/type "CodeableConcept"
+               :confirms #{'fhir-r4.patient-genderIdentity/schema}
                :zen.fhir/profileUri "http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity"}}
 
      'us-core.value-set.birthsex

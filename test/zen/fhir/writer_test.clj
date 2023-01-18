@@ -80,6 +80,8 @@
                   us-core.value-set.omb-race-category
                   us-nlm-vsac.value-set.2.16.840.1.113762.1.4.1021.32
 
+                  fhir-r4.patient-genderIdentity
+
                   fhir-r4.Address
                   fhir-r4.BackboneElement
                   fhir-r4.CodeableConcept
@@ -344,6 +346,8 @@
                   us-core.value-set.omb-ethnicity-category
                   us-core.value-set.omb-race-category
                   us-nlm-vsac.value-set.2.16.840.1.113762.1.4.1021.32
+
+                  fhir-r4.patient-genderIdentity
 
                   fhir-r4.Address
                   fhir-r4.BackboneElement
