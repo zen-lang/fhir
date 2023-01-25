@@ -624,6 +624,12 @@
                nil]})))
 
 (t/deftest base64Binary-schema-test
+  (def zctx (zen.core/new-context
+             {:package-paths ["zen.fhir"]
+              :memory-store (:fhir.zen/ns @ztx)}))
+
+  (zen.core/load-ns zctx (get-in @zctx [:memory-store 'fhir-r4.base64Binary]))
+
   (def base64-long-input (-> "zen/fhir/base64-long-input.txt"
                              (io/resource)
                              (slurp)))
@@ -643,33 +649,36 @@
                     base64-long-input)))))
 
   (t/testing "base64 incorrect short input"
-    (t/is (= 1 (count (:errors
-                       (zen.core/validate
-                        zctx
-                        #{'fhir-r4.base64Binary/schema}
-                        "aGVsbG8gd29ybGQ-="))))))
+    (matcho/match
+     (zen.core/validate
+      zctx
+      #{'fhir-r4.base64Binary/schema}
+      "aGVsbG8gd29ybGQ-=")
+     {:errors [{:message #(str/starts-with? % "Expected match")} nil]}))
 
   (t/testing "base64 incorrect long input"
-    (t/is (= 1 (count (:errors
-                       (zen.core/validate
-                        zctx
-                        #{'fhir-r4.base64Binary/schema}
-                        (str base64-long-input "-")))))))
-
+    (matcho/match
+     (zen.core/validate
+      zctx
+      #{'fhir-r4.base64Binary/schema}
+      (str base64-long-input "-"))
+     {:errors [{:message #(str/starts-with? % "Expected match")} nil]}))
 
   (t/testing "base64 empty input"
-    (t/is (= 1 (count (:errors
-                       (zen.core/validate
-                        zctx
-                        #{'fhir-r4.base64Binary/schema}
-                        ""))))))
+    (matcho/match
+     (zen.core/validate
+      zctx
+      #{'fhir-r4.base64Binary/schema}
+      "")
+     {:errors [{:message #(str/starts-with? % "Expected match")} nil]}))
 
   (t/testing "base64 so short input"
-    (t/is (= 1 (count (:errors
-                       (zen.core/validate
-                        zctx
-                        #{'fhir-r4.base64Binary/schema}
-                        "123"))))))
+    (matcho/match
+     (zen.core/validate
+      zctx
+      #{'fhir-r4.base64Binary/schema}
+      "123")
+     {:errors [{:message #(str/starts-with? % "Expected match")} nil]}))
 
   (t/testing "base64 min length input"
     (t/is (empty? (:errors
