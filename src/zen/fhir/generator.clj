@@ -49,7 +49,8 @@
     "code"         {:type  zen/string
                     :regex "^[^\\s]+(\\s[^\\s]+)*$"}
     "base64Binary" {:type  zen/string
-                    :regex "^(\\s*([0-9a-zA-Z\\+\\=]){4}\\s*)+$"}
+                    ;; FHIR regex doesn't work with long strings
+                    :regex "^(\\s*([0-9a-zA-Z\\+\\=]){4}\\s*)++$"}
     "xhtml"        {:type zen/string}
 
     "instant"  {:type  zen/string
