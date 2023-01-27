@@ -145,7 +145,7 @@
                    (try (sh (str "rm -rf " dep-folder))
                         (catch Exception _)))))))
 
-         build-terminology-bundles (clojure "-M -m zen.fhir.tooling.terminology")
+         build-terminology-bundles (clojure "-M:terminology-build -m zen.fhir.tooling.terminology")
          outdated             {:doc  "Check outdated libraries"
                                :task (clojure " -Sdeps '{:deps {com.github.liquidz/antq {:mvn/version \"RELEASE\"}}} '-M -m antq.core ")}
 
