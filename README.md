@@ -170,7 +170,7 @@ java -jar [JAR_PATH] [COMMAND] [OPTIONS]
 ```
   
   #### Commands
-  **`stndlp`**               Builds standalone Aidbox zen project. Result is a zip archive.
+  **`stndlp`**               Builds standalone zen project. Result is a zip archive.
   ###### Options:
    `-i`, `--input` S   Path to node-modules-folder (including node-modules)\
    `-o`, `--output` S  Path to resulting zip archive\
