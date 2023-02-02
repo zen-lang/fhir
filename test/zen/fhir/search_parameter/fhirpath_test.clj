@@ -90,16 +90,14 @@ Bundle.entry[0].resource
   (t/is (= {:default [["name"] ["alias"]]}
            (sut/fhirpath->knife "name | alias")))
 
-  (t/is (= #_{"Organization" [["extension" {:url "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/location-reference"}]]}
-         nil
+  (t/is (= {"Organization" [["extension" {:url "http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/location-reference"}]]}
            (sut/fhirpath->knife "Organization.extension.where(url='http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/location-reference')")))
 
 
-  (t/is (= #_{"Patient" [["extension" {:url "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
+  (t/is (= {"Patient" [["extension" {:url "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race"}
                           "extension"
                           "value"
                           "code"]]}
-         nil
            (sut/fhirpath->knife "Patient.extension.where(url = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race').extension.value.code")))
 
   (t/is (= #_{"QuestionnaireResponse" [["item"
