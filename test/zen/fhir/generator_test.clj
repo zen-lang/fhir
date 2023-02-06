@@ -639,7 +639,13 @@
                    (zen.core/validate
                     zctx
                     #{'fhir-r4.base64Binary/schema}
-                    "aGVsbG8gd29ybGQ=")))))
+                    "aGVsbG8gd29ybGQ="))))
+
+    (t/is (empty? (:errors
+                   (zen.core/validate
+                     zctx
+                     #{'fhir-r4.base64Binary/schema}
+                     "Pz8/")))))
 
   (t/testing "base64 correct long input"
     (t/is (empty? (:errors
