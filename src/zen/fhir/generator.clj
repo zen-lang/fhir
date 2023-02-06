@@ -49,8 +49,13 @@
     "code"         {:type  zen/string
                     :regex "^[^\\s]+(\\s[^\\s]+)*$"}
     "base64Binary" {:type  zen/string
-                    ;; FHIR regex doesn't work with long strings
-                    :regex "^(\\s*([0-9a-zA-Z\\+\\=]){4}\\s*)++$"}
+                    #_"NOTE: the regex from the FHIR spec has issues:
+                    - doesn't work with long strings in java regexp
+                    - doesn't match /
+                    - allows = in the middle of a string 
+                    - invalid count of = in a row (e.g. ===) (spec only allows = and ==)
+                    This regexp has fixes for long strings and /"
+                    :regex "^(\\s*([0-9a-zA-Z\\+\\=\\/]){4})++\\s*$"}
     "xhtml"        {:type zen/string}
 
     "instant"  {:type  zen/string
