@@ -2,6 +2,7 @@
   (:require [zen.fhir.writer :as sut]
             [zen.fhir.generator]
             [zen.fhir.loader]
+            [zen.fhir.inter-utils]
             [zen.package]
             [zen.core]
             [matcho.core :as matcho]
@@ -11,7 +12,8 @@
             [cheshire.core :as json]
             [clojure.java.shell :as sh]
             [ftr.zen-package]
-            [ftr.core]))
+            [ftr.core]
+            [ftr.utils.core]))
 
 
 (def zen-fhir-version (slurp (clojure.java.io/resource "zen-fhir-version")))
@@ -47,6 +49,7 @@
                                              "hl7.fhir.r4.core" {:zen.fhir/package-ns 'fhir-r4}
                                              "hl7.fhir.us.core" {:zen.fhir/package-ns 'us-core}}
                                     :whitelist {"ValueSet" #{"http://terminology.hl7.org/ValueSet/v3-ExposureMode"
+                                                             "http://hl7.org/fhir/ValueSet/performer-role"
                                                              "http://hl7.org/fhir/ValueSet/administrative-gender"
                                                              "http://hl7.org/fhir/us/core/ValueSet/birthsex"
                                                              "http://hl7.org/fhir/ValueSet/c80-practice-codes"
@@ -467,6 +470,7 @@
                   fhir-r4.value-set.action-selection-behavior
                   fhir-r4.value-set.device-nametype
                   fhir-r4.value-set.device-status
+                  fhir-r4.value-set.performer-role
                   fhir-r4.value-set.goal-priority
                   fhir-r4.value-set.group-type
                   fhir-r4.value-set.insuranceplan-applicability
@@ -616,6 +620,8 @@
 
       (def package-dir (str test-dir "/fhir-r4"))
 
+      (def ftr-tag "init")
+
       (sh/sh "mkdir" "-p" package-dir)
       (sh/sh "mkdir" "-p" (str package-dir "/zrc"))
 
@@ -624,21 +630,18 @@
                                                   :source-url  "node_modules"
                                                   :source-type :igs
                                                   :ftr-path    "ftr"
-                                                  :tag         "init"
+                                                  :tag         ftr-tag
                                                   :extractor-options
-                                                  {:whitelist
-                                                   {"ValueSet" #{"http://hl7.org/fhir/ValueSet/administrative-gender"
-                                                                 "http://hl7.org/fhir/us/core/ValueSet/birthsex"
+                                                  {:supplements
+                                                   [{:source-url (-> "fixture/ftr" (io/resource) (.getPath))
+                                                     :module     "snomed-subset"
+                                                     :tag        "prod"}]
+
+                                                   :whitelist
+                                                   {"ValueSet" #{"http://hl7.org/fhir/ValueSet/performer-role"
+                                                                 "http://hl7.org/fhir/ValueSet/administrative-gender"
                                                                  "http://hl7.org/fhir/ValueSet/c80-practice-codes"
-                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.32"
-                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1114.17"
-                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.101"
-                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1"
-                                                                 "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.103"
-                                                                 "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"
-                                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/SpecialtiesVS"
-                                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/IndividualAndGroupSpecialtiesVS"
-                                                                 "http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet/NonIndividualSpecialtiesVS"}}}}})
+                                                                 "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"}}}}})
             config (sut/generate-package-config
                      ztx
                      {:ftr-context extraction-result
@@ -670,7 +673,40 @@
            "ftr"
            {"ig"
             {"vs" {}
-             "tags" {"init.ndjson.gz" {}}}}})))
+             "tags" {(format "%s.ndjson.gz" ftr-tag) {}}}}}))
+
+      (t/testing "FTR supplements are processed correctly"
+        (t/testing "SNOMED supplement is supported"
+          (let [test-vs-url
+                "http://hl7.org/fhir/ValueSet/performer-role"
+
+                tf-dir
+                (io/file package-dir "ftr" "ig" "vs" (ftr.utils.core/escape-url test-vs-url))
+
+                tf-tag-file
+                (io/file tf-dir (format "tag.%s.ndjson.gz" ftr-tag))
+
+                tf-current-hash
+                (-> tf-tag-file
+                    (ftr.utils.core/parse-ndjson-gz)
+                    (first)
+                    (:hash))
+
+                tf
+                (io/file tf-dir (format "tf.%s.ndjson.gz" tf-current-hash))
+
+                test-vs-concepts
+                (->> tf
+                     (ftr.utils.core/parse-ndjson-gz)
+                     (drop-while #(not= "Concept" (:resourceType %))))]
+
+            ;; Count is hardcoded (based on SNOMED US Edition Version
+            ;; 2022-09-01) because we want to test that we generate
+            ;; exactly right amount of concepts in FTR supplements. We
+            ;; don’t know how often SNOMED updates. If its updates are
+            ;; very rare, it is not worth the effort to try to come up
+            ;; with a more flexible approach.
+            (t/is (= (count test-vs-concepts) 509))))))
 
     (t/testing "us-core spit data"
       (delete-directory-recursive (io/file test-dir))
