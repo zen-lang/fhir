@@ -59,10 +59,10 @@
 
 
 (def possible-dep-coords*
-  {"http://snomed.info/sct"         {:source-url "https://storage.googleapis.com/ftr/"
+  {"http://snomed.info/sct"         {:source-url "https://storage.googleapis.com/ftr"
                                      :module     "snomed"
                                      :tag        "prod"}
-   "http://hl7.org/fhir/sid/icd-10" {:source-url "https://storage.googleapis.com/ftr/"
+   "http://hl7.org/fhir/sid/icd-10" {:source-url "https://storage.googleapis.com/ftr"
                                      :module     "icd10cm"
                                      :tag        "prod"}})
 
