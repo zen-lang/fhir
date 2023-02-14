@@ -33,7 +33,8 @@
                                         :source-type :igs
                                         :ftr-path    "ftr"
                                         :tag         "init"
-                                        :supplements (vals zen.fhir.inter-utils/possible-dep-coords*)}})
+                                        :extractor-options {:supplements
+                                                            (vals zen.fhir.inter-utils/possible-dep-coords*)}}})
 
         _ (zen.package/sh! "rm" "-rf" node-modules-folder)
         _ (zen.fhir.generator/generate-zen-schemas ztx)
