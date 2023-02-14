@@ -134,7 +134,7 @@
 
 
 (defn generate-package-config [ztx
-                               {:keys [out-dir git-url-format zen-fhir-lib-url git-auth-url-format node-modules-folder ftr-context]}
+                               {:keys [out-dir git-url-format zen-fhir-lib-url git-auth-url-format node-modules-folder ftr-context ftr-build-deps-coords]}
                                package]
   (let [package-dir (str out-dir \/ package \/)
         packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir.zen/ns @ztx) (:fhir/inter @ztx))
@@ -143,7 +143,9 @@
         package-deps (into {'zen.fhir zen-fhir-lib-url}
                            (map (fn [dep] [(symbol dep) (format git-url-format dep)]))
                            (get packages-deps (symbol package)))
-        package-file {:deps package-deps}
+        package-file (cond-> {:deps package-deps}
+                       (get ftr-build-deps-coords package)
+                       (assoc :ftr-build-deps (get ftr-build-deps-coords package)))
         package-git-auth-url (some-> git-auth-url-format (format package))]
     {:package package
      :package-dir package-dir

@@ -6,7 +6,8 @@
             [zen.fhir.writer]
             [clojure.string]
             [zen.package]
-            [ftr.core]))
+            [ftr.core]
+            [zen.fhir.inter-utils]))
 
 
 (defn github-release-zen-packages [{:keys [node-modules-folder out-dir package-name zen-fhir-lib-url git-url-format git-auth-url-format
@@ -24,23 +25,27 @@
         _ (zen.fhir.loader/load-all ztx nil {:node-modules-folder node-modules-folder
                                              :skip-concept-processing true})
 
+        ftr-build-deps-coords (zen.fhir.inter-utils/build-ftr-deps-coords {:node-modules-folder node-modules-folder})
+
         ftr-context (ftr.core/extract {:cfg
                                        {:module      "ig"
                                         :source-url  node-modules-folder
                                         :source-type :igs
                                         :ftr-path    "ftr"
-                                        :tag         "init"}})
+                                        :tag         "init"
+                                        :supplements (vals zen.fhir.inter-utils/possible-dep-coords*)}})
 
         _ (zen.package/sh! "rm" "-rf" node-modules-folder)
         _ (zen.fhir.generator/generate-zen-schemas ztx)
-        release-result (zen.fhir.writer/release-packages ztx {:ftr-context          ftr-context
-                                                              :out-dir              out-dir
-                                                              :package              package-name
-                                                              :git-url-format       git-url-format
-                                                              :git-auth-url-format  git-auth-url-format
-                                                              :zen-fhir-lib-url     zen-fhir-lib-url
-                                                              :blacklisted-packages blacklisted-packages
-                                                              :node-modules-folder  node-modules-folder})]
+        release-result (zen.fhir.writer/release-packages ztx {:ftr-context           ftr-context
+                                                              :out-dir               out-dir
+                                                              :package               package-name
+                                                              :git-url-format        git-url-format
+                                                              :git-auth-url-format   git-auth-url-format
+                                                              :zen-fhir-lib-url      zen-fhir-lib-url
+                                                              :blacklisted-packages  blacklisted-packages
+                                                              :node-modules-folder   node-modules-folder
+                                                              :ftr-build-deps-coords ftr-build-deps-coords})]
     (if-let [error (:error (last release-result))]
       (throw (ex-info "Release error" {:error error}))
       (->> (map :package-git-url release-result)
