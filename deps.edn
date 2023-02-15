@@ -32,7 +32,8 @@
 
   :test {:extra-paths ["test" "inspect"]
          :extra-deps {healthsamurai/matcho {:mvn/version "0.3.10"}
-                      hiccup/hiccup {:mvn/version "2.0.0-alpha2"}}
+                      hiccup/hiccup {:mvn/version "2.0.0-alpha2"}
+                      ring/ring {:mvn/version "1.9.6"}}
          :jvm-opts ^:replace ["-XX:-OmitStackTraceInFastThrow"]}
 
   :terminology-build

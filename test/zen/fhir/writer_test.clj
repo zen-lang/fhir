@@ -3,6 +3,7 @@
             [zen.fhir.generator]
             [zen.fhir.loader]
             [zen.fhir.inter-utils]
+            [zen.fhir.test-utils]
             [zen.package]
             [zen.core]
             [matcho.core :as matcho]
@@ -615,6 +616,8 @@
           :package-dir string?})))
 
     (t/testing "spit data in package"
+      (def mock-cloud-server (zen.fhir.test-utils/start-mock-server))
+
       (delete-directory-recursive (io/file test-dir))
       (sh/sh "mkdir" "-p" test-dir)
 
@@ -633,7 +636,7 @@
                                                   :tag         ftr-tag
                                                   :extractor-options
                                                   {:supplements
-                                                   [{:source-url (-> "fixture/ftr" (io/resource) (.getPath))
+                                                   [{:source-url (str (zen.fhir.test-utils/mock-server-url) "/fixture/ftr")
                                                      :module     "snomed-subset"
                                                      :tag        "prod"}]
 
@@ -683,20 +686,24 @@
                 tf-dir
                 (io/file package-dir "ftr" "ig" "vs" (ftr.utils.core/escape-url test-vs-url))
 
-                tf-tag-file
-                (io/file tf-dir (format "tag.%s.ndjson.gz" ftr-tag))
+                tf-tag-file-path
+                (-> tf-dir
+                    (io/file (format "tag.%s.ndjson.gz" ftr-tag))
+                    (str))
 
                 tf-current-hash
-                (-> tf-tag-file
+                (-> tf-tag-file-path
                     (ftr.utils.core/parse-ndjson-gz)
                     (first)
                     (:hash))
 
-                tf
-                (io/file tf-dir (format "tf.%s.ndjson.gz" tf-current-hash))
+                tf-path
+                (-> tf-dir
+                    (io/file (format "tf.%s.ndjson.gz" tf-current-hash))
+                    (str))
 
                 test-vs-concepts
-                (->> tf
+                (->> tf-path
                      (ftr.utils.core/parse-ndjson-gz)
                      (drop-while #(not= "Concept" (:resourceType %))))]
 
@@ -706,7 +713,9 @@
             ;; don’t know how often SNOMED updates. If its updates are
             ;; very rare, it is not worth the effort to try to come up
             ;; with a more flexible approach.
-            (t/is (= (count test-vs-concepts) 509))))))
+            (t/is (= (count test-vs-concepts) 509)))))
+
+      (mock-cloud-server))
 
     (t/testing "us-core spit data"
       (delete-directory-recursive (io/file test-dir))
@@ -885,4 +894,3 @@
   (def _ (reset! ztx og-ztx))
 
   :done)
-
