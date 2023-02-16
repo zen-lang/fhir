@@ -3,6 +3,7 @@
         "hl7.fhir.r4.core": "^4.0.1",
         "hl7.fhir.us.carin-bb": "^1.2.0",
         "hl7.fhir.us.core": "^5.0.1",
+        "hl7.fhir.us.codex-radiation-therapy": "1.0.0-ballot",
         "hl7.fhir.us.davinci-drug-formulary": "^2.0.0",
         "hl7.fhir.us.davinci-hrex": "^1.0.0",
         "hl7.fhir.us.davinci-pdex": "^2.0.0-ballot",
