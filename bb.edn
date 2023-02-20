@@ -69,7 +69,7 @@
          repl {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                :task (clojure "-M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]")}
 
-         test {:depends [init]
+         test {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm]
                :task (clojure "-M:test:kaocha")}
 
          ci-test {:depends [set-zen-fhir-version set-zen-fhir-lib-version init test]}
