@@ -4,7 +4,7 @@
         org.clojure/data.csv {:mvn/version "1.0.1"}
         cheshire/cheshire    {:mvn/version "5.11.0"}
         zen-lang/zen         {:git/url "https://github.com/zen-lang/zen"
-                              :sha "b3324af8de7b6856395cb5e24df61e00424d5d14"}
+                              :sha "80197232fea0396b2fb514b5f50dccefea07c402"}
         fipp/fipp            {:mvn/version "0.6.26"}
         http-kit/http-kit    {:mvn/version "2.6.0"}
         health-samurai/ftr   {:local/root "libs/ftr"}
