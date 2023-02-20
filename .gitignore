@@ -20,6 +20,7 @@ yarn.lock
 
 /resources/zen-fhir-version
 /zen-packages/
+release.txt
 
 /zrc/zen/fhir.edn
 tmp
