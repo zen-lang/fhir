@@ -245,38 +245,37 @@
 (defn produce-ftr-manifests [ztx {:as config,
                                   :keys [package]
                                   {ftr-extraction-result :extraction-result} :ftr-context}]
-  (let [inter-valuesets (get-in @ztx [:fhir/inter "ValueSet"])
+  (when-let [loader-meta
+             (->> (get-in @ztx [:fhir/inter "ValueSet"])
+                  (filter (fn [[_vs-url {:as _vs, :zen.fhir/keys [package-ns]}]]
+                            (= (name package-ns) package)))
+                  (first)
+                  (second)
+                  (:zen/loader))]
+    (let [ftr-source-urls
+          (get-ftr-source-urls loader-meta)
 
-        loader-meta
-        (->> inter-valuesets
-             (filter (fn [[_vs-url {:as _vs, :zen.fhir/keys [package-ns]}]]
-                       (= (name package-ns) package)))
-             first
-             second
-             :zen/loader)
+          ftr-manifest
+          {:module      "ig"
+           :source-urls ftr-source-urls
+           :source-type :igs
+           :ftr-path    "ftr"
+           :tag         "init"}]
+      (swap! ztx update :fhir.zen/ns
+             (fn [namespaces]
+               (into {}
+                     (map (fn [[zen-ns ns-content]]
+                            (let [nss  (name zen-ns)
+                                  package-name (first (str/split nss #"\." 2))
+                                  vs-uri (get-in ns-content ['value-set :uri])]
+                              (if (and (= package package-name)
+                                       vs-uri
+                                       (get ftr-extraction-result vs-uri))
+                                [zen-ns (assoc-in ns-content ['value-set :ftr] ftr-manifest)]
+                                [zen-ns ns-content]))))
+                     namespaces)))))
+  config)
 
-        ftr-source-urls (get-ftr-source-urls loader-meta)
-
-        ftr-manifest {:module      "ig"
-                      :source-urls  ftr-source-urls
-                      :source-type :igs
-                      :ftr-path    "ftr"
-                      :tag         "init"}]
-
-    (swap! ztx update :fhir.zen/ns
-           (fn [namespaces]
-             (into {}
-                   (map (fn [[zen-ns ns-content]]
-                          (let [nss  (name zen-ns)
-                                package-name (first (str/split nss #"\." 2))
-                                vs-uri (get-in ns-content ['value-set :uri])]
-                            (if (and (= package package-name)
-                                     vs-uri
-                                     (get ftr-extraction-result vs-uri))
-                              [zen-ns (assoc-in ns-content ['value-set :ftr] ftr-manifest)]
-                              [zen-ns ns-content]))))
-                   namespaces)))
-    config))
 
 (defn spit-ftr [ztx ftr-context package-dir package]
   (let [value-sets (->> (get-in @ztx [:fhir.zen/ns])
