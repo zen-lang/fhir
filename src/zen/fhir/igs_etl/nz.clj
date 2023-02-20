@@ -21,28 +21,31 @@
 
 (defn fhir-ig->fhir-package! [{:keys [ig-path package-dir-dest]}]
   (let [package-manifest (cheshire.core/parse-string
-                           (slurp (str ig-path "site/package.manifest.json"))
+                           (slurp (io/file ig-path "site/package.manifest.json"))
                            keyword)
         package-name     (:name package-manifest)
         _                (assert (some? package-name) "Must have package name")
-        package-dest     (str package-dir-dest "/" package-name)]
+        package-dest     (.getPath (io/file package-dir-dest package-name))]
     [(clojure.java.shell/sh "mkdir" "-p" package-dest)
      (clojure.java.shell/sh "sh" "-c" (str "cp -r " ig-path "/site/*.json " package-dest))
      (clojure.java.shell/sh "rm" "canonicals.json" "expansions.json" "usage-stats.json"
                             :dir package-dest)
      (clojure.java.shell/sh "mv" "package.manifest.json" "package.json"
                             :dir package-dest)
-     (add-fhir-core-dependency-to-manifest! (str package-dest \/ "package.json"))]))
+     (add-fhir-core-dependency-to-manifest! (io/file package-dest "package.json"))]))
+
+
+(def igs [{:url      "https://fhir.org.nz/ig/base/full-ig.zip"
+           :dest-dir "zen.fhir.igs-etl.nz-base"}])
 
 
 (defn etl! [{:keys [package-dir-dest]}]
-  (let [ig-zip-url      "https://fhir.org.nz/ig/base/full-ig.zip"
-        tmp-ig-dir-dest "/tmp/zen.fhir.igs-etl.nz/"
-        ig-dir          "ig/"
-        ig-path         (str tmp-ig-dir-dest \/ ig-dir)]
-    (clojure.java.shell/sh "mkdir" "-p" tmp-ig-dir-dest)
-    (zen.utils/unzip! ig-zip-url ig-path)
-    (fhir-ig->fhir-package! {:ig-path ig-path :package-dir-dest package-dir-dest})))
+  (let [work-dir-path "/tmp"
+        ig-dir "ig"]
+    (doseq [{:keys [url dest-dir]} igs
+            :let [dest-path (.getPath (io/file work-dir-path dest-dir))]]
+      (zen.utils/unzip! url dest-path)
+      (fhir-ig->fhir-package! {:ig-path dest-path :package-dir-dest package-dir-dest}))))
 
 
 (comment
