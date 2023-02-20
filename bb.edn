@@ -52,19 +52,15 @@
          install-npm
          {:depends [clean-up-npm]
           :task (do
-                  (when (.exists (io/file "node_modules/fhir.org.nz.ig.base"))
-                    (shell "mv node_modules/fhir.org.nz.ig.base ."))
                   (shell "npm --registry=https://packages.simplifier.net install")
-                  (shell "npm --registry=https://packages.simplifier.net install")
-                  (when (.exists (io/file "fhir.org.nz.ig.base"))
-                    (shell "mv fhir.org.nz.ig.base node_modules")))}
+                  (shell "npm --registry=https://packages.simplifier.net install"))}
 
-         pull-nz-ig
+         pull-nz-igs
          {:task (do
                   (shell "mkdir -p node_modules")
                   (clojure "-X zen.fhir.igs-etl.nz/etl! :package-dir-dest '\"node_modules\"'"))}
 
-         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm pull-nz-ig]}
+         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm pull-nz-igs]}
 
          repl {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                :task (clojure "-M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]")}
