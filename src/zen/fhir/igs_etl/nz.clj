@@ -1,4 +1,4 @@
-(ns zen.fhir.igs-etl.nz-base
+(ns zen.fhir.igs-etl.nz
   (:require [zen.utils]
             [cheshire.core]
             [clojure.java.shell]
@@ -37,7 +37,7 @@
 
 (defn etl! [{:keys [package-dir-dest]}]
   (let [ig-zip-url      "https://fhir.org.nz/ig/base/full-ig.zip"
-        tmp-ig-dir-dest "/tmp/zen.fhir.igs-etl.nz-base/"
+        tmp-ig-dir-dest "/tmp/zen.fhir.igs-etl.nz/"
         ig-dir          "ig/"
         ig-path         (str tmp-ig-dir-dest \/ ig-dir)]
     (clojure.java.shell/sh "mkdir" "-p" tmp-ig-dir-dest)
@@ -46,11 +46,11 @@
 
 
 (comment
-  ;; clojure -X zen.fhir.igs-etl.nz-base/etl! :package-dir-dest '"/tmp/node_modules"'
+  ;; clojure -X zen.fhir.igs-etl.nz/etl! :package-dir-dest '"/tmp/node_modules"'
 
   (def ig-zip-url "https://fhir.org.nz/ig/base/full-ig.zip")
 
-  (def dest "/tmp/zen.fhir.igs-etl.nz-base/")
+  (def dest "/tmp/zen.fhir.igs-etl.nz/")
 
   (def ig-dir "ig/")
   (def ig-path (str dest \/ ig-dir))
