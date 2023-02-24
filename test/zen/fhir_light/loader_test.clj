@@ -71,7 +71,9 @@
                :telecom {:els {:system {}}}}}))
 
     (t/testing "to zen"
-      (def zen-sch (sut/nested->zen nested-res))
+      (def zen-sch (#'sut/nested->zen nested-res))
+
+      (assert (= zen-sch (sut/strdef->zen us-core-patient-str-def)))
 
       (def ztx (zen.core/new-context {}))
 

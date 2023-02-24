@@ -292,3 +292,12 @@
   [k ztx elements]
   (transpile-key-for-map-or-vector
     k ztx {:type 'zen/map :keys elements}))
+
+
+(defn strdef->zen [strdef]
+  (->> (get-in strdef [:differential :element])
+       (map group-element-keys)
+       (map enrich-loc)
+       (map add-schema-parts)
+       nest-by-enriched-loc
+       nested->zen))
