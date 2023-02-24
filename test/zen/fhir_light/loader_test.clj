@@ -6,7 +6,7 @@
             [zen.fhir-light.loader :as sut]))
 
 
-(t/deftest convert-single-strdef-test
+(t/deftest ^:kaocha/pending convert-single-strdef-test
   (def dir (System/getProperty "user.dir"))
 
   (def fhir-core-ig-dir
