@@ -82,17 +82,6 @@
     (assoc-in grouped-element [:loc ::id] parsed-id)))
 
 
-#{:base
-  :binding
-  :condition
-  :constraint
-  :contentReference
-  :sliceIsConstraining
-  :sliceName
-  :slicing
-  :type}
-
-
 (def validation-keys-types
   {:value     #{:type :binding :contentReference :maxLength #_[:base :path]}
    :container #{:max :min :sliceIsConstraining :sliceName :slicing #_[:base :min] #_[:base :max]}
@@ -149,8 +138,7 @@
 
 
 (defmethod el-keys->zen [:value :maxLength] [_ [_ max-length]]
-  {:type 'zen/string
-   :maxLength max-length})
+  {::maxLength max-length})
 
 
 (defn- parsed-id->nested-path [parsed-id]
@@ -228,3 +216,42 @@
                    (assoc-in acc (cons :result path) el-part)))
      {:result {}}
      enriched-elements)))
+
+
+(defn nested->zen [nested]
+  (merge #_"TODO: :slicing :poly-roots :poly-keys :context"
+    (when-let [requires (->> (:els-constraints nested)
+                             (filter (fn [[_ {::keys [required]}]] required))
+                             seq)]
+      {:type 'zen.fhir/element
+       :zen.fhir/require (into #{} (map (comp :key key)) requires)})
+
+    (when-let [forbids (->> (:els-constraints nested)
+                            (filter (fn [[_ {::keys [forbidden]}]] forbidden))
+                            seq)]
+      {:type 'zen.fhir/element
+       :zen.fhir/forbid (into #{} (map (comp :key key)) forbids)})
+
+    (when-let [container (:container nested)]
+      (merge
+        (when-let [min-card (::min container)]
+          {:type 'zen.fhir/element
+           :zen.fhir/min min-card})
+        (when-let [max-card (::max container)]
+          {:type 'zen.fhir/element
+           :zen.fhir/max max-card})
+        (when-let [collection-card (::collection container)]
+          {:type 'zen.fhir/element
+           :zen.fhir/collection collection-card})))
+
+    (when-let [els (:els nested)]
+      (when-let [elements (-> (update-vals els nested->zen)
+                              utils/strip-nils
+                              not-empty)]
+        {:type 'zen.fhir/element
+         :elements elements}))
+
+    (when-let [value (:value nested)]
+      (merge (when-let [max-length (::maxLength value)]
+               {:type 'zen/string
+                :maxLength max-length})))))

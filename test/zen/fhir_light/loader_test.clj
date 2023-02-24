@@ -15,6 +15,8 @@
   (def us-core-ig-dir
     (str dir "/node_modules/hl7.fhir.us.core"))
 
+  #_(json/parse-string (slurp (str us-core-ig-dir "/StructureDefinition-us-core-observation-sdoh-assessment.json"))
+                       keyword)
   (def us-core-patient-str-def
     (json/parse-string (slurp (str us-core-ig-dir "/StructureDefinition-us-core-patient.json"))
                        keyword))
@@ -68,7 +70,10 @@
         nested-res
         {:els {:extension {:slicing {:slices {"race" {}}}}
                :identifier {:els {:system {}}}
-               :telecom {:els {:system {}}}}}))))
+               :telecom {:els {:system {}}}}}))
+
+    (t/testing "to zen"
+      (def zen-sch (sut/nested->zen nested-res)))))
 
 
 (t/deftest convert-many-strdef-test
