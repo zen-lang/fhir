@@ -90,12 +90,12 @@
    :context   #{:constraint}})
 
 
-(defmulti el-keys->zen
+(defmulti process-el-key
   (fn [keys-type [el-key _el-val]]
     [keys-type el-key]))
 
 
-(defmethod el-keys->zen :default [_ entry] entry)
+(defmethod process-el-key :default [_ entry] entry)
 
 
 (defn validation->zen-schema-parts [validation]
@@ -104,7 +104,7 @@
           (keep (fn [[keys-type el-keys]]
                   (when-let [schema-part
                              (not-empty (into {}
-                                              (map #(el-keys->zen keys-type %))
+                                              (map #(process-el-key keys-type %))
                                               (select-keys validation el-keys)))]
                     [keys-type schema-part])))
           validation-keys-types)))
@@ -117,28 +117,28 @@
     (validation->zen-schema-parts (:validation grouped-el))))
 
 
-(defmethod el-keys->zen [:outer :min] [_ [_ min-card]]
+(defmethod process-el-key [:outer :min] [_ [_ min-card]]
   (when (< 0 min-card)
     {::required true}))
 
 
-(defmethod el-keys->zen [:container :min] [_ [_ min-card]]
+(defmethod process-el-key [:container :min] [_ [_ min-card]]
   (when (< 0 min-card)
     {::min min-card}))
 
 
-(defmethod el-keys->zen [:outer :max] [_ [_ max-card]]
+(defmethod process-el-key [:outer :max] [_ [_ max-card]]
   (when (= 0 max-card)
     {::forbidden true}))
 
 
-(defmethod el-keys->zen [:container :max] [_ [_ max-card]]
+(defmethod process-el-key [:container :max] [_ [_ max-card]]
   (if (= "*" max-card)
     {::collection true}
     {::max (parse-long max-card)}))
 
 
-(defmethod el-keys->zen [:value :maxLength] [_ [_ max-length]]
+(defmethod process-el-key [:value :maxLength] [_ [_ max-length]]
   {::maxLength max-length})
 
 
