@@ -1,5 +1,6 @@
 (ns zen.fhir-light.loader
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [zen.fhir.utils :as utils]))
 
 
 (def elements-keys-types
@@ -10,7 +11,9 @@
 
 
 (defn- group-element-keys [element]
-  (update-vals elements-keys-types #(select-keys element %)))
+  (-> elements-keys-types
+      (update-vals #(not-empty (select-keys element %)))
+      utils/strip-nils))
 
 
 (def ^:private poly-postfix "[x]")
@@ -66,10 +69,17 @@
     parsed-id))
 
 
-(defn- nest-by-enriched-path [enriched-elements]
+(def ^:private default-keys-to-strip
+  #{:loc :description :meta})
+
+
+(defn- nest-by-enriched-path [enriched-elements & {:keys [keys-to-strip]
+                                                   :or {keys-to-strip default-keys-to-strip}}]
   (:result (reduce (fn [acc el]
-                     (assoc-in acc
-                               (cons :result (parsed-id->nested-path (get-in el [:loc :zen.fhir-light/id])))
-                               (dissoc el :loc)))
+                     (let [stripped-el (apply dissoc el keys-to-strip)]
+                       (cond-> acc
+                         (seq stripped-el)
+                         (assoc-in (cons :result (parsed-id->nested-path (get-in el [:loc :zen.fhir-light/id])))
+                                   stripped-el))))
                    {:result {}}
                    enriched-elements)))

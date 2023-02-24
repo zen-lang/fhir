@@ -54,7 +54,7 @@
                                                                   {:key :identifier :type :key}
                                                                   {:key :system     :type :key}]}}])
 
-    (def nested-res (#'sut/nest-by-enriched-path (mapv #(dissoc % :description :meta) enriched-res)))
+    (def nested-res (#'sut/nest-by-enriched-path enriched-res))
 
     (matcho/match
       nested-res
