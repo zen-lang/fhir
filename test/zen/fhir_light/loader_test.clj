@@ -58,9 +58,9 @@
 
     (matcho/match
       nested-res
-      {:loc {:id "Patient"}
-       :els {:extension {:slicing {:slices {"race" {:loc {:id "Patient.extension:race"}}}}}
-             :identifier {:els {:system {:loc {:id "Patient.identifier.system"}}}}}})))
+      {:validation {:constraint [{}]}
+       :els {:extension {:slicing {:slices {"race" {:validation {:type [{:profile []}]}}}}}
+             :identifier {:els {:system {:validation {:min 1}}}}}})))
 
 (t/deftest convert-many-strdef-test
   (t/is true))

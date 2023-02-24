@@ -70,6 +70,6 @@
   (:result (reduce (fn [acc el]
                      (assoc-in acc
                                (cons :result (parsed-id->nested-path (get-in el [:loc :zen.fhir-light/id])))
-                               el))
+                               (dissoc el :loc)))
                    {:result {}}
                    enriched-elements)))
