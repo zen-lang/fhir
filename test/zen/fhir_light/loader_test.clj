@@ -6,6 +6,37 @@
             [zen.fhir-light.loader :as sut]))
 
 
+(defmethod zen.v2-validation/compile-type-check 'zen.fhir/element [_ _]
+  (with-bindings {#'zen.v2-validation/types-cfg
+                  {'zen.fhir/element
+                   {:fn (some-fn map? vector?)
+                    :to-str "object or 'object[]"}}}
+    (zen.v2-validation/type-fn 'zen.fhir/element)))
+
+
+(defn transpile-key-for-map-or-vector [_ ztx sch-for-map]
+  (let [for-map (zen.v2-validation/get-cached ztx sch-for-map false)
+        for-vector (zen.v2-validation/get-cached
+                     ztx {:type 'zen/vector :every sch-for-map} false)]
+    {:when (some-fn map? vector?)
+     :rule (fn [vtx data opts]
+             (if (vector? data)
+               (for-vector vtx data opts)
+               (for-map vtx data opts)))}))
+
+
+(defmethod zen.v2-validation/compile-key :zen.fhir/require
+  [k ztx require]
+  (transpile-key-for-map-or-vector
+    k ztx {:type 'zen/map :require require}))
+
+
+(defmethod zen.v2-validation/compile-key :zen.fhir/elements
+  [k ztx elements]
+  (transpile-key-for-map-or-vector
+    k ztx {:type 'zen/map :keys elements}))
+
+
 (t/deftest ^:kaocha/pending convert-single-strdef-test
   (def dir (System/getProperty "user.dir"))
 

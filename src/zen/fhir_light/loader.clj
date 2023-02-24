@@ -84,9 +84,9 @@
 
 
 (def validation-keys-types
-  {:value     #{:type :binding :contentReference :maxLength #_[:base :path]}
-   :container #{:max :min :sliceIsConstraining :sliceName :slicing #_[:base :min] #_[:base :max]}
-   :outer     #{:max :min :condition #_[:base :min] #_[:base :max]}
+  {:value     #{:type :binding :contentReference :maxLength :base}
+   :container #{:max :min :sliceIsConstraining :sliceName :slicing :base}
+   :outer     #{:max :min :condition :base}
    :context   #{:constraint}})
 
 
@@ -98,7 +98,7 @@
 (defmethod process-el-key :default [_ entry] entry)
 
 
-(defn validation->zen-schema-parts [validation]
+(defn- validation->zen-schema-parts [validation]
   (not-empty
     (into {}
           (keep (fn [[keys-type el-keys]]
@@ -196,7 +196,7 @@
   [:context parsed-id])
 
 
-(defn strip-el [el & {:keys [keys-to-select keys-to-strip]}]
+(defn- strip-el [el & {:keys [keys-to-select keys-to-strip]}]
   (not-empty
     (cond-> el
       (seq keys-to-strip)
@@ -218,31 +218,25 @@
      {:result {}}
      enriched-elements)))
 
-:container
-:els
-:slicing
-:poly-roots
-:poly-keys
-:value
-:context
 
-
-(defn els-constraints->zen [els-constraints]
+(defn- els-constraints->zen [els-constraints]
   (merge
-    (when-let [requires (->> els-constraints
-                             (filter (fn [[_ {::keys [required]}]] required))
-                             seq)]
+    (when-let [requires (seq (filter #(::required (val %))
+                                     els-constraints))]
       {:type 'zen.fhir/element
-       :zen.fhir/require (into #{} (map (comp :key key)) requires)})
+       :zen.fhir/require (into #{}
+                               (map #(:key (key %)))
+                               requires)})
 
-    (when-let [forbids (->> els-constraints
-                            (filter (fn [[_ {::keys [forbidden]}]] forbidden))
-                            seq)]
+    (when-let [forbids (seq (filter #(::forbidden (val %))
+                                    els-constraints))]
       {:type 'zen.fhir/element
-       :zen.fhir/forbid (into #{} (map (comp :key key)) forbids)})))
+       :zen.fhir/forbid (into #{}
+                              (map #(:key (key %)))
+                              forbids)})))
 
 
-(defn container->zen [{min-card ::min
+(defn- container->zen [{min-card ::min
                        max-card ::max
                        collection ::collection}]
   (merge
@@ -257,60 +251,30 @@
        :zen.fhir/collection collection})))
 
 
-(defn value->zen [value]
+(defn- value->zen [value]
   (when (some? value)
     (merge (when-let [max-length (::maxLength value)]
              {:type 'zen/string
               :maxLength max-length}))))
 
 
-(defn nested->zen* [nested]
-  (merge (els-constraints->zen (:els-constraints nested))
-         (container->zen (:container nested))
-         (value->zen (:value nested))
+(defn- nested->zen* [nested]
+  (merge
+    (els-constraints->zen (:els-constraints nested))
+    (container->zen (:container nested))
+    (value->zen (:value nested))
 
-         (when-let [els (:els nested)]
-           (when-let [elements (-> (update-vals els nested->zen*)
-                                   utils/strip-nils
-                                   not-empty)]
-             {:type 'zen.fhir/element
-              :zen.fhir/elements elements}))))
+    (when-let [els (:els nested)]
+      (when-let [elements (-> (update-vals els nested->zen*)
+                              utils/strip-nils
+                              not-empty)]
+        {:type 'zen.fhir/element
+         :zen.fhir/elements elements}))))
 
 
-(defn nested->zen [nested]
+(defn- nested->zen [nested]
   (merge {:zen/tags #{'zen/schema}}
          (nested->zen* nested)))
-
-
-(defmethod zen.v2-validation/compile-type-check 'zen.fhir/element [_ _]
-  (with-bindings {#'zen.v2-validation/types-cfg
-                  {'zen.fhir/element
-                   {:fn (some-fn map? vector?)
-                    :to-str "object or 'object[]"}}}
-    (zen.v2-validation/type-fn 'zen.fhir/element)))
-
-
-(defn transpile-key-for-map-or-vector [_ ztx sch-for-map]
-  (let [for-map (zen.v2-validation/get-cached ztx sch-for-map false)
-        for-vector (zen.v2-validation/get-cached
-                     ztx {:type 'zen/vector :every sch-for-map} false)]
-    {:when (some-fn map? vector?)
-     :rule (fn [vtx data opts]
-             (if (vector? data)
-               (for-vector vtx data opts)
-               (for-map vtx data opts)))}))
-
-
-(defmethod zen.v2-validation/compile-key :zen.fhir/require
-  [k ztx require]
-  (transpile-key-for-map-or-vector
-    k ztx {:type 'zen/map :require require}))
-
-
-(defmethod zen.v2-validation/compile-key :zen.fhir/elements
-  [k ztx elements]
-  (transpile-key-for-map-or-vector
-    k ztx {:type 'zen/map :keys elements}))
 
 
 (defn strdef->zen [strdef]
