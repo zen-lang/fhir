@@ -166,6 +166,7 @@
       (matcho/match (zen.core/validate ztx
                                        #{'test-patient/schema}
                                        {:name {:given ["1"]}
+                                        :gender "unknown"
                                         :identifier [{:system "sys"
                                                       :value "val"}]
                                         :telecom [{:system "sys"
