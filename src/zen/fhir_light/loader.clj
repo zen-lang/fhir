@@ -95,7 +95,7 @@
     [keys-type el-key]))
 
 
-(defmethod el-keys->zen :default [_ _] nil)
+(defmethod el-keys->zen :default [_ entry] entry)
 
 
 (defn validation->zen-schema-parts [validation]
