@@ -90,24 +90,11 @@
    :context   #{:constraint}})
 
 
-(defmulti process-el-key
-  (fn [keys-type [el-key _el-val]]
-    [keys-type el-key]))
-
-
-(defmethod process-el-key :default [_ entry] entry)
-
-
 (defn- validation->zen-schema-parts [validation]
-  (not-empty
-    (into {}
-          (keep (fn [[keys-type el-keys]]
-                  (when-let [schema-part
-                             (not-empty (into {}
-                                              (map #(process-el-key keys-type %))
-                                              (select-keys validation el-keys)))]
-                    [keys-type schema-part])))
-          validation-keys-types)))
+  (->> (update-vals validation-keys-types
+                    #(not-empty (select-keys validation %)))
+       utils/strip-nils
+       not-empty))
 
 
 (defn- add-schema-parts [grouped-el]
@@ -115,31 +102,6 @@
     grouped-el
     :schema-parts
     (validation->zen-schema-parts (:validation grouped-el))))
-
-
-(defmethod process-el-key [:outer :min] [_ [_ min-card]]
-  (when (< 0 min-card)
-    {::required true}))
-
-
-(defmethod process-el-key [:container :min] [_ [_ min-card]]
-  (when (< 0 min-card)
-    {::min min-card}))
-
-
-(defmethod process-el-key [:outer :max] [_ [_ max-card]]
-  (when (= 0 max-card)
-    {::forbidden true}))
-
-
-(defmethod process-el-key [:container :max] [_ [_ max-card]]
-  (if (= "*" max-card)
-    {::collection true}
-    {::max (parse-long max-card)}))
-
-
-(defmethod process-el-key [:value :maxLength] [_ [_ max-length]]
-  {::maxLength max-length})
 
 
 (defn- parsed-id->nested-path [parsed-id]
@@ -221,14 +183,14 @@
 
 (defn- els-constraints->zen [els-constraints]
   (merge
-    (when-let [requires (seq (filter #(::required (val %))
+    (when-let [requires (seq (filter #(some->> (:min (val %)) (< 0))
                                      els-constraints))]
       {:type 'zen.fhir/element
        :zen.fhir/require (into #{}
                                (map #(:key (key %)))
                                requires)})
 
-    (when-let [forbids (seq (filter #(::forbidden (val %))
+    (when-let [forbids (seq (filter #(= 0 (:max (val %)))
                                     els-constraints))]
       {:type 'zen.fhir/element
        :zen.fhir/forbid (into #{}
@@ -236,19 +198,17 @@
                               forbids)})))
 
 
-(defn- container->zen [{min-card ::min
-                       max-card ::max
-                       collection ::collection}]
+(defn- container->zen [{min-card :min max-card :max}]
   (merge
-    (when (some? min-card)
+    (when (and min-card (< 0 min-card))
       {:type 'zen.fhir/element
        :zen.fhir/min min-card})
-    (when (some? max-card)
-      {:type 'zen.fhir/element
-       :zen.fhir/max max-card})
-    (when (some? collection)
-      {:type 'zen.fhir/element
-       :zen.fhir/collection collection})))
+    (when max-card
+      (if (= "*" max-card)
+        {:type 'zen.fhir/element
+         :zen.fhir/collection true}
+        {:type 'zen.fhir/element
+         :zen.fhir/max max-card}))))
 
 
 (defn- value->zen [value]
