@@ -184,10 +184,10 @@
 
 (defmethod schema-part-path :outer [parsed-id [_ schema-part]]
   (let [outer-id (->> parsed-id
-                        reverse
-                        rest
-                        (drop-while #(not= :key (:type %)))
-                        reverse)
+                      reverse
+                      rest
+                      (drop-while #(not= :key (:type %)))
+                      reverse)
         outer-path (parsed-id->nested-path outer-id)]
     (conj outer-path :els-constraints (last parsed-id))))
 
@@ -218,44 +218,63 @@
      {:result {}}
      enriched-elements)))
 
+:container
+:els
+:slicing
+:poly-roots
+:poly-keys
+:value
+:context
 
-(defn nested->zen* [nested]
-  (merge #_"TODO: :slicing :poly-roots :poly-keys :context"
-    (when-let [requires (->> (:els-constraints nested)
+
+(defn els-constraints->zen [els-constraints]
+  (merge
+    (when-let [requires (->> els-constraints
                              (filter (fn [[_ {::keys [required]}]] required))
                              seq)]
       {:type 'zen.fhir/element
        :zen.fhir/require (into #{} (map (comp :key key)) requires)})
 
-    (when-let [forbids (->> (:els-constraints nested)
+    (when-let [forbids (->> els-constraints
                             (filter (fn [[_ {::keys [forbidden]}]] forbidden))
                             seq)]
       {:type 'zen.fhir/element
-       :zen.fhir/forbid (into #{} (map (comp :key key)) forbids)})
+       :zen.fhir/forbid (into #{} (map (comp :key key)) forbids)})))
 
-    (when-let [container (:container nested)]
-      (merge
-        (when-let [min-card (::min container)]
-          {:type 'zen.fhir/element
-           :zen.fhir/min min-card})
-        (when-let [max-card (::max container)]
-          {:type 'zen.fhir/element
-           :zen.fhir/max max-card})
-        (when-let [collection-card (::collection container)]
-          {:type 'zen.fhir/element
-           :zen.fhir/collection collection-card})))
 
-    (when-let [els (:els nested)]
-      (when-let [elements (-> (update-vals els nested->zen*)
-                              utils/strip-nils
-                              not-empty)]
-        {:type 'zen.fhir/element
-         :zen.fhir/elements elements}))
+(defn container->zen [{min-card ::min
+                       max-card ::max
+                       collection ::collection}]
+  (merge
+    (when (some? min-card)
+      {:type 'zen.fhir/element
+       :zen.fhir/min min-card})
+    (when (some? max-card)
+      {:type 'zen.fhir/element
+       :zen.fhir/max max-card})
+    (when (some? collection)
+      {:type 'zen.fhir/element
+       :zen.fhir/collection collection})))
 
-    (when-let [value (:value nested)]
-      (merge (when-let [max-length (::maxLength value)]
-               {:type 'zen/string
-                :maxLength max-length})))))
+
+(defn value->zen [value]
+  (when (some? value)
+    (merge (when-let [max-length (::maxLength value)]
+             {:type 'zen/string
+              :maxLength max-length}))))
+
+
+(defn nested->zen* [nested]
+  (merge (els-constraints->zen (:els-constraints nested))
+         (container->zen (:container nested))
+         (value->zen (:value nested))
+
+         (when-let [els (:els nested)]
+           (when-let [elements (-> (update-vals els nested->zen*)
+                                   utils/strip-nils
+                                   not-empty)]
+             {:type 'zen.fhir/element
+              :zen.fhir/elements elements}))))
 
 
 (defn nested->zen [nested]
