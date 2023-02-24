@@ -22,8 +22,6 @@
                        keyword))
   #_(dissoc us-core-patient-str-def :text :snapshot)
 
-  (def ztx (zen.core/new-context {}))
-
   (t/testing "pure convertation, no context"
     (t/testing "keys grouping"
       (def el-res (map #'sut/group-element-keys (get-in us-core-patient-str-def [:differential :element])))
@@ -73,7 +71,73 @@
                :telecom {:els {:system {}}}}}))
 
     (t/testing "to zen"
-      (def zen-sch (sut/nested->zen nested-res)))))
+      (def zen-sch (sut/nested->zen nested-res))
+
+      (def ztx (zen.core/new-context {}))
+
+      (zen.core/load-ns ztx '{:ns zen.fhir
+                              element {:zen/tags #{zen/schema zen/is-type}
+                                       :type zen/map}
+                              elements {:zen/tags #{zen/is-key}
+                                        :for #{element}
+                                        :type zen/map
+                                        :key {:type zen/keyword}
+                                        :values {:confirms #{zen/schema}}}
+                              max {:zen/tags #{zen/is-key}
+                                   :for #{element}
+                                   :type zen/integer
+                                   :min 0}
+                              min {:zen/tags #{zen/is-key}
+                                   :for #{element}
+                                   :type zen/integer
+                                   :min 0}
+                              collection {:zen/tags #{zen/is-key}
+                                          :for #{element}
+                                          :type zen/boolean}
+                              forbid {:zen/tags #{zen/is-key}
+                                      :for #{element}
+                                      :type zen/set
+                                      :every {:type zen/keyword}}
+                              require {:zen/tags #{zen/is-key}
+                                       :for #{element}
+                                       :type zen/set
+                                       :every {:type zen/keyword}}})
+
+      (zen.core/load-ns ztx {:ns 'test-patient
+                             :import #{'zen.fhir}
+                             'schema zen-sch})
+
+      (swap! ztx
+             dissoc
+             :errors
+             :zen.v2-validation/compiled-schemas
+             :zen.v2-validation/prop-schemas)
+
+      (matcho/match (zen.core/errors ztx) empty?)
+
+      (matcho/match (zen.core/validate ztx
+                                       #{'test-patient/schema}
+                                       "hello")
+                    {:errors [{} nil]})
+
+      (matcho/match (zen.core/validate ztx
+                                       #{'test-patient/schema}
+                                       [{}])
+                    {:errors [{} {} {}]})
+
+      (matcho/match (zen.core/validate ztx
+                                       #{'test-patient/schema}
+                                       {})
+                    {:errors [{} {} {}]})
+
+      (matcho/match (zen.core/validate ztx
+                                       #{'test-patient/schema}
+                                       {:name {:given ["1"]}
+                                        :identifier [{:system "sys"
+                                                      :value "val"}]
+                                        :telecom [{:system "sys"
+                                                   :value "val"}]})
+                    {:errors empty?}))))
 
 
 (t/deftest convert-many-strdef-test
