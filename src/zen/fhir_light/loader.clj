@@ -3,17 +3,30 @@
             [zen.fhir.utils :as utils]))
 
 
+
 (def elements-keys-types
   {:loc         #{:id :path}
-   :validation  #{:min :max :type :condition :constraint}
-   :meta        #{:mustSupport}
-   :description #{:mapping}})
+   :validation  #{:base :binding :condition :constraint :contentReference
+                  :max :maxLength :min :sliceIsConstraining :sliceName :slicing :type}
+   :meta        #{:isModifier :isSummary :mustSupport :representation}
+   :description #{:alias :code :comment :definition :example :isModifierReason
+                  :label :mapping :orderMeaning :requirements :short}})
+
+
+(def elements-poly-keys-types
+  {:validation  #{:fixed :maxValue :minValue :pattern}
+   :meta        #{:default}})
 
 
 (defn- group-element-keys [element]
-  (-> elements-keys-types
-      (update-vals #(not-empty (select-keys element %)))
-      utils/strip-nils))
+  (utils/strip-when empty?
+    (merge-with merge
+                (update-vals elements-keys-types
+                             #(select-keys element %))
+                (update-vals elements-poly-keys-types
+                             #(into {}
+                                    (mapcat (fn [pk] (utils/poly-find-all element pk)))
+                                    %)))))
 
 
 (def ^:private poly-postfix "[x]")

@@ -60,7 +60,9 @@
       nested-res
       {:validation {:constraint [{}]}
        :els {:extension {:slicing {:slices {"race" {:validation {:type [{:profile []}]}}}}}
-             :identifier {:els {:system {:validation {:min 1}}}}}})))
+             :identifier {:els {:system {:validation {:min 1}}}}
+             :telecom {:els {:system {:validation {:binding {}}}}}}})))
+
 
 (t/deftest convert-many-strdef-test
   (t/is true))
