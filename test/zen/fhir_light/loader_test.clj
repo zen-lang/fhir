@@ -45,16 +45,16 @@
 
     (matcho/match
       enriched-res
-      [{:loc {:id "Patient"                   :zen.fhir-light/id [{:root "Patient" :type :root}]}}
-       {:loc {:id "Patient.extension:race"    :zen.fhir-light/id [{:root "Patient"}
-                                                                  {:key :extension :type :key}
-                                                                  {:slice "race"   :type :slice}]}}
+      [{:loc {:id "Patient"                   ::sut/id [{:root "Patient" :type :root}]}}
+       {:loc {:id "Patient.extension:race"    ::sut/id [{:root "Patient"}
+                                                        {:key :extension :type :key}
+                                                        {:slice "race"   :type :slice}]}}
        {} {} {} {}
-       {:loc {:id "Patient.identifier.system" :zen.fhir-light/id [{:root "Patient"}
-                                                                  {:key :identifier :type :key}
-                                                                  {:key :system     :type :key}]}}])
+       {:loc {:id "Patient.identifier.system" ::sut/id [{:root "Patient"}
+                                                        {:key :identifier :type :key}
+                                                        {:key :system     :type :key}]}}])
 
-    (def nested-res (#'sut/nest-by-enriched-path enriched-res))
+    (def nested-res (#'sut/nest-by-enriched-loc enriched-res))
 
     (matcho/match
       nested-res

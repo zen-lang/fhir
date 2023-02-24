@@ -65,11 +65,6 @@
                  (mapcat parse-id-part (rest id-parts)))))))
 
 
-(defn- enrich-loc [grouped-element]
-  (let [id (get-in grouped-element [:loc :id])]
-    (assoc-in grouped-element [:loc :zen.fhir-light/id] (parse-id id))))
-
-
 (defn- parsed-id->nested-path [parsed-id]
   (mapcat
     (fn [id-el]
@@ -82,17 +77,29 @@
     parsed-id))
 
 
+(defn- enrich-loc [grouped-element]
+  (let [id          (get-in grouped-element [:loc :id])
+        parsed-id   (parse-id id)
+        nested-path (parsed-id->nested-path parsed-id)]
+    (update grouped-element :loc
+            assoc
+            ::id parsed-id
+            ::path nested-path)))
+
+
 (def ^:private default-keys-to-strip
   #{:loc :description :meta})
 
 
-(defn- nest-by-enriched-path [enriched-elements & {:keys [keys-to-strip]
-                                                   :or {keys-to-strip default-keys-to-strip}}]
-  (:result (reduce (fn [acc el]
-                     (let [stripped-el (apply dissoc el keys-to-strip)]
-                       (cond-> acc
-                         (seq stripped-el)
-                         (assoc-in (cons :result (parsed-id->nested-path (get-in el [:loc :zen.fhir-light/id])))
-                                   stripped-el))))
-                   {:result {}}
-                   enriched-elements)))
+(defn- nest-by-enriched-loc [enriched-elements
+                             & {:keys [keys-to-strip]
+                                :or {keys-to-strip default-keys-to-strip}}]
+  (:result
+   (transduce
+     (keep #(when-let [stripped-el (not-empty (apply dissoc % keys-to-strip))]
+              [(get-in % [:loc ::path])
+               stripped-el]))
+     (completing (fn [acc [path el]]
+                   (assoc-in acc (cons :result path) el)))
+     {:result {}}
+     enriched-elements)))
