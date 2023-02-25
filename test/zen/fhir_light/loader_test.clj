@@ -59,33 +59,33 @@
 
       (matcho/match
         el-res
-        [{:loc {:id "Patient"                          :path "Patient"}                   :validation {:constraint [{} nil]}}
-         {:loc {:id "Patient.extension:race"           :path "Patient.extension"}         :validation {:min 0 :max "1" :type [{:code "Extension" :profile [string?]}]}}
-         {:loc {:id "Patient.extension:ethnicity"      :path "Patient.extension"}         :validation {:min 0 :max "1" :type [{:code "Extension" :profile [string?]}]}}
-         {:loc {:id "Patient.extension:birthsex"       :path "Patient.extension"}         :validation {:min 0 :max "1" :type [{:code "Extension" :profile [string?]}]}}
-         {:loc {:id "Patient.extension:genderIdentity" :path "Patient.extension"}         :validation {:min 0 :max "1" :type [{:code "Extension" :profile [string?]}]}}
-         {:loc {:id "Patient.identifier"               :path "Patient.identifier"}        :validation {:min 1} :meta {:mustSupport true} :description {:mapping [{}]}}
-         {:loc {:id "Patient.identifier.system"        :path "Patient.identifier.system"} :validation {:min 1}}
-         {:loc {:id "Patient.identifier.value"         :path "Patient.identifier.value"}  :validation {:min 1}}
-         {:loc {:id "Patient.name"                     :path "Patient.name"}              :validation {:min 1}}
-         {:loc {:id "Patient.name.use"                 :path "Patient.name.use"}          :validation empty?}
-         {:loc {:id "Patient.name.family"              :path "Patient.name.family"}       :validation {:condition ["us-core-6"]}}
-         {:loc {:id "Patient.name.given"               :path "Patient.name.given"}        :validation {:condition ["us-core-6"]}}
-         {:loc {:id "Patient.name.suffix"              :path "Patient.name.suffix"}       :validation empty?}]))
+        [{:zf/loc {:id "Patient"                          :path string?} :zf/validation {:constraint [{} nil]}}
+         {:zf/loc {:id "Patient.extension:race"           :path string?} :zf/validation {:min 0 :max "1" :type [{:code "Extension" :profile [string?]}]}}
+         {:zf/loc {:id "Patient.extension:ethnicity"      :path string?} :zf/validation {:min 0 :max "1" :type [{:code "Extension" :profile [string?]}]}}
+         {:zf/loc {:id "Patient.extension:birthsex"       :path string?} :zf/validation {:min 0 :max "1" :type [{:code "Extension" :profile [string?]}]}}
+         {:zf/loc {:id "Patient.extension:genderIdentity" :path string?} :zf/validation {:min 0 :max "1" :type [{:code "Extension" :profile [string?]}]}}
+         {:zf/loc {:id "Patient.identifier"               :path string?} :zf/validation {:min 1} :zf/meta {:mustSupport true} :zf/description {:mapping [{}]}}
+         {:zf/loc {:id "Patient.identifier.system"        :path string?} :zf/validation {:min 1}}
+         {:zf/loc {:id "Patient.identifier.value"         :path string?} :zf/validation {:min 1}}
+         {:zf/loc {:id "Patient.name"                     :path string?} :zf/validation {:min 1}}
+         {:zf/loc {:id "Patient.name.use"                 :path string?} :zf/validation empty?}
+         {:zf/loc {:id "Patient.name.family"              :path string?} :zf/validation {:condition ["us-core-6"]}}
+         {:zf/loc {:id "Patient.name.given"               :path string?} :zf/validation {:condition ["us-core-6"]}}
+         {:zf/loc {:id "Patient.name.suffix"              :path string?} :zf/validation empty?}]))
 
     (t/testing "parse id"
       (def enriched-res (map #'sut/enrich-loc el-res))
 
       (matcho/match
         enriched-res
-        [{:loc {:id "Patient"                   ::sut/id [{:root "Patient" :type :root}]}}
-         {:loc {:id "Patient.extension:race"    ::sut/id [{:root "Patient"}
-                                                          {:key :extension :type :key}
-                                                          {:slice "race"   :type :slice}]}}
+        [{:zf/loc {:id "Patient"                   :zf/id [{:root "Patient" :type :root}]}}
+         {:zf/loc {:id "Patient.extension:race"    :zf/id [{:root "Patient"}
+                                                           {:key :extension :type :key}
+                                                           {:slice "race"   :type :slice}]}}
          {} {} {} {}
-         {:loc {:id "Patient.identifier.system" ::sut/id [{:root "Patient"}
-                                                          {:key :identifier :type :key}
-                                                          {:key :system     :type :key}]}}]))
+         {:zf/loc {:id "Patient.identifier.system" :zf/id [{:root "Patient"}
+                                                           {:key :identifier :type :key}
+                                                           {:key :system     :type :key}]}}]))
 
     (t/testing "generate schema parts"
       (def schema-parts-res (map #'sut/add-schema-parts enriched-res)))
@@ -93,13 +93,13 @@
     (t/testing "nesting"
       (def nested-res (#'sut/nest-by-enriched-loc
                         schema-parts-res
-                        :keys-to-strip #{:loc :description :meta :validation}))
+                        :keys-to-strip #{:zf/loc :zf/description :zf/meta :zf/validation}))
 
       (matcho/match
         nested-res
-        {:els {:extension {:slicing {:slices {"race" {}}}}
-               :identifier {:els {:system {}}}
-               :telecom {:els {:system {}}}}}))
+        {:zf/els {:extension {:zf/slicing {:zf/slices {"race" {}}}}
+                  :identifier {:zf/els {:system {}}}
+                  :telecom {:zf/els {:system {}}}}}))
 
     (t/testing "to zen"
       (def zen-sch (#'sut/nested->zen nested-res))
@@ -172,6 +172,20 @@
                                         :telecom [{:system "sys"
                                                    :value "val"}]})
                     {:errors empty?}))))
+
+
+(comment
+  (def strdefs
+    (->> (file-seq (clojure.java.io/file us-core-ig-dir))
+         (filter #(clojure.string/starts-with? (.getName %)
+                                               "StructureDefinition"))
+         (map slurp)
+         (keep #(try (json/parse-string % keyword)
+                     (catch Exception _)))))
+
+  (def schemas
+    (map sut/strdef->zen
+         strdefs)))
 
 
 (t/deftest convert-many-strdef-test

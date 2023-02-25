@@ -5,28 +5,28 @@
 
 
 (def elements-keys-types
-  {:loc         #{:id :path}
-   :validation  #{:base :binding :condition :constraint :contentReference
-                  :max :maxLength :min :sliceIsConstraining :sliceName :slicing :type}
-   :meta        #{:isModifier :isSummary :mustSupport :representation}
-   :description #{:alias :code :comment :definition :example :isModifierReason
-                  :label :mapping :orderMeaning :requirements :short}})
+  {:zf/loc         #{:id :path}
+   :zf/validation  #{:base :binding :condition :constraint :contentReference
+                     :max :maxLength :min :sliceIsConstraining :sliceName :slicing :type}
+   :zf/meta        #{:isModifier :isSummary :mustSupport :representation}
+   :zf/description #{:alias :code :comment :definition :example :isModifierReason
+                     :label :mapping :orderMeaning :requirements :short}})
 
 
 (def elements-poly-keys-types
-  {:validation  #{:fixed :maxValue :minValue :pattern}
-   :meta        #{:default}})
+  {:zf/validation  #{:fixed :maxValue :minValue :pattern}
+   :zf/meta        #{:default}})
 
 
 (defn- group-element-keys [element]
   (utils/strip-when empty?
-    (merge-with merge
-                (update-vals elements-keys-types
-                             #(select-keys element %))
-                (update-vals elements-poly-keys-types
-                             #(into {}
-                                    (mapcat (fn [pk] (utils/poly-find-all element pk)))
-                                    %)))))
+                    (merge-with merge
+                                (update-vals elements-keys-types
+                                             #(select-keys element %))
+                                (update-vals elements-poly-keys-types
+                                             #(into {}
+                                                    (mapcat (fn [pk] (utils/poly-find-all element pk)))
+                                                    %)))))
 
 
 (def ^:private poly-postfix "[x]")
@@ -78,16 +78,16 @@
 
 
 (defn- enrich-loc [grouped-element]
-  (let [id        (get-in grouped-element [:loc :id])
+  (let [id        (get-in grouped-element [:zf/loc :id])
         parsed-id (parse-id id)]
-    (assoc-in grouped-element [:loc ::id] parsed-id)))
+    (assoc-in grouped-element [:zf/loc :zf/id] parsed-id)))
 
 
 (def validation-keys-types
-  {:value     #{:type :binding :contentReference :maxLength :base}
-   :container #{:max :min :sliceIsConstraining :sliceName :slicing :base}
-   :outer     #{:max :min :condition :base}
-   :context   #{:constraint}})
+  {:zf/value     #{:type :binding :contentReference :maxLength :base}
+   :zf/container #{:max :min :sliceIsConstraining :sliceName :slicing :base}
+   :zf/outer     #{:max :min :condition :base}
+   :zf/context   #{:constraint}})
 
 
 (defn- validation->zen-schema-parts [validation]
@@ -101,18 +101,18 @@
   (utils/assoc-some
     grouped-el
     :schema-parts
-    (validation->zen-schema-parts (:validation grouped-el))))
+    (validation->zen-schema-parts (:zf/validation grouped-el))))
 
 
 (defn- parsed-id->nested-path [parsed-id]
   (vec (mapcat (fn [id-el]
                  (case (:type id-el)
                    :root      []
-                   :key       [:els (:key id-el)]
-                   :poly-root [:poly-roots (:poly-root id-el)]
-                   :poly-key  [:poly-keys (:poly-key id-el)]
-                   :slice     [:slicing :slices (:slice id-el)]))
-         parsed-id)))
+                   :key       [:zf/els (:key id-el)]
+                   :poly-root [:zf/poly-roots (:poly-root id-el)]
+                   :poly-key  [:zf/poly-keys (:poly-key id-el)]
+                   :slice     [:zf/slicing :zf/slices (:slice id-el)]))
+               parsed-id)))
 
 
 (defmulti el-part&path
@@ -136,26 +136,26 @@
        schema-parts))
 
 
-(defmethod schema-part-path :value [parsed-id [_ schema-part]]
-  (conj (parsed-id->nested-path parsed-id) :value))
+(defmethod schema-part-path :zf/value [parsed-id [_ schema-part]]
+  (conj (parsed-id->nested-path parsed-id) :zf/value))
 
 
-(defmethod schema-part-path :container [parsed-id [_ schema-part]]
-  (conj (parsed-id->nested-path parsed-id) :container (last parsed-id)))
+(defmethod schema-part-path :zf/container [parsed-id [_ schema-part]]
+  (conj (parsed-id->nested-path parsed-id) :zf/container (last parsed-id)))
 
 
-(defmethod schema-part-path :outer [parsed-id [_ schema-part]]
+(defmethod schema-part-path :zf/outer [parsed-id [_ schema-part]]
   (let [outer-id (->> parsed-id
                       reverse
                       rest
                       (drop-while #(not= :key (:type %)))
                       reverse)
         outer-path (parsed-id->nested-path outer-id)]
-    (conj outer-path :els-constraints (last parsed-id))))
+    (conj outer-path :zf/els-constraints (last parsed-id))))
 
 
-(defmethod schema-part-path :context [parsed-id [_ schema-part]]
-  [:context parsed-id])
+(defmethod schema-part-path :zf/context [parsed-id [_ schema-part]]
+  [:zf/context parsed-id])
 
 
 (defn- strip-el [el & {:keys [keys-to-select keys-to-strip]}]
@@ -173,7 +173,7 @@
    (transduce
      (mapcat (fn [el]
                (when-let [stripped-el (strip-el el params)]
-                 (mapcat #(el-part&path (get-in el [:loc ::id]) %)
+                 (mapcat #(el-part&path (get-in el [:zf/loc :zf/id]) %)
                          stripped-el))))
      (completing (fn [acc {:keys [el-part path]}]
                    (assoc-in acc (cons :result path) el-part)))
@@ -181,7 +181,9 @@
      enriched-elements)))
 
 
-(defn- els-constraints->zen [els-constraints]
+(defn- els-constraints->zen
+  "{<source :zf/id> #{:max :min :condition :base}}"
+  [els-constraints]
   (merge
     (when-let [requires (seq (filter #(some->> (:min (val %)) (< 0))
                                      els-constraints))]
@@ -198,7 +200,9 @@
                               forbids)})))
 
 
-(defn- container->zen [{min-card :min max-card :max}]
+(defn- container->zen
+  "#{:max :min :sliceIsConstraining :sliceName :slicing :base}"
+  [{min-card :min max-card :max}]
   (merge
     (when (and min-card (< 0 min-card))
       {:type 'zen.fhir/element
@@ -211,20 +215,65 @@
          :zen.fhir/max max-card}))))
 
 
-(defn- value->zen [value]
+(defn- slicing->zen
+  "{:slices {\"<slice name>\" <nested>}}"
+  [slicing])
+
+
+(defn- poly-roots->zen
+  "{\"<poly root name>\" <nested>}"
+  [poly-roots])
+
+
+(defn- poly-keys->zen
+  "{\"<poly key name>\" <nested>}"
+  [poly-keys])
+
+
+(defn- value->zen
+  "#{:type :binding :contentReference :maxLength :base}"
+  [value]
   (when (some? value)
-    (merge (when-let [max-length (::maxLength value)]
+    (merge (when-let [max-length (:maxLength value)]
              {:type 'zen/string
               :maxLength max-length}))))
 
 
-(defn- nested->zen* [nested]
-  (merge
-    (els-constraints->zen (:els-constraints nested))
-    (container->zen (:container nested))
-    (value->zen (:value nested))
+(defn- context->zen
+  "{<source :zf/id> #{:constraint}}"
+  [context])
 
-    (when-let [els (:els nested)]
+
+(defn- meta->zen
+  "#{:isModifier :isSummary :mustSupport :representation}"
+  [meta-data])
+
+
+(defn description->zen
+  "#{:alias :code :comment :definition :example :isModifierReason
+     :label :mapping :orderMeaning :requirements :short}"
+  [description])
+
+
+(defn- nested->zen* [{:as nested
+                      meta-data :zf/meta
+                      :zf/keys [description loc
+                                context container
+                                els els-constraints
+                                poly-roots poly-keys
+                                slicing value]}]
+  (merge
+    (els-constraints->zen els-constraints)
+    (container->zen container)
+    (slicing->zen slicing)
+    (poly-roots->zen poly-roots)
+    (poly-keys->zen poly-keys)
+    (value->zen value)
+    (context->zen context)
+    (meta->zen meta-data)
+    (description->zen description)
+
+    (when (some? els)
       (when-let [elements (-> (update-vals els nested->zen*)
                               utils/strip-nils
                               not-empty)]
@@ -233,8 +282,9 @@
 
 
 (defn- nested->zen [nested]
-  (merge {:zen/tags #{'zen/schema}}
-         (nested->zen* nested)))
+  (merge
+    {:zen/tags #{'zen/schema}}
+    (nested->zen* nested)))
 
 
 (defn strdef->zen [strdef]
