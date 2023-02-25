@@ -181,6 +181,20 @@
      enriched-elements)))
 
 
+(declare nested->zen*)
+
+
+(defn- els->zen
+  "{<key> <nested>}"
+  [els]
+  (when (some? els)
+    (when-let [elements (-> (update-vals els nested->zen*)
+                            utils/strip-nils
+                            not-empty)]
+      {:type 'zen.fhir/element
+       :zen.fhir/elements elements})))
+
+
 (defn- els-constraints->zen
   "{<source :zf/id> #{:max :min :condition :base}}"
   [els-constraints]
@@ -255,30 +269,23 @@
   [description])
 
 
-(defn- nested->zen* [{:as nested
-                      meta-data :zf/meta
-                      :zf/keys [description loc
-                                context container
-                                els els-constraints
-                                poly-roots poly-keys
-                                slicing value]}]
+(defn- nested->zen*
+  "#{:zf/description :zf/loc :zf/meta
+    :zf/context :zf/els :zf/els-constraints
+    :zf/slicing :zf/container :zf/value
+    :zf/poly-roots :zf/poly-keys}"
+  [nested]
   (merge
-    (els-constraints->zen els-constraints)
-    (container->zen container)
-    (slicing->zen slicing)
-    (poly-roots->zen poly-roots)
-    (poly-keys->zen poly-keys)
-    (value->zen value)
-    (context->zen context)
-    (meta->zen meta-data)
-    (description->zen description)
-
-    (when (some? els)
-      (when-let [elements (-> (update-vals els nested->zen*)
-                              utils/strip-nils
-                              not-empty)]
-        {:type 'zen.fhir/element
-         :zen.fhir/elements elements}))))
+    (els->zen (:zf/els nested))
+    (els-constraints->zen (:zf/els-constraints nested))
+    (container->zen (:zf/container nested))
+    (slicing->zen (:zf/slicing nested))
+    (poly-roots->zen (:zf/poly-roots nested))
+    (poly-keys->zen (:zf/poly-keys nested))
+    (value->zen (:zf/value nested))
+    (context->zen (:zf/context nested))
+    (meta->zen (:zf/meta nested))
+    (description->zen (:zf/description nested))))
 
 
 (defn- nested->zen [nested]
