@@ -3,7 +3,38 @@
             [clojure.test :as t]
             [matcho.core :as matcho]
             [zen.core]
+            [zen.v2-validation]
             [zen.fhir-light.loader :as sut]))
+
+
+(def zen-fhir-ns
+  '{:ns zen.fhir
+    element {:zen/tags #{zen/schema zen/is-type}
+             :type zen/map}
+    elements {:zen/tags #{zen/is-key}
+              :for #{element}
+              :type zen/map
+              :key {:type zen/keyword}
+              :values {:confirms #{zen/schema}}}
+    max {:zen/tags #{zen/is-key}
+         :for #{element}
+         :type zen/integer
+         :min 0}
+    min {:zen/tags #{zen/is-key}
+         :for #{element}
+         :type zen/integer
+         :min 0}
+    collection {:zen/tags #{zen/is-key}
+                :for #{element}
+                :type zen/boolean}
+    forbid {:zen/tags #{zen/is-key}
+            :for #{element}
+            :type zen/set
+            :every {:type zen/keyword}}
+    require {:zen/tags #{zen/is-key}
+             :for #{element}
+             :type zen/set
+             :every {:type zen/keyword}}})
 
 
 (defmethod zen.v2-validation/compile-type-check 'zen.fhir/element [_ _]
@@ -108,33 +139,7 @@
 
       (def ztx (zen.core/new-context {}))
 
-      (zen.core/load-ns ztx '{:ns zen.fhir
-                              element {:zen/tags #{zen/schema zen/is-type}
-                                       :type zen/map}
-                              elements {:zen/tags #{zen/is-key}
-                                        :for #{element}
-                                        :type zen/map
-                                        :key {:type zen/keyword}
-                                        :values {:confirms #{zen/schema}}}
-                              max {:zen/tags #{zen/is-key}
-                                   :for #{element}
-                                   :type zen/integer
-                                   :min 0}
-                              min {:zen/tags #{zen/is-key}
-                                   :for #{element}
-                                   :type zen/integer
-                                   :min 0}
-                              collection {:zen/tags #{zen/is-key}
-                                          :for #{element}
-                                          :type zen/boolean}
-                              forbid {:zen/tags #{zen/is-key}
-                                      :for #{element}
-                                      :type zen/set
-                                      :every {:type zen/keyword}}
-                              require {:zen/tags #{zen/is-key}
-                                       :for #{element}
-                                       :type zen/set
-                                       :every {:type zen/keyword}}})
+      (zen.core/load-ns ztx zen-fhir-ns)
 
       (zen.core/load-ns ztx {:ns 'test-patient
                              :import #{'zen.fhir}
