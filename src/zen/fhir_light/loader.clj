@@ -127,8 +127,8 @@
   (:result
    (transduce
      (mapcat (fn [el]
-               (update-keys (strip-el el params)
-                            #(el-part-path (get-in el [:zf/loc :zf/id]) %))))
+               (-> (strip-el el params)
+                   (update-keys #(el-part-path (get-in el [:zf/loc :zf/id]) %)))))
      (completing (fn [acc [path el-part]]
                    (assoc-in acc (cons :result path) el-part)))
      {:result {}}
