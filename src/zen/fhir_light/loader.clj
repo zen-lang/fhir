@@ -5,17 +5,21 @@
 
 
 (def elements-keys-types
-  {:zf/loc         #{:id :path}
-   :zf/validation  #{:base :binding :condition :constraint :contentReference
-                     :max :maxLength :min :sliceIsConstraining :sliceName :slicing :type}
-   :zf/meta        #{:isModifier :isSummary :mustSupport :representation}
-   :zf/description #{:alias :code :comment :definition :example :isModifierReason
-                     :label :mapping :orderMeaning :requirements :short}})
+  {:zf/loc          #{:id :path}
+
+   :zf/value        #{:type :binding :contentReference :maxLength :base}
+   :zf/container    #{:max :min :sliceIsConstraining :sliceName :slicing :base}
+   :zf/outer        #{:max :min :condition :base}
+   :zf/context      #{:constraint}
+
+   :zf/meta         #{:isModifier :isSummary :mustSupport :representation}
+   :zf/description  #{:alias :code :comment :definition :example :isModifierReason
+                      :label :mapping :orderMeaning :requirements :short}})
 
 
 (def elements-poly-keys-types
-  {:zf/validation  #{:fixed :maxValue :minValue :pattern}
-   :zf/meta        #{:default}})
+  {:zf/value #{:fixed :maxValue :minValue :pattern}
+   :zf/meta  #{:default}})
 
 
 (defn- group-element-keys [element]
@@ -83,27 +87,6 @@
     (assoc-in grouped-element [:zf/loc :zf/id] parsed-id)))
 
 
-(def validation-keys-types
-  {:zf/value     #{:type :binding :contentReference :maxLength :base}
-   :zf/container #{:max :min :sliceIsConstraining :sliceName :slicing :base}
-   :zf/outer     #{:max :min :condition :base}
-   :zf/context   #{:constraint}})
-
-
-(defn- validation->zen-schema-parts [validation]
-  (->> (update-vals validation-keys-types
-                    #(not-empty (select-keys validation %)))
-       utils/strip-nils
-       not-empty))
-
-
-(defn- add-schema-parts [grouped-el]
-  (utils/assoc-some
-    grouped-el
-    :schema-parts
-    (validation->zen-schema-parts (:zf/validation grouped-el))))
-
-
 (defn- parsed-id->nested-path [parsed-id]
   (vec (mapcat (fn [id-el]
                  (case (:type id-el)
@@ -115,47 +98,19 @@
                parsed-id)))
 
 
-(defmulti el-part&path
-  (fn [_parsed-id [keys-group _el-part]]
-    keys-group))
-
-
-(defmethod el-part&path :default [parsed-id [keys-group el-part]]
-  [{:el-part el-part
-    :path    (conj (parsed-id->nested-path parsed-id) keys-group)}])
-
-
-(defmulti schema-part-path
-  (fn [_parsed-id [schema-keys-type _schema-part]]
-    schema-keys-type))
-
-
-(defmethod el-part&path :schema-parts [parsed-id [_ schema-parts]]
-  (map (fn [e] {:el-part (val e)
-                :path (schema-part-path parsed-id e)})
-       schema-parts))
-
-
-(defmethod schema-part-path :zf/value [parsed-id [_ schema-part]]
-  (conj (parsed-id->nested-path parsed-id) :zf/value))
-
-
-(defmethod schema-part-path :zf/container [parsed-id [_ schema-part]]
-  (conj (parsed-id->nested-path parsed-id) :zf/container (last parsed-id)))
-
-
-(defmethod schema-part-path :zf/outer [parsed-id [_ schema-part]]
-  (let [outer-id (->> parsed-id
-                      reverse
-                      rest
-                      (drop-while #(not= :key (:type %)))
-                      reverse)
-        outer-path (parsed-id->nested-path outer-id)]
-    (conj outer-path :zf/els-constraints (last parsed-id))))
-
-
-(defmethod schema-part-path :zf/context [parsed-id [_ schema-part]]
-  [:zf/context parsed-id])
+(defn el-part-path [parsed-id elements-keys-type]
+  (case elements-keys-type
+    :zf/value     (conj (parsed-id->nested-path parsed-id) :zf/value)
+    :zf/container (conj (parsed-id->nested-path parsed-id) :zf/container (last parsed-id))
+    :zf/outer     (let [outer-id   (->> parsed-id
+                                        reverse
+                                        rest
+                                        (drop-while #(not= :key (:type %)))
+                                        reverse)
+                        outer-path (parsed-id->nested-path outer-id)]
+                    (conj outer-path :zf/els-constraints (last parsed-id)))
+    :zf/context   [:zf/context parsed-id]
+    (conj (parsed-id->nested-path parsed-id) elements-keys-type)))
 
 
 (defn- strip-el [el & {:keys [keys-to-select keys-to-strip]}]
@@ -172,10 +127,9 @@
   (:result
    (transduce
      (mapcat (fn [el]
-               (when-let [stripped-el (strip-el el params)]
-                 (mapcat #(el-part&path (get-in el [:zf/loc :zf/id]) %)
-                         stripped-el))))
-     (completing (fn [acc {:keys [el-part path]}]
+               (update-keys (strip-el el params)
+                            #(el-part-path (get-in el [:zf/loc :zf/id]) %))))
+     (completing (fn [acc [path el-part]]
                    (assoc-in acc (cons :result path) el-part)))
      {:result {}}
      enriched-elements)))
@@ -263,7 +217,7 @@
   [meta-data])
 
 
-(defn description->zen
+(defn- description->zen
   "#{:alias :code :comment :definition :example :isModifierReason
      :label :mapping :orderMeaning :requirements :short}"
   [description])
@@ -271,9 +225,9 @@
 
 (defn- nested->zen*
   "#{:zf/description :zf/loc :zf/meta
-    :zf/context :zf/els :zf/els-constraints
-    :zf/slicing :zf/container :zf/value
-    :zf/poly-roots :zf/poly-keys}"
+     :zf/context :zf/els :zf/els-cnstraints
+     :zf/slicing :zf/container :zf/value
+     :zf/poly-roots :zf/poly-keys}"
   [nested]
   (merge
     (els->zen (:zf/els nested))
@@ -298,6 +252,5 @@
   (->> (get-in strdef [:differential :element])
        (map group-element-keys)
        (map enrich-loc)
-       (map add-schema-parts)
        nest-by-enriched-loc
        nested->zen))

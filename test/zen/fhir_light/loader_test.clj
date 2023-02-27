@@ -90,19 +90,19 @@
 
       (matcho/match
         el-res
-        [{:zf/loc {:id "Patient"                          :path string?} :zf/validation {:constraint [{} nil]}}
-         {:zf/loc {:id "Patient.extension:race"           :path string?} :zf/validation {:min 0 :max "1" :type [{:code "Extension" :profile [string?]}]}}
-         {:zf/loc {:id "Patient.extension:ethnicity"      :path string?} :zf/validation {:min 0 :max "1" :type [{:code "Extension" :profile [string?]}]}}
-         {:zf/loc {:id "Patient.extension:birthsex"       :path string?} :zf/validation {:min 0 :max "1" :type [{:code "Extension" :profile [string?]}]}}
-         {:zf/loc {:id "Patient.extension:genderIdentity" :path string?} :zf/validation {:min 0 :max "1" :type [{:code "Extension" :profile [string?]}]}}
-         {:zf/loc {:id "Patient.identifier"               :path string?} :zf/validation {:min 1} :zf/meta {:mustSupport true} :zf/description {:mapping [{}]}}
-         {:zf/loc {:id "Patient.identifier.system"        :path string?} :zf/validation {:min 1}}
-         {:zf/loc {:id "Patient.identifier.value"         :path string?} :zf/validation {:min 1}}
-         {:zf/loc {:id "Patient.name"                     :path string?} :zf/validation {:min 1}}
-         {:zf/loc {:id "Patient.name.use"                 :path string?} :zf/validation empty?}
-         {:zf/loc {:id "Patient.name.family"              :path string?} :zf/validation {:condition ["us-core-6"]}}
-         {:zf/loc {:id "Patient.name.given"               :path string?} :zf/validation {:condition ["us-core-6"]}}
-         {:zf/loc {:id "Patient.name.suffix"              :path string?} :zf/validation empty?}]))
+        [{:zf/loc {:path string? :id "Patient"}}
+         {:zf/loc {:path string? :id "Patient.extension:race"}}
+         {:zf/loc {:path string? :id "Patient.extension:ethnicity"}}
+         {:zf/loc {:path string? :id "Patient.extension:birthsex"}}
+         {:zf/loc {:path string? :id "Patient.extension:genderIdentity"}}
+         {:zf/loc {:path string? :id "Patient.identifier"}}
+         {:zf/loc {:path string? :id "Patient.identifier.system"}}
+         {:zf/loc {:path string? :id "Patient.identifier.value"}}
+         {:zf/loc {:path string? :id "Patient.name"}}
+         {:zf/loc {:path string? :id "Patient.name.use"}}
+         {:zf/loc {:path string? :id "Patient.name.family"}}
+         {:zf/loc {:path string? :id "Patient.name.given"}}
+         {:zf/loc {:path string? :id "Patient.name.suffix"}}]))
 
     (t/testing "parse id"
       (def enriched-res (map #'sut/enrich-loc el-res))
@@ -118,13 +118,10 @@
                                                            {:key :identifier :type :key}
                                                            {:key :system     :type :key}]}}]))
 
-    (t/testing "generate schema parts"
-      (def schema-parts-res (map #'sut/add-schema-parts enriched-res)))
-
     (t/testing "nesting"
       (def nested-res (#'sut/nest-by-enriched-loc
-                        schema-parts-res
-                        :keys-to-strip #{:zf/loc :zf/description :zf/meta :zf/validation}))
+                        enriched-res
+                        :keys-to-strip #{:zf/loc :zf/description :zf/meta}))
 
       (matcho/match
         nested-res
