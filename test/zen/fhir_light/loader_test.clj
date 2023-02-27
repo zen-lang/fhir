@@ -11,11 +11,11 @@
   '{:ns zen.fhir
     element {:zen/tags #{zen/schema zen/is-type}
              :type zen/map}
-    elements {:zen/tags #{zen/is-key}
-              :for #{element}
-              :type zen/map
-              :key {:type zen/keyword}
-              :values {:confirms #{zen/schema}}}
+    el {:zen/tags #{zen/is-key}
+        :for #{element}
+        :type zen/map
+        :key {:type zen/keyword}
+        :values {:confirms #{zen/schema}}}
     max {:zen/tags #{zen/is-key}
          :for #{element}
          :type zen/integer
@@ -37,38 +37,37 @@
              :every {:type zen/keyword}}})
 
 
-(defmethod zen.v2-validation/compile-type-check 'zen.fhir/element [_ _]
-  (with-bindings {#'zen.v2-validation/types-cfg
-                  {'zen.fhir/element
-                   {:fn (some-fn map? vector?)
-                    :to-str "object or 'object[]"}}}
-    (zen.v2-validation/type-fn 'zen.fhir/element)))
+
+#_"NOTE: emptiness check as per https://hl7.org/fhir/json.html"
+(defmethod zen.v2-validation/compile-type-check 'zen.fhir/element [tp _]
+  (fn [vtx data _opts]
+    (if (and (seqable? data) (empty? data))
+      (let [error-msg (cond (string? data) "string"
+                            (map? data)    "object"
+                            :else          "collection")
+            error {:message (str "'" tp " " error-msg "s can not be empty")
+                   :type    "type"}]
+        (zen.v2-validation/add-err vtx :type error))
+      vtx)))
 
 
-(defn transpile-key-for-map-or-vector [_ ztx sch-for-map]
-  (let [for-map (zen.v2-validation/get-cached ztx sch-for-map false)
+(defn transpile-key-for-map-or-vector [_ ztx sch-for-scalar]
+  (let [for-scalar (zen.v2-validation/get-cached ztx sch-for-scalar false)
         for-vector (zen.v2-validation/get-cached
-                     ztx {:type 'zen/vector :every sch-for-map} false)]
-    {:when (some-fn map? vector?)
-     :rule (fn [vtx data opts]
+                     ztx {:type 'zen/vector :every sch-for-scalar} false)]
+    {:rule (fn [vtx data opts]
              (if (vector? data)
                (for-vector vtx data opts)
-               (for-map vtx data opts)))}))
+               (for-scalar vtx data opts)))}))
 
 
-(defmethod zen.v2-validation/compile-key :zen.fhir/require
-  [k ztx require]
-  (transpile-key-for-map-or-vector
-    k ztx {:type 'zen/map :require require}))
-
-
-(defmethod zen.v2-validation/compile-key :zen.fhir/elements
+(defmethod zen.v2-validation/compile-key :zen.fhir/el
   [k ztx elements]
   (transpile-key-for-map-or-vector
-    k ztx {:type 'zen/map :keys elements}))
+    k ztx elements))
 
 
-(t/deftest ^:kaocha/pending convert-single-strdef-test
+(t/deftest convert-single-strdef-test
   (def dir (System/getProperty "user.dir"))
 
   (def fhir-core-ig-dir
@@ -167,13 +166,59 @@
 
       (matcho/match (zen.core/validate ztx
                                        #{'test-patient/schema}
-                                       {:name {:given ["1"]}
+                                       {:name {}
                                         :gender "unknown"
                                         :identifier [{:system "sys"
                                                       :value "val"}]
                                         :telecom [{:system "sys"
                                                    :value "val"}]})
-                    {:errors empty?}))))
+                    {:errors [{:path [:name nil]}
+                              nil]}))))
+
+
+(t/deftest convert-fhir-base-strdef-test
+  (def dir (System/getProperty "user.dir"))
+
+  (def fhir-core-ig-dir
+    (str dir "/node_modules/hl7.fhir.r4.core"))
+
+  (def us-core-ig-dir
+    (str dir "/node_modules/hl7.fhir.us.core"))
+
+  (def fhir-patient-str-def
+    (json/parse-string (slurp (str fhir-core-ig-dir "/StructureDefinition-Patient.json"))
+                       keyword))
+
+  (def us-core-patient-str-def
+    (json/parse-string (slurp (str us-core-ig-dir "/StructureDefinition-us-core-patient.json"))
+                       keyword))
+
+  (def fhir-patient-sch (sut/strdef->zen fhir-patient-str-def))
+
+  #_{:type 'zen/map
+   :keys {:given {:type 'zen.fhir/element
+                  :zen.fhir/collection true
+                  :zen.fhir/el
+                  {:type 'zen/string}}}}
+
+  (matcho/match
+    fhir-patient-sch
+    {:type 'zen.fhir/element
+     :zen.fhir/el
+     {:type 'zen/map
+      :keys {:name {:type 'zen.fhir/element
+                    :zen.fhir/collection true}}}})
+
+  (def us-patient-sch (sut/strdef->zen us-core-patient-str-def))
+
+  (matcho/match
+    us-patient-sch
+    {:type 'zen.fhir/element
+     :zen.fhir/el
+     {:type 'zen/map
+      :require #(contains? % :name)
+      :keys {:name {:type 'zen.fhir/element
+                    :zen.fhir/min 1}}}}))
 
 
 (comment
@@ -186,8 +231,9 @@
                      (catch Exception _)))))
 
   (def schemas
-    (map sut/strdef->zen
-         strdefs)))
+    (into {}
+          (map (juxt :url sut/strdef->zen))
+          strdefs)))
 
 
 (t/deftest convert-many-strdef-test

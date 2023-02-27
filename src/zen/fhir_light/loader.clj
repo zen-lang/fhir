@@ -146,26 +146,31 @@
                             utils/strip-nils
                             not-empty)]
       {:type 'zen.fhir/element
-       :zen.fhir/elements elements})))
+       :zen.fhir/el
+       {:type 'zen/map
+        :keys elements}})))
 
 
 (defn- els-constraints->zen
   "{<source :zf/id> #{:max :min :condition :base}}"
   [els-constraints]
   (merge
-    (when-let [requires (seq (filter #(some->> (:min (val %)) (< 0))
+    (when-let [requires (seq (filter #(some->> (:min (val %))
+                                               (< 0))
                                      els-constraints))]
       {:type 'zen.fhir/element
-       :zen.fhir/require (into #{}
-                               (map #(:key (key %)))
-                               requires)})
+       :zen.fhir/el {:type 'zen/map
+                     :require (into #{}
+                                    (map #(:key (key %)))
+                                    requires)}})
 
-    (when-let [forbids (seq (filter #(= 0 (:max (val %)))
-                                    els-constraints))]
-      {:type 'zen.fhir/element
-       :zen.fhir/forbid (into #{}
-                              (map #(:key (key %)))
-                              forbids)})))
+    #_(when-let [forbids (seq (filter #(= "0" (:max (val %)))
+                                      els-constraints))]
+        {:type 'zen.fhir/element
+         :zen.fhir/el {:type 'zen/map
+                       :forbid (into #{}
+                                     (map #(:key (key %)))
+                                     forbids)}})))
 
 
 (defn- container->zen
@@ -180,7 +185,7 @@
         {:type 'zen.fhir/element
          :zen.fhir/collection true}
         {:type 'zen.fhir/element
-         :zen.fhir/max max-card}))))
+         :zen.fhir/max (parse-long max-card)}))))
 
 
 (defn- slicing->zen
@@ -223,13 +228,33 @@
   [description])
 
 
+(defn- safe-deep-merge
+  ([a] a)
+  ([a b]
+   (cond
+     (= a b)
+     a
+
+     (and (or (nil? a) (map? a)) (or (nil? b) (map? b)))
+     (merge-with safe-deep-merge a b)
+
+     :else
+     (throw (ex-info "Can't merge not maps. Overwriting values is not allowed"
+                     {:a a
+                      :b b}))))
+  ([a b & maps]
+   (reduce safe-deep-merge
+           a
+           (cons b maps))))
+
+
 (defn- nested->zen*
   "#{:zf/description :zf/loc :zf/meta
      :zf/context :zf/els :zf/els-cnstraints
      :zf/slicing :zf/container :zf/value
      :zf/poly-roots :zf/poly-keys}"
   [nested]
-  (merge
+  (safe-deep-merge
     (els->zen (:zf/els nested))
     (els-constraints->zen (:zf/els-constraints nested))
     (container->zen (:zf/container nested))
