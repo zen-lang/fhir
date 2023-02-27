@@ -207,9 +207,9 @@
   "#{:type :binding :contentReference :maxLength :base}"
   [value]
   (when (some? value)
-    (merge (when-let [max-length (:maxLength value)]
-             {:type 'zen/string
-              :maxLength max-length}))))
+    (merge #_(when-let [max-length (:maxLength value)]
+               {:type 'zen/string
+                :maxLength max-length}))))
 
 
 (defn- context->zen
