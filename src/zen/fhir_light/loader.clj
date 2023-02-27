@@ -98,7 +98,7 @@
                parsed-id)))
 
 
-(defn el-part-path [parsed-id elements-keys-type]
+(defn- el-part-path [parsed-id elements-keys-type]
   (case elements-keys-type
     :zf/value     (conj (parsed-id->nested-path parsed-id) :zf/value)
     :zf/container (conj (parsed-id->nested-path parsed-id) :zf/container (last parsed-id))
