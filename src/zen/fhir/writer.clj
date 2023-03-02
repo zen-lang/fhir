@@ -10,8 +10,14 @@
             [ftr.core]
             [ftr.zen-package]
             [fipp.edn]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [clojure.java.shell])
   (:import java.io.File))
+
+
+(defn sh! [& args]
+  (println "$" (str/join " " args))
+  (apply clojure.java.shell/sh args))
 
 
 (defn order-zen-ns [zen-ns-map]
@@ -169,7 +175,7 @@
                                  package-git-url
                                  package-dir]}]
   (assoc config :cloned?
-         (zero? (:exit (zen.package/sh! "git"
+         (zero? (:exit (sh! "git"
                                         "clone"
                                         "--depth=1"
                                         (or package-git-auth-url
@@ -189,7 +195,7 @@
 
 
 (defn add-git-remote [ztx dir remote-url]
-  (zen.package/sh! "git" "remote" "add" "origin" remote-url :dir dir))
+  (sh! "git" "remote" "add" "origin" remote-url :dir dir))
 
 
 (defn create-remote! [ztx {:as config :keys [cloned? package package-dir package-git-auth-url package-git-url]}]
@@ -210,15 +216,15 @@
     (do
       (zen.package/mkdir! out-dir package)
       (zen.package/zen-init! package-dir)
-      (zen.package/sh! "git" "add" "--all" :dir package-dir)
-      (zen.package/sh! "git" "commit" "-m" "'Init commit'" :dir package-dir)
-      (zen.package/sh! "git" "branch" "-M" "main" :dir package-dir)
+      (sh! "git" "add" "--all" :dir package-dir)
+      (sh! "git" "commit" "-m" "'Init commit'" :dir package-dir)
+      (sh! "git" "branch" "-M" "main" :dir package-dir)
       config)))
 
 
 (defn clean-up-clonned-repo! [{:as config, :keys [package-dir]}]
   (when package-dir
-    (zen.package/sh! "rm" "-rf" "*" :dir package-dir))
+    (sh! "rm" "-rf" "*" :dir package-dir))
   config)
 
 
@@ -363,18 +369,18 @@
 
 
 (defn commit-zen-changes [{:keys [package-dir] :as config}]
-  (zen.package/sh! "git" "add" "--all" :dir package-dir)
-  (zen.package/sh! "git" "commit" "-m" "'Update zen package'" :dir package-dir)
+  (sh! "git" "add" "--all" :dir package-dir)
+  (sh! "git" "commit" "-m" "'Update zen package'" :dir package-dir)
   config)
 
 
 (defn release-zen-package [{:as config :keys [package-dir]}]
-  (zen.package/sh! "git" "push" "-u" "origin" "main" :dir package-dir)
+  (sh! "git" "push" "-u" "origin" "main" :dir package-dir)
   config)
 
 
 (defn rm-local-repo! [{:as config, :keys [out-dir package]}]
-  (zen.package/sh! "rm" "-rf" package :dir out-dir)
+  (sh! "rm" "-rf" package :dir out-dir)
   config)
 
 
@@ -396,7 +402,7 @@
     (assoc config :package-rsynced-successfully?
            (zero?
              (:exit
-              (zen.package/sh! "gsutil" "-m" "rsync" "-r" "-d" rsync-source rsync-destination))))))
+              (sh! "gsutil" "-m" "rsync" "-r" "-d" rsync-source rsync-destination))))))
 
 
 (defn rsync-ftr> [_ztx {:as config, :keys [package package-dir]}]
@@ -406,12 +412,12 @@
     (assoc config :package-rsynced-successfully?
            (zero?
              (:exit
-              (zen.package/sh! "gsutil" "-m" "rsync" "-r" "-d" rsync-destination rsync-source))))))
+              (sh! "gsutil" "-m" "rsync" "-r" "-d" rsync-destination rsync-source))))))
 
 
 (defn delete-ftr-folder [_ztx {:as config, :keys [package-dir]}]
   (when package-dir
-    (zen.package/sh! "rm" "-rf" "ftr" :dir package-dir))
+    (sh! "rm" "-rf" "ftr" :dir package-dir))
   config)
 
 
