@@ -9,6 +9,11 @@
 
 (def zen-fhir-ns
   '{:ns zen.fhir
+    type-binding {:zen/tags #{zen/schema zen/tag}
+                  :require #{:fhirSequence :code}
+                  :keys {:fhirVersion {:type zen/string}
+                         :fhirSequence {:type zen/string}
+                         :code {:type zen/string}}}
     element {:zen/tags #{zen/schema zen/is-type}
              :type zen/map}
     el {:zen/tags #{zen/is-key}
@@ -85,7 +90,8 @@
 
   (t/testing "pure convertation, no context"
     (t/testing "keys grouping"
-      (def el-res (map #'sut/group-element-keys (get-in us-core-patient-str-def [:differential :element])))
+      (def el-res (map #(#'sut/group-keys % sut/elements-keys-types sut/elements-poly-keys-types)
+                       (get-in us-core-patient-str-def [:differential :element])))
 
       (matcho/match
         el-res
@@ -129,51 +135,14 @@
                   :telecom {:zf/els {:system {}}}}}))
 
     (t/testing "to zen"
-      (def zen-sch (#'sut/nested->zen nested-res))
+      (def zen-sch (#'sut/nested->zen {:zf/strdef
+                                       (#'sut/group-keys us-core-patient-str-def
+                                                         sut/strdef-keys-types
+                                                         nil)}
+                                      nested-res))
 
-      (assert (= zen-sch (sut/strdef->zen us-core-patient-str-def)))
-
-      (def ztx (zen.core/new-context {}))
-
-      (zen.core/load-ns ztx zen-fhir-ns)
-
-      (zen.core/load-ns ztx {:ns 'test-patient
-                             :import #{'zen.fhir}
-                             'schema zen-sch})
-
-      (swap! ztx
-             dissoc
-             :errors
-             :zen.v2-validation/compiled-schemas
-             :zen.v2-validation/prop-schemas)
-
-      (matcho/match (zen.core/errors ztx) empty?)
-
-      (matcho/match (zen.core/validate ztx
-                                       #{'test-patient/schema}
-                                       "hello")
-                    {:errors [{} nil]})
-
-      (matcho/match (zen.core/validate ztx
-                                       #{'test-patient/schema}
-                                       [{}])
-                    {:errors [{} {} {}]})
-
-      (matcho/match (zen.core/validate ztx
-                                       #{'test-patient/schema}
-                                       {})
-                    {:errors [{} {} {}]})
-
-      (matcho/match (zen.core/validate ztx
-                                       #{'test-patient/schema}
-                                       {:name {}
-                                        :gender "unknown"
-                                        :identifier [{:system "sys"
-                                                      :value "val"}]
-                                        :telecom [{:system "sys"
-                                                   :value "val"}]})
-                    {:errors [{:path [:name nil]}
-                              nil]}))))
+      (t/is (= (:zf/schema zen-sch)
+               (:zf/schema (sut/strdef->zen-ns us-core-patient-str-def)))))))
 
 
 (t/deftest convert-fhir-base-strdef-test
@@ -193,7 +162,7 @@
     (json/parse-string (slurp (str us-core-ig-dir "/StructureDefinition-us-core-patient.json"))
                        keyword))
 
-  (def fhir-patient-sch (sut/strdef->zen fhir-patient-str-def))
+  (def fhir-patient-sch (sut/strdef->zen-ns fhir-patient-str-def))
 
   #_{:type 'zen/map
    :keys {:given {:type 'zen.fhir/element
@@ -203,36 +172,96 @@
 
   (matcho/match
     fhir-patient-sch
-    {:type 'zen.fhir/element
-     :zen.fhir/el
-     {:type 'zen/map
-      :keys {:name {:type 'zen.fhir/element
-                    :zen.fhir/collection true}}}})
+    {:zf/bindings
+     {'zen.fhir.bindings.fhir-r4.types/HumanName
+      {:zen/tags #{'zen/schema 'zen/binding 'zen.fhir/type-binding}
+       :fhirVersion "4.0.1"
+       :fhirSequence "r4"
+       :code "HumanName"}}
+     :zf/schema
+     {:type 'zen.fhir/element
+      :zen.fhir/el
+      {:type 'zen/map
+       :keys {:name {:type 'zen.fhir/element
+                     :zen.fhir/collection true
+                     :zen.fhir/el {:confirms
+                                   #{'zen.fhir.bindings.fhir-r4.types/HumanName}}}}}}})
 
-  (def us-patient-sch (sut/strdef->zen us-core-patient-str-def))
+  (def us-patient-sch (sut/strdef->zen-ns us-core-patient-str-def))
 
   (matcho/match
     us-patient-sch
-    {:type 'zen.fhir/element
-     :zen.fhir/el
-     {:type 'zen/map
-      :require #(contains? % :name)
-      :keys {:name {:type 'zen.fhir/element
-                    :zen.fhir/min 1}}}}))
+    {:zf/schema
+     {:type 'zen.fhir/element
+      :zen.fhir/el
+      {:type 'zen/map
+       :require #(contains? % :name)
+       :keys {:name {:type 'zen.fhir/element
+                     :zen.fhir/min 1}}}}})
+
+  (def ztx (zen.core/new-context {}))
+
+  (zen.core/load-ns ztx zen-fhir-ns)
+
+  (doseq [bindings-ns (:zf/bindings-ns us-patient-sch)]
+    (zen.core/load-ns ztx bindings-ns))
+
+  (zen.core/load-ns ztx {:ns 'test-patient
+                         :import (into #{'zen.fhir}
+                                       (map :ns)
+                                       (:zf/bindings us-patient-sch))
+                         'schema (:zf/schema us-patient-sch)})
+
+  (swap! ztx
+         dissoc
+         :errors
+         :zen.v2-validation/compiled-schemas
+         :zen.v2-validation/prop-schemas)
+
+  (matcho/match (zen.core/errors ztx) [{:type :unbound-binding} nil])
+
+  (matcho/match (zen.core/validate ztx
+                                   #{'test-patient/schema}
+                                   "hello")
+                {:errors [{} nil]})
+
+  (matcho/match (zen.core/validate ztx
+                                   #{'test-patient/schema}
+                                   [{}])
+                {:errors [{} {} {}]})
+
+  (matcho/match (zen.core/validate ztx
+                                   #{'test-patient/schema}
+                                   {})
+                {:errors [{} {} {}]})
+
+  (matcho/match (zen.core/validate ztx
+                                   #{'test-patient/schema}
+                                   {:name {}
+                                    :gender "unknown"
+                                    :identifier [{:system "sys"
+                                                  :value "val"}]
+                                    :telecom [{:system "sys"
+                                               :value "val"}]})
+                {:errors [{:path [:name nil]}
+                          nil]}))
 
 
 (comment
   (def strdefs
-    (->> (file-seq (clojure.java.io/file us-core-ig-dir))
+    (->> (concat (file-seq (clojure.java.io/file us-core-ig-dir))
+                 (file-seq (clojure.java.io/file fhir-core-ig-dir)))
          (filter #(clojure.string/starts-with? (.getName %)
                                                "StructureDefinition"))
          (map slurp)
          (keep #(try (json/parse-string % keyword)
-                     (catch Exception _)))))
+                     (catch Exception _)))
+         (filter #(= "StructureDefinition" (:resourceType %)))))
+
 
   (def schemas
     (into {}
-          (map (juxt :url sut/strdef->zen))
+          (map (juxt :url sut/strdef->zen-ns))
           strdefs)))
 
 

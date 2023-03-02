@@ -4,6 +4,27 @@
             [zen.fhir.utils :as utils]))
 
 
+(defn- safe-deep-merge
+  ([] nil)
+  ([a] a)
+  ([a b]
+   (cond
+     (= a b)
+     a
+
+     (and (or (nil? a) (map? a)) (or (nil? b) (map? b)))
+     (merge-with safe-deep-merge a b)
+
+     :else
+     (throw (ex-info "Can't merge not maps. Overwriting values is not allowed"
+                     {:a a
+                      :b b}))))
+  ([a b & maps]
+   (reduce safe-deep-merge
+           a
+           (cons b maps))))
+
+
 (def elements-keys-types
   {:zf/loc          #{:id :path}
 
@@ -22,12 +43,12 @@
    :zf/meta  #{:default}})
 
 
-(defn- group-element-keys [element]
+(defn- group-keys [element keys-types poly-keys-types]
   (utils/strip-when empty?
                     (merge-with merge
-                                (update-vals elements-keys-types
+                                (update-vals keys-types
                                              #(select-keys element %))
-                                (update-vals elements-poly-keys-types
+                                (update-vals poly-keys-types
                                              #(into {}
                                                     (mapcat (fn [pk] (utils/poly-find-all element pk)))
                                                     %)))))
@@ -137,115 +158,168 @@
 
 (declare nested->zen*)
 
-
 (defn- els->zen
   "{<key> <nested>}"
-  [els]
+  [ctx els]
   (when (some? els)
-    (when-let [elements (-> (update-vals els nested->zen*)
-                            utils/strip-nils
-                            not-empty)]
-      {:type 'zen.fhir/element
-       :zen.fhir/el
-       {:type 'zen/map
-        :keys elements}})))
+    (let [keys-acc (update-vals els #(nested->zen* ctx %))
+
+          key-schemas (-> keys-acc
+                          (update-vals :zf/schema)
+                          utils/strip-nils
+                          not-empty)
+
+          rest-acc (->> keys-acc
+                        vals
+                        (keep #(dissoc % :zf/schema))
+                        (apply safe-deep-merge))]
+      (cond-> rest-acc
+        key-schemas
+        (assoc :zf/schema
+               {:type 'zen.fhir/element
+                :zen.fhir/el
+                {:type 'zen/map
+                 :keys key-schemas}})))))
 
 
 (defn- els-constraints->zen
   "{<source :zf/id> #{:max :min :condition :base}}"
-  [els-constraints]
-  (merge
-    (when-let [requires (seq (filter #(some->> (:min (val %))
-                                               (< 0))
-                                     els-constraints))]
-      {:type 'zen.fhir/element
-       :zen.fhir/el {:type 'zen/map
-                     :require (into #{}
-                                    (map #(:key (key %)))
-                                    requires)}})
-
-    #_(when-let [forbids (seq (filter #(= "0" (:max (val %)))
+  [ctx els-constraints]
+  {:zf/schema
+   (merge
+     (when-let [requires (seq (filter #(some->> (:min (val %))
+                                                (< 0))
                                       els-constraints))]
-        {:type 'zen.fhir/element
-         :zen.fhir/el {:type 'zen/map
-                       :forbid (into #{}
+       {:type 'zen.fhir/element
+        :zen.fhir/el {:type 'zen/map
+                      :require (into #{}
                                      (map #(:key (key %)))
-                                     forbids)}})))
+                                     requires)}})
+
+     #_(when-let [forbids (seq (filter #(= "0" (:max (val %)))
+                                       els-constraints))]
+         {:type 'zen.fhir/element
+          :zen.fhir/el {:type 'zen/map
+                        :forbid (into #{}
+                                      (map #(:key (key %)))
+                                      forbids)}}))})
 
 
 (defn- container->zen
   "#{:max :min :sliceIsConstraining :sliceName :slicing :base}"
-  [{min-card :min max-card :max}]
-  (merge
-    (when (and min-card (< 0 min-card))
-      {:type 'zen.fhir/element
-       :zen.fhir/min min-card})
-    (when max-card
-      (if (= "*" max-card)
-        {:type 'zen.fhir/element
-         :zen.fhir/collection true}
-        {:type 'zen.fhir/element
-         :zen.fhir/max (parse-long max-card)}))))
+  [ctx {min-card :min max-card :max}]
+  {:zf/schema
+   (merge
+     (when (and min-card (< 0 min-card))
+       {:type 'zen.fhir/element
+        :zen.fhir/min min-card})
+     (when max-card
+       (if (= "*" max-card)
+         {:type 'zen.fhir/element
+          :zen.fhir/collection true}
+         {:type 'zen.fhir/element
+          :zen.fhir/max (parse-long max-card)})))})
 
 
 (defn- slicing->zen
   "{:slices {\"<slice name>\" <nested>}}"
-  [slicing])
+  [ctx slicing])
 
 
 (defn- poly-roots->zen
   "{\"<poly root name>\" <nested>}"
-  [poly-roots])
+  [ctx poly-roots])
 
 
 (defn- poly-keys->zen
   "{\"<poly key name>\" <nested>}"
-  [poly-keys])
+  [ctx poly-keys])
+
+
+(def fhir-sequence->version-mapping
+  {"r5" #{"5.0.0-draft-final"
+          "5.0.0-snapshot3"
+          "5.0.0-ballot"
+          "5.0.0-snapshot1"
+          "4.6.0"
+          "4.5.0"
+          "4.4.0"
+          "4.2.0"}
+
+   "r4b" #{"4.3.0"
+           "4.3.0-snapshot1"
+           "4.1.0"}
+
+   "r4" #{"4.0.1"
+          "4.0.0"
+          "3.5a.0"
+          "3.5.0"
+          "3.3.0"
+          "3.2.0"}
+
+   "stu3" #{"3.0.2"
+            "3.0.1"
+            "3.0.0"
+            "1.8.0"
+            "1.6.0"
+            "1.4.0"
+            "1.2.0"
+            "1.1.0"}})
+
+
+(def fhir-version->sequence-mapping
+  (into {}
+        (for [[fhir-sequence versions] fhir-sequence->version-mapping
+              version                  versions]
+          [version fhir-sequence])))
+
+
+(defn mk-type-binding [fhir-sequence fhir-version type-code]
+  (let [sym (symbol (str "zen.fhir.bindings.fhir-" fhir-sequence ".types/" type-code))
+        zen-def {:zen/tags #{'zen/schema 'zen/binding 'zen.fhir/type-binding}
+                 :fhirSequence fhir-sequence
+                 :fhirVersion fhir-version
+                 :code "HumanName"}]
+    {:zf/symbol sym
+     :zf/binding {sym zen-def}}))
 
 
 (defn- value->zen
   "#{:type :binding :contentReference :maxLength :base}"
-  [value]
+  [ctx value]
   (when (some? value)
-    (merge #_(when-let [max-length (:maxLength value)]
-               {:type 'zen/string
-                :maxLength max-length}))))
+    (merge
+      (when-let [types (seq (:type value))]
+        (let [fhir-version  (get-in ctx [:zf/strdef :zf/meta :fhirVersion])
+              fhir-sequence (fhir-version->sequence-mapping fhir-version)
+              bindings      (->> types
+                                 (keep :code)
+                                 (map #(mk-type-binding fhir-sequence fhir-version %)))
+              binding-syms  (into #{} (map :zf/symbol) bindings)
+              binding-defs  (into {} (map :zf/binding) bindings)]
+          (when (seq bindings)
+            {:zf/bindings binding-defs
+             :zf/schema {:type 'zen.fhir/element
+                         :zen.fhir/el {:confirms binding-syms}}})))
+      #_(when-let [max-length (:maxLength value)]
+          {:type 'zen/string
+           :maxLength max-length}))))
 
 
 (defn- context->zen
   "{<source :zf/id> #{:constraint}}"
-  [context])
+  [ctx context])
 
 
 (defn- meta->zen
   "#{:isModifier :isSummary :mustSupport :representation}"
-  [meta-data])
+  [ctx meta-data])
 
 
 (defn- description->zen
   "#{:alias :code :comment :definition :example :isModifierReason
      :label :mapping :orderMeaning :requirements :short}"
-  [description])
-
-
-(defn- safe-deep-merge
-  ([a] a)
-  ([a b]
-   (cond
-     (= a b)
-     a
-
-     (and (or (nil? a) (map? a)) (or (nil? b) (map? b)))
-     (merge-with safe-deep-merge a b)
-
-     :else
-     (throw (ex-info "Can't merge not maps. Overwriting values is not allowed"
-                     {:a a
-                      :b b}))))
-  ([a b & maps]
-   (reduce safe-deep-merge
-           a
-           (cons b maps))))
+  [ctx description])
 
 
 (defn- nested->zen*
@@ -253,29 +327,56 @@
      :zf/context :zf/els :zf/els-cnstraints
      :zf/slicing :zf/container :zf/value
      :zf/poly-roots :zf/poly-keys}"
-  [nested]
+  [ctx nested]
   (safe-deep-merge
-    (els->zen (:zf/els nested))
-    (els-constraints->zen (:zf/els-constraints nested))
-    (container->zen (:zf/container nested))
-    (slicing->zen (:zf/slicing nested))
-    (poly-roots->zen (:zf/poly-roots nested))
-    (poly-keys->zen (:zf/poly-keys nested))
-    (value->zen (:zf/value nested))
-    (context->zen (:zf/context nested))
-    (meta->zen (:zf/meta nested))
-    (description->zen (:zf/description nested))))
+    (els->zen ctx (:zf/els nested))
+    (els-constraints->zen ctx (:zf/els-constraints nested))
+    (container->zen ctx (:zf/container nested))
+    (slicing->zen ctx (:zf/slicing nested))
+    (poly-roots->zen ctx (:zf/poly-roots nested))
+    (poly-keys->zen ctx (:zf/poly-keys nested))
+    (value->zen ctx (:zf/value nested))
+    (context->zen ctx (:zf/context nested))
+    (meta->zen ctx (:zf/meta nested))
+    (description->zen ctx (:zf/description nested))))
 
 
-(defn- nested->zen [nested]
-  (merge
-    {:zen/tags #{'zen/schema}}
-    (nested->zen* nested)))
+(defn- nested->zen [ctx nested]
+  (-> (nested->zen* ctx nested)
+      (update :zf/schema merge {:zen/tags #{'zen/schema}})))
 
 
-(defn strdef->zen [strdef]
-  (->> (get-in strdef [:differential :element])
-       (map group-element-keys)
-       (map enrich-loc)
-       nest-by-enriched-loc
-       nested->zen))
+(def strdef-keys-types
+  {:zf/meta #{:resourceType :url
+              :type :kind :derivation :abstract
+              :experimental :status
+              :fhirVersion  :version :date  :context :contextInvariant}
+
+   :zf/description #{:name :title :description :purpose :useContext
+                     :publisher :contact :jurisdiction :copyright
+                     :keyword :identifier :mapping}})
+
+
+(defn symbols-map->zen-nss [symbols-map]
+  (->> symbols-map
+       (group-by #(namespace (key %)))
+       (map (fn [[zen-ns symbols]]
+              (into {:ns (symbol zen-ns)
+                     :import #{'zen.fhir}}
+                    (map (fn [[qsym sym-def]]
+                           [(symbol (name qsym))
+                            sym-def]))
+                    symbols)))))
+
+
+(defn strdef->zen-ns [strdef]
+  (let [grouped-strdef (group-keys strdef strdef-keys-types nil)
+        nested-els (->> (get-in strdef [:differential :element])
+                        (map #(group-keys %
+                                          elements-keys-types
+                                          elements-poly-keys-types))
+                        (map enrich-loc)
+                        nest-by-enriched-loc)
+        zen (nested->zen {:zf/strdef grouped-strdef} nested-els)
+        zen (assoc zen :zf/bindings-ns (symbols-map->zen-nss (:zf/bindings zen)))]
+    zen))
