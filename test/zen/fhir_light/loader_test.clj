@@ -248,8 +248,38 @@
 
 
 (comment
+  (defn- safe-deep-merge
+    ([] nil)
+    ([a] a)
+    ([a b]
+     (cond
+       (= a b)
+       a
+
+       (and (set? a) (set? b))
+       (clojure.set/union a b)
+
+       (and (map? a) (map? b) (= "4.0.0" (:fhirVersion a)) (= "4.0.1" (:fhirVersion b)))
+       b
+
+       (and (map? a) (map? b) (= "4.0.1" (:fhirVersion a)) (= "4.0.0" (:fhirVersion b)))
+       a
+
+       (and (or (nil? a) (map? a)) (or (nil? b) (map? b)))
+       (merge-with safe-deep-merge a b)
+
+
+       :else
+       (throw (ex-info "Can't merge not maps. Overwriting values is not allowed"
+                       {:a a
+                        :b b}))))
+    ([a b & maps]
+     (reduce safe-deep-merge
+             a
+             (cons b maps))))
+
   (def strdefs
-    (->> (concat (file-seq (clojure.java.io/file us-core-ig-dir))
+    (->> (concat #_(file-seq (clojure.java.io/file us-core-ig-dir))
                  (file-seq (clojure.java.io/file fhir-core-ig-dir)))
          (filter #(clojure.string/starts-with? (.getName %)
                                                "StructureDefinition"))
@@ -258,11 +288,36 @@
                      (catch Exception _)))
          (filter #(= "StructureDefinition" (:resourceType %)))))
 
-
   (def schemas
     (into {}
-          (map (juxt :url sut/strdef->zen-ns))
-          strdefs)))
+          (map (juxt :url #(:zf/schema (sut/strdef->zen-ns %))))
+          strdefs))
+
+  (map (juxt :url #(:zf/bindings-ns (sut/strdef->zen-ns %)))
+       strdefs)
+
+  (def bindings
+    (apply #'sut/safe-deep-merge
+           (mapcat #(map (fn [n] (update-vals
+                                   (dissoc n :ns :import)
+                                   (fn [m] (assoc m :sourceUrl #{(:url %)}))))
+                         (:zf/bindings-ns (sut/strdef->zen-ns %)))
+                   strdefs)))
+
+  (sort (keys bindings))
+
+  (get bindings 'ProductShelfLife)
+
+  (get (group-by :url strdefs)
+       "http://hl7.org/fhir/StructureDefinition/boolean")
+
+  (get (group-by :url strdefs)
+       "http://hl7.org/fhir/StructureDefinition/MedicinalProductPackaged")
+
+  (get (group-by :url strdefs)
+       "http://hl7.org/fhir/StructureDefinition/ProductShelfLife")
+
+  nil)
 
 
 (t/deftest convert-many-strdef-test
