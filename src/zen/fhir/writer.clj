@@ -8,8 +8,10 @@
             [org.httpkit.client :as client]
             [zen.package]
             [ftr.core]
+            [ftr.zen-package]
             [fipp.edn]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io])
+  (:import java.io.File))
 
 
 (defn order-zen-ns [zen-ns-map]
@@ -134,7 +136,7 @@
 
 
 (defn generate-package-config [ztx
-                               {:keys [out-dir git-url-format zen-fhir-lib-url git-auth-url-format node-modules-folder ftr-context ftr-build-deps-coords]}
+                               {:keys [out-dir git-url-format zen-fhir-lib-url git-auth-url-format node-modules-folder ftr-context ftr-build-deps-coords produce-remote-ftr-manifests? remote-repo-url]}
                                package]
   (let [package-dir (str out-dir \/ package \/)
         packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir.zen/ns @ztx) (:fhir/inter @ztx))
@@ -156,7 +158,10 @@
                                package-git-url)
      :out-dir out-dir
      :node-modules-folder node-modules-folder
-     :ftr-context ftr-context}))
+     :ftr-context ftr-context
+     :produce-remote-ftr-manifests? produce-remote-ftr-manifests?
+     :remote-repo-url remote-repo-url
+     }))
 
 
 (defn clone-zen-package [{:as config
@@ -213,7 +218,7 @@
 
 (defn clean-up-clonned-repo! [{:as config, :keys [package-dir]}]
   (when package-dir
-    (zen.package/sh! "bash" "-c" "ls | grep -v ftr | xargs rm -rf" :dir package-dir))
+    (zen.package/sh! "rm" "-rf" "*" :dir package-dir))
   config)
 
 
@@ -256,7 +261,7 @@
           (get-ftr-source-urls loader-meta)
 
           ftr-manifest
-          {:module      "ig"
+          {:module      package
            :source-urls ftr-source-urls
            :source-type :igs
            :ftr-path    "ftr"
@@ -276,6 +281,30 @@
                      namespaces)))))
   config)
 
+(defn produce-ftr-manifests-for-remote-repo [ztx {:as config,
+                                                  :keys [package remote-repo-url package-dir]
+                                                  {ftr-extraction-result :extraction-result} :ftr-context}]
+  (let [ftr-manifest {:module       package
+                      :source-url   (or remote-repo-url package-dir)
+                      :source-type  :cloud-storage
+                      :ftr-path     "ftr"
+                      :tag          "init"}]
+
+    (swap! ztx update :fhir.zen/ns
+           (fn [namespaces]
+             (into {}
+                   (map (fn [[zen-ns ns-content]]
+                          (let [nss  (name zen-ns)
+                                package-name (first (str/split nss #"\." 2))
+                                vs-uri (get-in ns-content ['value-set :uri])]
+                            (if (and (= package package-name)
+                                     vs-uri
+                                     (get ftr-extraction-result vs-uri))
+                              [zen-ns (assoc-in ns-content ['value-set :ftr] ftr-manifest)]
+                              [zen-ns ns-content]))))
+                   namespaces)))
+    config))
+
 
 (defn spit-ftr [ztx ftr-context package-dir package]
   (let [value-sets (->> (get-in @ztx [:fhir.zen/ns])
@@ -288,16 +317,45 @@
         ftr-configs (->> value-sets
                          (group-by :ftr)
                          keys
-                         (filter identity))]
+                         (filter (every-pred (comp #(not= % :cloud-storage) :source-type) identity)))]
     (doseq [ftr ftr-configs]
       (ftr.core/spit-ftr (merge ftr-context {:cfg (assoc ftr
                                                          :ftr-path (str package-dir "/ftr")
                                                          :vs-urls vs-urls)})))))
 
 
-(defn spit-data [ztx {:keys [package-dir package package-file-path package-file ftr-context] :as config}]
-  (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
+(defn spit-validation-index [ztx package package-dir]
+  (let [valueset-defs (->> (get-in @ztx [:fhir.zen/ns])
+                           (filter (fn [[zen-ns ns-content]]
+                                     (let [nss  (name zen-ns)
+                                           package-name (first (str/split nss #"\." 2))]
+                                       (and (= package package-name) (get ns-content 'value-set)))))
+                           (map (fn [[_zen-ns ns-content]] (get ns-content 'value-set))))
+
+        ftr-manifests (->> (keep :ftr valueset-defs)
+                           distinct)
+
+        sep File/separator
+
+        tag-index-paths (->> ftr-manifests
+                             (map (fn [fm]
+                                    {:tag (:tag fm)
+                                     :module (:module fm)
+                                     :ftr-dir (str package-dir sep "ftr")
+                                     :path (str package-dir sep "ftr" sep (:module fm)  sep "tags" sep (:tag fm) ".ndjson.gz")}))
+                             (filter (fn [tip]
+                                       (.exists (io/file (:path tip))))))]
+    (ftr.zen-package/serialize-ftr-validation-index-by-ti-paths
+      tag-index-paths
+      (str package-dir File/separator "index.nippy"))))
+
+
+(defn spit-data [ztx {:keys [package-dir package package-file-path package-file ftr-context produce-remote-ftr-manifests?] :as config}]
   (spit-ftr ztx ftr-context package-dir package)
+  (spit-validation-index ztx package package-dir)
+  (when produce-remote-ftr-manifests?
+    (produce-ftr-manifests-for-remote-repo ztx config))
+  (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
   (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
   config)
 
@@ -329,6 +387,31 @@
          (rf result input))))))
 
 
+(defn rsync-ftr< [_ztx {:as config, :keys [package package-dir]}]
+  (let [rsync-source      (str "gs://ftr/" package)
+        rsync-destination (str package-dir File/separator "ftr")
+        _                 (.mkdirs (io/file rsync-destination))]
+    (assoc config :package-rsynced-successfully?
+           (zero?
+             (:exit
+              (zen.package/sh! "gsutil" "-m" "rsync" "-r" "-d" rsync-source rsync-destination))))))
+
+
+(defn rsync-ftr> [_ztx {:as config, :keys [package package-dir]}]
+  (let [rsync-source      (str "gs://ftr/" package)
+        rsync-destination (str package-dir File/separator "ftr" File/separator package)
+        _                 (.mkdirs (io/file rsync-destination))]
+    (assoc config :package-rsynced-successfully?
+           (zero?
+             (:exit
+              (zen.package/sh! "gsutil" "-m" "rsync" "-r" "-d" rsync-destination rsync-source))))))
+
+
+(defn delete-ftr-folder [_ztx {:as _config, :keys [package-dir]}]
+  (when package-dir
+    (zen.package/sh! "rm" "-rf" "ftr" :dir package-dir)))
+
+
 (defn release-xform [ztx config]
   (let [xforms [(filter (partial filter-zen-packages ztx config))
                 (map (partial generate-package-config ztx config))
@@ -336,8 +419,11 @@
                 (map (partial init-zen-repo! ztx))
                 (map (partial create-remote! ztx))
                 (map clean-up-clonned-repo!)
+                (map (partial rsync-ftr< ztx))
                 (map (partial produce-ftr-manifests ztx))
                 (map (partial spit-data ztx))
+                (map (partial rsync-ftr> ztx))
+                (map (partial delete-ftr-folder ztx))
                 (map commit-zen-changes)
                 (map release-zen-package)
                 (map rm-local-repo!)]]

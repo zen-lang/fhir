@@ -629,7 +629,7 @@
       (sh/sh "mkdir" "-p" (str package-dir "/zrc"))
 
       (let [extraction-result (ftr.core/extract {:cfg
-                                                 {:module      "ig"
+                                                 {:module      "fhir-r4"
                                                   :source-url  "node_modules"
                                                   :source-type :igs
                                                   :ftr-path    "ftr"
@@ -658,6 +658,8 @@
 
         (sut/spit-data ztx config))
 
+
+
       (t/is (.exists (io/file (str test-dir "/fhir-r4/zrc/fhir-r4/Element.edn"))))
       (t/is (and (.exists (io/file (str test-dir "/fhir-r4/zen-package.edn")))
                  (let [package (-> (str test-dir "/fhir-r4/zen-package.edn")
@@ -674,7 +676,7 @@
           (fs-tree->tree-map package-dir)
           {"fhir-r4-terminology-bundle.ndjson.gz" nil
            "ftr"
-           {"ig"
+           {"fhir-r4"
             {"vs" {}
              "tags" {(format "%s.ndjson.gz" ftr-tag) {}}}}}))
 
@@ -684,7 +686,7 @@
                 "http://hl7.org/fhir/ValueSet/performer-role"
 
                 tf-dir
-                (io/file package-dir "ftr" "ig" "vs" (ftr.utils.core/escape-url test-vs-url))
+                (io/file package-dir "ftr" "fhir-r4" "vs" (ftr.utils.core/escape-url test-vs-url))
 
                 tf-tag-file-path
                 (-> tf-dir
@@ -727,7 +729,7 @@
       (sh/sh "mkdir" "-p" (str package-dir "/zrc"))
 
       (let [extraction-result (ftr.core/extract {:cfg
-                                                 {:module      "ig"
+                                                 {:module      "us-core"
                                                   :source-url  "node_modules"
                                                   :source-type :igs
                                                   :ftr-path    "ftr"
@@ -763,7 +765,7 @@
         (matcho/match
           (fs-tree->tree-map package-dir)
           {"ftr"
-           {"ig"
+           {"us-core"
             {"vs" {}
              "tags" {"init.ndjson.gz" {}}}}})))
 
@@ -800,7 +802,8 @@
                          :out-dir test-dir
                          :cloned? false
                          :git-url-format (str test-dir "/%s")
-                         :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")}
+                         :zen-fhir-lib-url (str (System/getProperty "user.dir") "/zen.fhir/")
+                         :produce-remote-ftr-manifests? true}
                         package-name)]
           (->> package
                sut/clone-zen-package

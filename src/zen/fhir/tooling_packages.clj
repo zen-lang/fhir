@@ -7,11 +7,12 @@
             [clojure.string]
             [zen.package]
             [ftr.core]
-            [zen.fhir.inter-utils]))
+            [zen.fhir.inter-utils]
+            [clojure.java.shell]))
 
 
 (defn github-release-zen-packages [{:keys [node-modules-folder out-dir package-name zen-fhir-lib-url git-url-format git-auth-url-format
-                                           blacklisted-packages]}]
+                                           blacklisted-packages remote-repo-url produce-remote-ftr-manifests?]}]
   (let [github-user  (System/getenv "ZEN_FHIR_RELEASE_GITHUB_USER")
         github-token (System/getenv "ZEN_FHIR_RELEASE_GITHUB_TOKEN")
         org-name     (System/getenv "ZEN_FHIR_RELEASE_GITHUB_ORG")
@@ -38,15 +39,17 @@
 
         _ (zen.package/sh! "rm" "-rf" node-modules-folder)
         _ (zen.fhir.generator/generate-zen-schemas ztx)
-        release-result (zen.fhir.writer/release-packages ztx {:ftr-context           ftr-context
-                                                              :out-dir               out-dir
-                                                              :package               package-name
-                                                              :git-url-format        git-url-format
-                                                              :git-auth-url-format   git-auth-url-format
-                                                              :zen-fhir-lib-url      zen-fhir-lib-url
-                                                              :blacklisted-packages  blacklisted-packages
-                                                              :node-modules-folder   node-modules-folder
-                                                              :ftr-build-deps-coords ftr-build-deps-coords})]
+        release-result (zen.fhir.writer/release-packages ztx {:ftr-context                   ftr-context
+                                                              :out-dir                       out-dir
+                                                              :package                       package-name
+                                                              :git-url-format                git-url-format
+                                                              :git-auth-url-format           git-auth-url-format
+                                                              :zen-fhir-lib-url              zen-fhir-lib-url
+                                                              :blacklisted-packages          blacklisted-packages
+                                                              :node-modules-folder           node-modules-folder
+                                                              :remote-repo-url               remote-repo-url
+                                                              :produce-remote-ftr-manifests? produce-remote-ftr-manifests?
+                                                              :ftr-build-deps-coords         ftr-build-deps-coords})]
     (if-let [error (:error (last release-result))]
       (throw (ex-info "Release error" {:error error}))
       (->> (map :package-git-url release-result)
@@ -62,6 +65,8 @@
            :zen-fhir-lib-url     zen-fhir-lib-url
            :git-auth-url-format  git-auth-url-format
            :git-url-format       git-url-format
+           :remote-repo-url      "https://storage.googleapis.com"
+           :produce-remote-ftr-manifests? true
            :blacklisted-packages #{}})))
 
 
@@ -69,4 +74,6 @@
 
   (-main "release.txt" "node_modules" "/tmp/output")
 
-  nil)
+
+
+  )
