@@ -279,7 +279,7 @@
         zen-def {:zen/tags #{'zen/schema 'zen/binding 'zen.fhir/type-binding}
                  :fhirSequence fhir-sequence
                  :fhirVersion fhir-version
-                 :code "HumanName"}]
+                 :code type-code}]
     {:zf/symbol sym
      :zf/binding {sym zen-def}}))
 
