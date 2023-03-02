@@ -288,7 +288,9 @@
                       :source-url   (or remote-repo-url package-dir)
                       :source-type  :cloud-storage
                       :ftr-path     "ftr"
-                      :tag          "init"}]
+                      :tag          "init"
+                      :validation-index {:type :nippy
+                                         :file "index.nippy"}}]
 
     (swap! ztx update :fhir.zen/ns
            (fn [namespaces]
@@ -407,9 +409,10 @@
               (zen.package/sh! "gsutil" "-m" "rsync" "-r" "-d" rsync-destination rsync-source))))))
 
 
-(defn delete-ftr-folder [_ztx {:as _config, :keys [package-dir]}]
+(defn delete-ftr-folder [_ztx {:as config, :keys [package-dir]}]
   (when package-dir
-    (zen.package/sh! "rm" "-rf" "ftr" :dir package-dir)))
+    (zen.package/sh! "rm" "-rf" "ftr" :dir package-dir))
+  config)
 
 
 (defn release-xform [ztx config]
