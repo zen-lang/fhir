@@ -293,6 +293,8 @@
           (map (juxt :url #(:zf/schema (sut/strdef->zen-ns %))))
           strdefs))
 
+  (get schemas "http://hl7.org/fhir/StructureDefinition/Patient")
+
   (map (juxt :url #(:zf/bindings-ns (sut/strdef->zen-ns %)))
        strdefs)
 

@@ -25,6 +25,55 @@
            (cons b maps))))
 
 
+(def fhir-sequence->version-mapping
+  {"r5" #{"5.0.0-draft-final"
+          "5.0.0-snapshot3"
+          "5.0.0-ballot"
+          "5.0.0-snapshot1"
+          "4.6.0"
+          "4.5.0"
+          "4.4.0"
+          "4.2.0"}
+
+   "r4b" #{"4.3.0"
+           "4.3.0-snapshot1"
+           "4.1.0"}
+
+   "r4" #{"4.0.1"
+          "4.0.0"
+          "3.5a.0"
+          "3.5.0"
+          "3.3.0"
+          "3.2.0"}
+
+   "stu3" #{"3.0.2"
+            "3.0.1"
+            "3.0.0"
+            "1.8.0"
+            "1.6.0"
+            "1.4.0"
+            "1.2.0"
+            "1.1.0"}})
+
+
+(def fhir-version->sequence-mapping
+  (into {}
+        (for [[fhir-sequence versions] fhir-sequence->version-mapping
+              version                  versions]
+          [version fhir-sequence])))
+
+
+(def strdef-keys-types
+  {:zf/meta #{:resourceType :url
+              :type :kind :derivation :abstract
+              :experimental :status
+              :fhirVersion  :version :date  :context :contextInvariant}
+
+   :zf/description #{:name :title :description :purpose :useContext
+                     :publisher :contact :jurisdiction :copyright
+                     :keyword :identifier :mapping}})
+
+
 (def elements-keys-types
   {:zf/loc          #{:id :path}
 
@@ -236,44 +285,6 @@
   [ctx poly-keys])
 
 
-(def fhir-sequence->version-mapping
-  {"r5" #{"5.0.0-draft-final"
-          "5.0.0-snapshot3"
-          "5.0.0-ballot"
-          "5.0.0-snapshot1"
-          "4.6.0"
-          "4.5.0"
-          "4.4.0"
-          "4.2.0"}
-
-   "r4b" #{"4.3.0"
-           "4.3.0-snapshot1"
-           "4.1.0"}
-
-   "r4" #{"4.0.1"
-          "4.0.0"
-          "3.5a.0"
-          "3.5.0"
-          "3.3.0"
-          "3.2.0"}
-
-   "stu3" #{"3.0.2"
-            "3.0.1"
-            "3.0.0"
-            "1.8.0"
-            "1.6.0"
-            "1.4.0"
-            "1.2.0"
-            "1.1.0"}})
-
-
-(def fhir-version->sequence-mapping
-  (into {}
-        (for [[fhir-sequence versions] fhir-sequence->version-mapping
-              version                  versions]
-          [version fhir-sequence])))
-
-
 (defn mk-type-binding [fhir-sequence fhir-version type-code]
   (let [sym (symbol (str "zen.fhir.bindings.fhir-" fhir-sequence ".types/" type-code))
         zen-def {:zen/tags #{'zen/schema 'zen/binding 'zen.fhir/type-binding}
@@ -344,17 +355,6 @@
 (defn- nested->zen [ctx nested]
   (-> (nested->zen* ctx nested)
       (update :zf/schema merge {:zen/tags #{'zen/schema}})))
-
-
-(def strdef-keys-types
-  {:zf/meta #{:resourceType :url
-              :type :kind :derivation :abstract
-              :experimental :status
-              :fhirVersion  :version :date  :context :contextInvariant}
-
-   :zf/description #{:name :title :description :purpose :useContext
-                     :publisher :contact :jurisdiction :copyright
-                     :keyword :identifier :mapping}})
 
 
 (defn symbols-map->zen-nss [symbols-map]
