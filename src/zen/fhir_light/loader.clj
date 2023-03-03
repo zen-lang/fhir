@@ -5,18 +5,6 @@
             [zen.v2-validation]))
 
 
-(defn symbols-map->zen-nss [symbols-map]
-  (->> symbols-map
-       (group-by #(namespace (key %)))
-       (map (fn [[zen-ns symbols]]
-              (into {:ns (symbol zen-ns)
-                     :import #{'zen.fhir}}
-                    (map (fn [[qsym sym-def]]
-                           [(symbol (name qsym))
-                            sym-def]))
-                    symbols)))))
-
-
 (defn strdef->zen-ns [strdef]
   (let [grouped-strdef
         (loader.group/group-keys strdef loader.group/strdef-keys-types nil)
@@ -31,6 +19,6 @@
 
         zen-res (loader.to-zen/nested->zen {:zf/strdef grouped-strdef} nested-els)
 
-        bindings-ns (symbols-map->zen-nss (:zf/bindings zen-res))]
+        bindings-ns (loader.to-zen/symbols-map->zen-nss (:zf/bindings zen-res))]
 
     (assoc zen-res :zf/bindings-ns bindings-ns)))

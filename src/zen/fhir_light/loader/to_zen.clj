@@ -243,3 +243,14 @@
       (update :zf/schema merge {:zen/tags #{'zen/schema}})))
 
 
+(defn symbols-map->zen-nss [symbols-map]
+  (->> symbols-map
+       (group-by #(namespace (key %)))
+       (map (fn [[zen-ns symbols]]
+              (into {:ns (symbol zen-ns)
+                     :import #{'zen.fhir}}
+                    (map (fn [[qsym sym-def]]
+                           [(symbol (name qsym))
+                            sym-def]))
+                    symbols)))))
+
