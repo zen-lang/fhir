@@ -1,8 +1,7 @@
 (ns zen.fhir-light.loader
   (:require [zen.fhir-light.loader.group :as loader.group]
             [zen.fhir-light.loader.nest :as loader.nest]
-            [zen.fhir-light.loader.to-zen :as loader.to-zen]
-            [zen.v2-validation]))
+            [zen.fhir-light.loader.to-zen :as loader.to-zen]))
 
 
 (defn strdef->zen-ns [strdef]
