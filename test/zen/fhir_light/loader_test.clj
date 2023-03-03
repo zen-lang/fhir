@@ -3,8 +3,11 @@
             [clojure.test :as t]
             [matcho.core :as matcho]
             [zen.core]
-            [zen.v2-validation]
-            [zen.fhir-light.loader :as sut]))
+            [zen.fhir-light.loader :as sut]
+            [zen.fhir-light.loader.group :as sut.group]
+            [zen.fhir-light.loader.nest :as sut.nest]
+            [zen.fhir-light.loader.to-zen :as sut.to-zen]
+            [zen.v2-validation]))
 
 
 (def zen-fhir-ns
@@ -91,7 +94,7 @@
 
   (t/testing "pure convertation, no context"
     (t/testing "keys grouping"
-      (def el-res (map #(#'sut/group-keys % sut/elements-keys-types sut/elements-poly-keys-types)
+      (def el-res (map #(#'sut.group/group-keys % sut.group/elements-keys-types sut.group/elements-poly-keys-types)
                        (get-in us-core-patient-str-def [:differential :element])))
 
       (matcho/match
@@ -111,7 +114,7 @@
          {:zf/loc {:path string? :id "Patient.name.suffix"}}]))
 
     (t/testing "parse id"
-      (def enriched-res (map #'sut/enrich-loc el-res))
+      (def enriched-res (map sut.group/enrich-loc el-res))
 
       (matcho/match
         enriched-res
@@ -125,7 +128,7 @@
                                                            {:key :system     :type :key}]}}]))
 
     (t/testing "nesting"
-      (def nested-res (#'sut/nest-by-enriched-loc
+      (def nested-res (#'sut.nest/nest-by-enriched-loc
                         enriched-res
                         :keys-to-strip #{:zf/loc :zf/description :zf/meta}))
 
@@ -136,11 +139,11 @@
                   :telecom {:zf/els {:system {}}}}}))
 
     (t/testing "to zen"
-      (def zen-sch (#'sut/nested->zen {:zf/strdef
-                                       (#'sut/group-keys us-core-patient-str-def
-                                                         sut/strdef-keys-types
-                                                         nil)}
-                                      nested-res))
+      (def zen-sch (sut.to-zen/nested->zen {:zf/strdef
+                                            (sut.group/group-keys us-core-patient-str-def
+                                                                  sut.group/strdef-keys-types
+                                                                  nil)}
+                                           nested-res))
 
       (t/is (= (:zf/schema zen-sch)
                (:zf/schema (sut/strdef->zen-ns us-core-patient-str-def)))))))
@@ -312,7 +315,7 @@
        (map #(dissoc % :text :snapshot))
        (map #(get-in % [:differential :element]))
        (map #(map (fn [e]
-                    (apply dissoc e (:zf/description sut/elements-keys-types))) %))
+                    (apply dissoc e (:zf/description sut.group/elements-keys-types))) %))
        #_(mapcat #(mapcat (comp (fn [t] (map :code t)):type) %))
        #_distinct
        #_sort)
