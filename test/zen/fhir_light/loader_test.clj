@@ -196,7 +196,7 @@
          :fhirSequence "r4"
          :url "http://hl7.org/fhir/StructureDefinition/HumanName"
          :code "HumanName"}
-        'zen.fhir.bindings.fhir-r4.resource/Patient
+        'zen.fhir.bindings.fhir-r4.structure/Patient
         {:url "http://hl7.org/fhir/StructureDefinition/Patient"}}
        :zf/schema
        {:type 'zen.fhir/element
@@ -215,7 +215,7 @@
     (matcho/match
       us-patient-sch
       {:zf/bindings
-       {'zen.fhir.bindings.fhir-r4.resource/Patient
+       {'zen.fhir.bindings.fhir-r4.structure/Patient
         {:url "http://hl7.org/fhir/StructureDefinition/Patient"}}
        :zf/schema
        {:type 'zen.fhir/element

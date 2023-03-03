@@ -131,19 +131,39 @@
   (Character/isUpperCase ^Character (first type-code)))
 
 
-(defn- mk-type-sym [fhir-sequence kind type-code]
-  (symbol (str "zen.fhir.bindings.fhir-" fhir-sequence
-               "." kind
-               "/" type-code)))
+(defn- most-reliable-string-hash-definitely-without-collisions [s]
+  (str (Integer/toHexString (hash s))
+       (Integer/toHexString (hash (apply str (reverse s))))))
+
+
+(defn- mk-type-sym [fhir-sequence kind type-code url]
+  (cond
+    (contains? #{"primitive-type" "complex-type"}
+               kind)
+    (symbol (str "zen.fhir.bindings.fhir-" fhir-sequence
+                 "." kind
+                 "/" type-code))
+
+    (str/starts-with? url fhir-type-url-prefix)
+    (symbol (str "zen.fhir.bindings.fhir-" fhir-sequence
+                 ".structure/" type-code))
+
+    #_"NOTE: we can't use url as symbol.
+       I have no other idea how to create a symbol for a binding from a single url"
+    :else
+    (symbol (str "zen.fhir.bindings.profiles/H_"
+                 (most-reliable-string-hash-definitely-without-collisions
+                   type-code)))))
 
 
 (defn- parse-fhir-type [fhir-sequence type-code]
   (let [kind (if (complex-type-code? type-code)
                "complex-type"
-               "primitive-type")]
+               "primitive-type")
+        url (str fhir-type-url-prefix type-code)]
     {:type/code type-code
-     :type/url  (str fhir-type-url-prefix type-code)
-     :type/sym  (mk-type-sym fhir-sequence kind type-code)}))
+     :type/url  url
+     :type/sym  (mk-type-sym fhir-sequence kind type-code url)}))
 
 
 (defn- parse-system-type [fhirpath-type-url]
@@ -249,10 +269,11 @@
         fhir-sequence (fhir-version->sequence-mapping fhir-version)
         type-code     (get-in grouped-strdef [:zf/meta :type])
         kind          (get-in grouped-strdef [:zf/meta :kind])
-        sym           (mk-type-sym fhir-sequence kind type-code)]
+        url           (get-in grouped-strdef [:zf/meta :url])
+        sym           (mk-type-sym fhir-sequence kind type-code url)]
     {:zf/sym     sym
      :zf/binding {sym {:zen/tags     #{'zen/schema 'zen.fhir/type-binding 'zen/binding}
                        :fhirSequence fhir-sequence
                        :fhirVersion  fhir-version
-                       :url          (get-in grouped-strdef [:zf/meta :url])
-                       :code         (get-in grouped-strdef [:zf/meta :type])}}}))
+                       :code         type-code
+                       :url          url}}}))
