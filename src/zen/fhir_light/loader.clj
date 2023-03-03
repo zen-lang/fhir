@@ -18,20 +18,18 @@
              (map #(loader.group/enrich-loc ctx %))
              loader.nest/nest-by-enriched-loc)
 
-
         this-binding (loader.to-zen/mk-binding grouped-strdef)
 
         zen-res (loader.to-zen/nested->zen ctx nested-els)
 
-        zen-res (-> zen-res
-                    (update :zf/schema
-                            merge
-                            {:zen/tags #{'zen/schema}
-                             :zen/binding (:zf/sym this-binding)})
-                    (update :zf/bindings
-                            merge
-                            (:zf/binding this-binding)))
+        symbols
+        (-> (:zf/bindings zen-res)
+            (merge (:zf/binding this-binding))
+            (assoc (loader.to-zen/strdef->sym grouped-strdef)
+                   (assoc (:zf/schema zen-res)
+                          :zen/tags #{'zen/schema}
+                          :zen/binding (:zf/sym this-binding))))
 
-        bindings-ns (loader.to-zen/symbols-map->zen-nss (:zf/bindings zen-res))]
+        nss (loader.to-zen/symbols-map->zen-nss symbols)]
 
-    (assoc zen-res :zf/bindings-ns bindings-ns)))
+    (into {} (map (juxt :ns identity)) nss)))

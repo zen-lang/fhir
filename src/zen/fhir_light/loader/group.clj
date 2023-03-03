@@ -4,12 +4,12 @@
 
 
 (def strdef-keys-types
-  {:zf/meta #{:resourceType :url
+  {:zf/meta #{:resourceType :url :name
               :type :kind :derivation :abstract
               :experimental :status
               :fhirVersion  :version :date  :context :contextInvariant}
 
-   :zf/description #{:name :title :description :purpose :useContext
+   :zf/description #{:title :description :purpose :useContext
                      :publisher :contact :jurisdiction :copyright
                      :keyword :identifier :mapping}})
 

@@ -153,7 +153,7 @@
     :else
     (symbol (str "zen.fhir.bindings.profiles/H_"
                  (most-reliable-string-hash-definitely-without-collisions
-                   type-code)))))
+                   url)))))
 
 
 (defn- parse-fhir-type [fhir-sequence type-code]
@@ -270,10 +270,30 @@
         type-code     (get-in grouped-strdef [:zf/meta :type])
         kind          (get-in grouped-strdef [:zf/meta :kind])
         url           (get-in grouped-strdef [:zf/meta :url])
+        version       (get-in grouped-strdef [:zf/meta :version])
         sym           (mk-type-sym fhir-sequence kind type-code url)]
     {:zf/sym     sym
      :zf/binding {sym {:zen/tags     #{'zen/schema 'zen.fhir/type-binding 'zen/binding}
                        :fhirSequence fhir-sequence
                        :fhirVersion  fhir-version
+                       :version      version
                        :code         type-code
                        :url          url}}}))
+
+
+(defn strdef->sym [grouped-strdef]
+  (let [fhir-version  (get-in grouped-strdef [:zf/meta :fhirVersion])
+        fhir-sequence (fhir-version->sequence-mapping fhir-version)
+        type-code     (get-in grouped-strdef [:zf/meta :type])
+        kind          (get-in grouped-strdef [:zf/meta :kind])
+        url           (get-in grouped-strdef [:zf/meta :url])
+        sym           (mk-type-sym fhir-sequence kind type-code url)
+        fhir-core?    (str/starts-with? url fhir-type-url-prefix)
+        profile-version (get-in grouped-strdef [:zf/meta :version])
+        profile-name  (get-in grouped-strdef [:zf/meta :name]) #_"NOTE: is it unique?"]
+    (if fhir-core?
+      (symbol (str "zen.fhir.fhir-" fhir-sequence "."
+                   kind "." type-code "/schema"))
+      (symbol (str "zen.fhir.profiles."
+                   profile-name
+                   ".v" (str/replace profile-version \. \-) "/schema")))))

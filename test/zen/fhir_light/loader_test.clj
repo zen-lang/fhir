@@ -172,72 +172,73 @@
 
     (matcho/match
       boolean-sch
-      {:zf/bindings
-       {'zen.fhir.bindings.system-type/Boolean
+      {'zen.fhir.bindings.system-type
+       {'Boolean
         {:url "http://hl7.org/fhirpath/System.Boolean"
-         :code "http://hl7.org/fhirpath/System.Boolean"}
-        'zen.fhir.bindings.fhir-r4.primitive-type/boolean
+         :code "http://hl7.org/fhirpath/System.Boolean"}}
+
+       'zen.fhir.bindings.fhir-r4.primitive-type
+       {'boolean
         {:url "http://hl7.org/fhir/StructureDefinition/boolean"
          :code "boolean"}}
-       :zf/schema
-       {:zen/binding 'zen.fhir.bindings.fhir-r4.primitive-type/boolean
-        :type 'zen.fhir/element
-        :zen.fhir/el {:confirms #{'zen.fhir.bindings.system-type/Boolean}}}}))
+
+       'zen.fhir.fhir-r4.primitive-type.boolean
+       {'schema
+        {:zen/binding 'zen.fhir.bindings.fhir-r4.primitive-type/boolean
+         :type 'zen.fhir/element
+         :zen.fhir/el {:confirms #{'zen.fhir.bindings.system-type/Boolean}}}}}))
 
   (t/testing "base schema"
     (def fhir-patient-sch (sut/strdef->zen-ns fhir-patient-str-def))
 
     (matcho/match
       fhir-patient-sch
-      {:zf/bindings
-       {'zen.fhir.bindings.fhir-r4.complex-type/HumanName
+      {'zen.fhir.bindings.fhir-r4.complex-type
+       {'HumanName
         {:zen/tags #{'zen/schema 'zen/binding 'zen.fhir/type-binding}
          :fhirVersion "4.0.1"
          :fhirSequence "r4"
          :url "http://hl7.org/fhir/StructureDefinition/HumanName"
-         :code "HumanName"}
-        'zen.fhir.bindings.fhir-r4.structure/Patient
+         :code "HumanName"}}
+
+       'zen.fhir.bindings.fhir-r4.structure
+       {'Patient
         {:url "http://hl7.org/fhir/StructureDefinition/Patient"}}
-       :zf/schema
-       {:type 'zen.fhir/element
-        :zen.fhir/el
-        {:type 'zen/map
-         :keys
-         {:name
-          {:type 'zen.fhir/element
-           :zen.fhir/collection true
-           :zen.fhir/el {:confirms
-                         #{'zen.fhir.bindings.fhir-r4.complex-type/HumanName}}}}}}}))
+
+       'zen.fhir.fhir-r4.resource.Patient
+       {'schema
+        {:zen/binding 'zen.fhir.bindings.fhir-r4.structure/Patient
+         :type 'zen.fhir/element
+         :zen.fhir/el
+         {:type 'zen/map
+          :keys
+          {:name
+           {:type 'zen.fhir/element
+            :zen.fhir/collection true
+            :zen.fhir/el {:confirms
+                          #{'zen.fhir.bindings.fhir-r4.complex-type/HumanName}}}}}}}}))
 
   (t/testing "profile"
     (def us-patient-sch (sut/strdef->zen-ns us-core-patient-str-def))
 
     (matcho/match
       us-patient-sch
-      {#_#_:zf/bindings #_"NOTE TODO: uncomment when baseDefinition is supported"
-       {'zen.fhir.bindings.fhir-r4.structure/Patient
-        {:url "http://hl7.org/fhir/StructureDefinition/Patient"}}
-       :zf/schema
-       {:type 'zen.fhir/element
-        :zen.fhir/el
-        {:type 'zen/map
-         :require #(contains? % :name)
-         :keys {:name {:type 'zen.fhir/element
-                       :zen.fhir/min 1}}}}}))
+      {'zen.fhir.profiles.USCorePatientProfile.v5-0-1
+       {'schema
+        {:type 'zen.fhir/element
+         :zen.fhir/el
+         {:type 'zen/map
+          :require #(contains? % :name)
+          :keys {:name {:type 'zen.fhir/element
+                        :zen.fhir/min 1}}}}}}))
 
   (t/testing "validaton"
     (def ztx (zen.core/new-context {}))
 
     (zen.core/load-ns ztx zen-fhir-ns)
 
-    (doseq [bindings-ns (:zf/bindings-ns us-patient-sch)]
+    (doseq [bindings-ns (vals us-patient-sch)]
       (zen.core/load-ns ztx bindings-ns))
-
-    (zen.core/load-ns ztx {:ns 'test-patient
-                           :import (into #{'zen.fhir}
-                                         (map :ns)
-                                         (:zf/bindings us-patient-sch))
-                           'schema (:zf/schema us-patient-sch)})
 
     (swap! ztx
            dissoc
@@ -245,63 +246,89 @@
            :zen.v2-validation/compiled-schemas
            :zen.v2-validation/prop-schemas)
 
-    (matcho/match (zen.core/errors ztx) [{:type :unbound-binding}
-                                         {:type :unbound-binding}
-                                         nil])
+    (matcho/match
+      (zen.core/errors ztx)
+      [{:type :unbound-binding}
+       {:type :unbound-binding}
+       nil])
 
-    (matcho/match (zen.core/validate ztx
-                                     #{'test-patient/schema}
-                                     "hello")
-                  {:errors [{} nil]})
+    (matcho/match
+      (zen.core/validate ztx
+                         #{'zen.fhir.profiles.USCorePatientProfile.v5-0-1/schema}
+                         "hello")
+      {:errors [{} nil]})
 
-    (matcho/match (zen.core/validate ztx
-                                     #{'test-patient/schema}
-                                     [{}])
-                  {:errors [{} {} {}]})
+    (matcho/match
+      (zen.core/validate ztx
+                         #{'zen.fhir.profiles.USCorePatientProfile.v5-0-1/schema}
+                         [{}])
+      {:errors [{} {} {}]})
 
-    (matcho/match (zen.core/validate ztx
-                                     #{'test-patient/schema}
-                                     {})
-                  {:errors [{} {} {}]})
+    (matcho/match
+      (zen.core/validate ztx
+                         #{'zen.fhir.profiles.USCorePatientProfile.v5-0-1/schema}
+                         {})
+      {:errors [{} {} {}]})
 
-    (matcho/match (zen.core/validate ztx
-                                     #{'test-patient/schema}
-                                     {:name {}
-                                      :gender "unknown"
-                                      :identifier [{:system "sys"
-                                                    :value "val"}]
-                                      :telecom [{:system "sys"
-                                                 :value "val"}]})
-                  {:errors [{:path [:name nil]}
-                            nil]})))
+    (matcho/match
+      (zen.core/validate ztx
+                         #{'zen.fhir.profiles.USCorePatientProfile.v5-0-1/schema}
+                         {:name {}
+                          :gender "unknown"
+                          :identifier [{:system "sys"
+                                        :value "val"}]
+                          :telecom [{:system "sys"
+                                     :value "val"}]})
+      {:errors [{:path [:name nil]}
+                nil]})))
 
 
 (comment
+
+  (defn- merge-with* [path f & maps]
+    (when (some identity maps)
+      (let [merge-entry (fn [m e]
+			                    (let [k (key e) v (val e)]
+			                      (if (contains? m k)
+			                        (assoc m k (f (conj path k) (get m k) v))
+			                        (assoc m k v))))
+            merge2 (fn [m1 m2]
+		                 (reduce merge-entry (or m1 {}) (seq m2)))]
+        (reduce merge2 maps))))
+
+  (defn- safe-deep-merge*
+    [path a b]
+    (cond
+      (= a b)
+      a
+
+      (and (set? a) (set? b))
+      (clojure.set/union a b)
+
+      (and (map? a) (map? b)
+           (= "4.0.0" (:fhirVersion a)) (= "4.0.1" (:fhirVersion b)))
+      b
+
+      (and (map? a) (map? b)
+           (= "4.0.1" (:fhirVersion a)) (= "4.0.0" (:fhirVersion b)))
+      a
+
+      (and (or (nil? a) (map? a)) (or (nil? b) (map? b)))
+      (merge-with* path safe-deep-merge* a b)
+
+      :foo
+      b
+
+      :else
+      (throw (ex-info "Can't merge not maps. Overwriting values is not allowed"
+                      {:path path
+                       :a a
+                       :b b}))))
+
   (defn- safe-deep-merge
     ([] nil)
     ([a] a)
-    ([a b]
-     (cond
-       (= a b)
-       a
-
-       (and (set? a) (set? b))
-       (clojure.set/union a b)
-
-       (and (map? a) (map? b) (= "4.0.0" (:fhirVersion a)) (= "4.0.1" (:fhirVersion b)))
-       b
-
-       (and (map? a) (map? b) (= "4.0.1" (:fhirVersion a)) (= "4.0.0" (:fhirVersion b)))
-       a
-
-       (and (or (nil? a) (map? a)) (or (nil? b) (map? b)))
-       (merge-with safe-deep-merge a b)
-
-
-       :else
-       (throw (ex-info "Can't merge not maps. Overwriting values is not allowed"
-                       {:a a
-                        :b b}))))
+    ([a b] (safe-deep-merge* [] a b))
     ([a b & maps]
      (reduce safe-deep-merge
              a
@@ -317,49 +344,22 @@
                      (catch Exception _)))
          (filter #(= "StructureDefinition" (:resourceType %)))))
 
-  (->> strdefs
-       (filter #(= "primitive-type" (:kind %)))
-       (map #(dissoc % :text :snapshot))
-       (map #(get-in % [:differential :element]))
-       (map #(map (fn [e]
-                    (apply dissoc e (:zf/description sut.group/elements-keys-types))) %))
-       #_(mapcat #(mapcat (comp (fn [t] (map :code t)):type) %))
-       #_distinct
-       #_sort)
+  (def zen-namespaces
+    (map sut/strdef->zen-ns strdefs))
 
-  (->> strdefs
-       (filter #(->> (get-in % [:differential :element])
-                     (some :representation)))
-       (remove #(= "primitive-type" (:kind %)))
-       (map #(dissoc % :text :snapshot))
-       #_(mapcat #(->> (get-in % [:differential :element])
-                     (keep :representation)))
-       #_#_(map #(dissoc % :text :snapshot))
-       (map (juxt :url :type #(get-in % [:differential :element])))
-       #_(map #(map (fn [e]
-                    (apply dissoc e (:zf/description sut.group/elements-keys-types))) %)))
+  (def merged
+    (apply safe-deep-merge zen-namespaces))
 
-  (def schemas
-    (into {}
-          (map (juxt :url #(:zf/schema (sut/strdef->zen-ns %))))
-          strdefs))
+  (do
+    (def gztx (zen.core/new-context {}))
 
-  (get schemas "http://hl7.org/fhir/StructureDefinition/Patient")
+    (doseq [zen-ns (vals merged)]
+      (zen.core/load-ns ztx zen-ns))
 
-  (map (juxt :url #(:zf/bindings-ns (sut/strdef->zen-ns %)))
-       strdefs)
+    (swap! ztx dissoc :errors)
 
-  (def bindings
-    (apply #'sut/safe-deep-merge
-           (mapcat #(map (fn [n] (update-vals
-                                   (dissoc n :ns :import)
-                                   (fn [m] (assoc m :sourceUrl #{(:url %)}))))
-                         (:zf/bindings-ns (sut/strdef->zen-ns %)))
-                   strdefs)))
-
-  (sort (keys bindings))
-
-  (get bindings 'ProductShelfLife)
+    (doseq [zen-ns (vals merged)]
+      (zen.core/load-ns ztx zen-ns)))
 
   (get (group-by :url strdefs)
        "http://hl7.org/fhir/StructureDefinition/boolean")
