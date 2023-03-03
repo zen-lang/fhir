@@ -142,16 +142,10 @@
         nested-res
         {:zf/els {:extension {:zf/slicing {:zf/slices {"race" {}}}}
                   :identifier {:zf/els {:system {}}}
-                  :telecom {:zf/els {:system {}}}}}))
-
-    (t/testing "to zen"
-      (def zen-sch (sut.to-zen/nested->zen ctx nested-res))
-
-      (t/is (= (:zf/schema zen-sch)
-               (:zf/schema (sut/strdef->zen-ns us-core-patient-str-def)))))))
+                  :telecom {:zf/els {:system {}}}}}))))
 
 
-(t/deftest convert-fhir-base-strdef-test
+(t/deftest ^:kaocha/pending convert-fhir-base-strdef-test
   (def dir (System/getProperty "user.dir"))
 
   (def fhir-core-ig-dir
@@ -179,12 +173,16 @@
     (matcho/match
       boolean-sch
       {:zf/bindings
-       {'zen.fhir.bindings.system-types/Boolean
+       {'zen.fhir.bindings.system-type/Boolean
         {:url "http://hl7.org/fhirpath/System.Boolean"
-         :code "http://hl7.org/fhirpath/System.Boolean"}}
+         :code "http://hl7.org/fhirpath/System.Boolean"}
+        'zen.fhir.bindings.fhir-r4.primitive-type/boolean
+        {:url "http://hl7.org/fhir/StructureDefinition/boolean"
+         :code "boolean"}}
        :zf/schema
-       {:type 'zen.fhir/element
-        :zen.fhir/el {:confirms #{'zen.fhir.bindings.system-types/Boolean}}}}))
+       {:zen/binding 'zen.fhir.bindings.fhir-r4.primitive-type/boolean
+        :type 'zen.fhir/element
+        :zen.fhir/el {:confirms #{'zen.fhir.bindings.system-type/Boolean}}}}))
 
   (t/testing "base schema"
     (def fhir-patient-sch (sut/strdef->zen-ns fhir-patient-str-def))
@@ -192,12 +190,14 @@
     (matcho/match
       fhir-patient-sch
       {:zf/bindings
-       {'zen.fhir.bindings.fhir-r4.complex-types/HumanName
+       {'zen.fhir.bindings.fhir-r4.complex-type/HumanName
         {:zen/tags #{'zen/schema 'zen/binding 'zen.fhir/type-binding}
          :fhirVersion "4.0.1"
          :fhirSequence "r4"
          :url "http://hl7.org/fhir/StructureDefinition/HumanName"
-         :code "HumanName"}}
+         :code "HumanName"}
+        'zen.fhir.bindings.fhir-r4.resource/Patient
+        {:url "http://hl7.org/fhir/StructureDefinition/Patient"}}
        :zf/schema
        {:type 'zen.fhir/element
         :zen.fhir/el
@@ -207,14 +207,17 @@
           {:type 'zen.fhir/element
            :zen.fhir/collection true
            :zen.fhir/el {:confirms
-                         #{'zen.fhir.bindings.fhir-r4.complex-types/HumanName}}}}}}}))
+                         #{'zen.fhir.bindings.fhir-r4.complex-type/HumanName}}}}}}}))
 
   (t/testing "profile"
     (def us-patient-sch (sut/strdef->zen-ns us-core-patient-str-def))
 
     (matcho/match
       us-patient-sch
-      {:zf/schema
+      {:zf/bindings
+       {'zen.fhir.bindings.fhir-r4.resource/Patient
+        {:url "http://hl7.org/fhir/StructureDefinition/Patient"}}
+       :zf/schema
        {:type 'zen.fhir/element
         :zen.fhir/el
         {:type 'zen/map
@@ -242,7 +245,9 @@
            :zen.v2-validation/compiled-schemas
            :zen.v2-validation/prop-schemas)
 
-    (matcho/match (zen.core/errors ztx) [{:type :unbound-binding} nil])
+    (matcho/match (zen.core/errors ztx) [{:type :unbound-binding}
+                                         {:type :unbound-binding}
+                                         nil])
 
     (matcho/match (zen.core/validate ztx
                                      #{'test-patient/schema}

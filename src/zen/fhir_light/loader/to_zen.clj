@@ -42,14 +42,14 @@
           [version fhir-sequence])))
 
 
-(declare nested->zen*)
+(declare nested->zen)
 
 
 (defn- els->zen
   "{<key> <nested>}"
   [ctx els]
   (when (some? els)
-    (let [keys-acc (update-vals els #(nested->zen* ctx %))
+    (let [keys-acc (update-vals els #(nested->zen ctx %))
 
           key-schemas (-> keys-acc
                           (update-vals :zf/schema)
@@ -131,15 +131,19 @@
   (Character/isUpperCase ^Character (first type-code)))
 
 
+(defn- mk-type-sym [fhir-sequence kind type-code]
+  (symbol (str "zen.fhir.bindings.fhir-" fhir-sequence
+               "." kind
+               "/" type-code)))
+
+
 (defn- parse-fhir-type [fhir-sequence type-code]
   (let [kind (if (complex-type-code? type-code)
-               "complex"
-               "primitive")]
+               "complex-type"
+               "primitive-type")]
     {:type/code type-code
      :type/url  (str fhir-type-url-prefix type-code)
-     :type/sym  (symbol (str "zen.fhir.bindings.fhir-" fhir-sequence
-                             "." kind "-types"
-                             "/" type-code))}))
+     :type/sym  (mk-type-sym fhir-sequence kind type-code)}))
 
 
 (defn- parse-system-type [fhirpath-type-url]
@@ -147,7 +151,7 @@
                         (count (str fhirpath-type-url-prefix "System.")))]
     {:type/code fhirpath-type-url
      :type/url  fhirpath-type-url
-     :type/sym  (symbol (str "zen.fhir.bindings.system-types/" type-name))}))
+     :type/sym  (symbol (str "zen.fhir.bindings.system-type/" type-name))}))
 
 
 (defn- parse-type [fhir-sequence type-code]
@@ -207,11 +211,13 @@
   [ctx description])
 
 
-(defn- nested->zen*
+(defn nested->zen
   "#{:zf/description :zf/loc :zf/meta
      :zf/context :zf/els :zf/els-cnstraints
      :zf/slicing :zf/container :zf/value
-     :zf/poly-roots :zf/poly-keys}"
+     :zf/poly-roots :zf/poly-keys}
+
+  Returns #{:zf/schema :zf/bindings} "
   [ctx nested]
   (utils.merge/safe-deep-merge
     (els->zen ctx (:zf/els nested))
@@ -226,13 +232,6 @@
     (description->zen ctx (:zf/description nested))))
 
 
-(defn nested->zen
-  "Returns #{:zf/schema :zf/bindings}"
-  [ctx nested]
-  (-> (nested->zen* ctx nested)
-      (update :zf/schema merge {:zen/tags #{'zen/schema}})))
-
-
 (defn symbols-map->zen-nss [symbols-map]
   (->> symbols-map
        (group-by #(namespace (key %)))
@@ -244,3 +243,16 @@
                             sym-def]))
                     symbols)))))
 
+
+(defn mk-binding [grouped-strdef]
+  (let [fhir-version  (get-in grouped-strdef [:zf/meta :fhirVersion])
+        fhir-sequence (fhir-version->sequence-mapping fhir-version)
+        type-code     (get-in grouped-strdef [:zf/meta :type])
+        kind          (get-in grouped-strdef [:zf/meta :kind])
+        sym           (mk-type-sym fhir-sequence kind type-code)]
+    {:zf/sym     sym
+     :zf/binding {sym {:zen/tags     #{'zen/schema 'zen.fhir/type-binding 'zen/binding}
+                       :fhirSequence fhir-sequence
+                       :fhirVersion  fhir-version
+                       :url          (get-in grouped-strdef [:zf/meta :url])
+                       :code         (get-in grouped-strdef [:zf/meta :type])}}}))
