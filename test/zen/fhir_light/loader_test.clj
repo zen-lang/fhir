@@ -13,6 +13,7 @@
                   :require #{:fhirSequence :code}
                   :keys {:fhirVersion {:type zen/string}
                          :fhirSequence {:type zen/string}
+                         :url {:type zen/string}
                          :code {:type zen/string}}}
     element {:zen/tags #{zen/schema zen/is-type}
              :type zen/map}
@@ -158,93 +159,111 @@
     (json/parse-string (slurp (str fhir-core-ig-dir "/StructureDefinition-Patient.json"))
                        keyword))
 
-  (def us-core-patient-str-def
-    (json/parse-string (slurp (str us-core-ig-dir "/StructureDefinition-us-core-patient.json"))
+  (def boolean-str-def
+    (json/parse-string (slurp (str fhir-core-ig-dir "/StructureDefinition-boolean.json"))
                        keyword))
 
-  (def fhir-patient-sch (sut/strdef->zen-ns fhir-patient-str-def))
+  (def us-core-patient-str-def
+    (json/parse-string (slurp (str us-core-ig-dir
+                                   "/StructureDefinition-us-core-patient.json"))
+                       keyword))
 
-  #_{:type 'zen/map
-   :keys {:given {:type 'zen.fhir/element
-                  :zen.fhir/collection true
-                  :zen.fhir/el
-                  {:type 'zen/string}}}}
+  (t/testing "primitive type"
+    (def boolean-sch (sut/strdef->zen-ns boolean-str-def))
 
-  (matcho/match
-    fhir-patient-sch
-    {:zf/bindings
-     {'zen.fhir.bindings.fhir-r4.types/HumanName
-      {:zen/tags #{'zen/schema 'zen/binding 'zen.fhir/type-binding}
-       :fhirVersion "4.0.1"
-       :fhirSequence "r4"
-       :code "HumanName"}}
-     :zf/schema
-     {:type 'zen.fhir/element
-      :zen.fhir/el
-      {:type 'zen/map
-       :keys {:name {:type 'zen.fhir/element
-                     :zen.fhir/collection true
-                     :zen.fhir/el {:confirms
-                                   #{'zen.fhir.bindings.fhir-r4.types/HumanName}}}}}}})
+    (matcho/match
+      boolean-sch
+      {:zf/bindings
+       {'zen.fhir.bindings.fhir-r4.system-types/Boolean
+        {:url "http://hl7.org/fhirpath/System.Boolean"
+         :code "http://hl7.org/fhirpath/System.Boolean"}}
+       :zf/schema
+       {:type 'zen.fhir/element
+        :zen.fhir/el {:confirms #{'zen.fhir.bindings.fhir-r4.system-types/Boolean}}}}))
 
-  (def us-patient-sch (sut/strdef->zen-ns us-core-patient-str-def))
+  (t/testing "base schema"
+    (def fhir-patient-sch (sut/strdef->zen-ns fhir-patient-str-def))
 
-  (matcho/match
-    us-patient-sch
-    {:zf/schema
-     {:type 'zen.fhir/element
-      :zen.fhir/el
-      {:type 'zen/map
-       :require #(contains? % :name)
-       :keys {:name {:type 'zen.fhir/element
-                     :zen.fhir/min 1}}}}})
+    (matcho/match
+      fhir-patient-sch
+      {:zf/bindings
+       {'zen.fhir.bindings.fhir-r4.complex-types/HumanName
+        {:zen/tags #{'zen/schema 'zen/binding 'zen.fhir/type-binding}
+         :fhirVersion "4.0.1"
+         :fhirSequence "r4"
+         :url "http://hl7.org/fhir/StructureDefinition/HumanName"
+         :code "HumanName"}}
+       :zf/schema
+       {:type 'zen.fhir/element
+        :zen.fhir/el
+        {:type 'zen/map
+         :keys
+         {:name
+          {:type 'zen.fhir/element
+           :zen.fhir/collection true
+           :zen.fhir/el {:confirms
+                         #{'zen.fhir.bindings.fhir-r4.complex-types/HumanName}}}}}}}))
 
-  (def ztx (zen.core/new-context {}))
+  (t/testing "profile"
+    (def us-patient-sch (sut/strdef->zen-ns us-core-patient-str-def))
 
-  (zen.core/load-ns ztx zen-fhir-ns)
+    (matcho/match
+      us-patient-sch
+      {:zf/schema
+       {:type 'zen.fhir/element
+        :zen.fhir/el
+        {:type 'zen/map
+         :require #(contains? % :name)
+         :keys {:name {:type 'zen.fhir/element
+                       :zen.fhir/min 1}}}}}))
 
-  (doseq [bindings-ns (:zf/bindings-ns us-patient-sch)]
-    (zen.core/load-ns ztx bindings-ns))
+  (t/testing "validaton"
+    (def ztx (zen.core/new-context {}))
 
-  (zen.core/load-ns ztx {:ns 'test-patient
-                         :import (into #{'zen.fhir}
-                                       (map :ns)
-                                       (:zf/bindings us-patient-sch))
-                         'schema (:zf/schema us-patient-sch)})
+    (zen.core/load-ns ztx zen-fhir-ns)
 
-  (swap! ztx
-         dissoc
-         :errors
-         :zen.v2-validation/compiled-schemas
-         :zen.v2-validation/prop-schemas)
+    (doseq [bindings-ns (:zf/bindings-ns us-patient-sch)]
+      (zen.core/load-ns ztx bindings-ns))
 
-  (matcho/match (zen.core/errors ztx) [{:type :unbound-binding} nil])
+    (zen.core/load-ns ztx {:ns 'test-patient
+                           :import (into #{'zen.fhir}
+                                         (map :ns)
+                                         (:zf/bindings us-patient-sch))
+                           'schema (:zf/schema us-patient-sch)})
 
-  (matcho/match (zen.core/validate ztx
-                                   #{'test-patient/schema}
-                                   "hello")
-                {:errors [{} nil]})
+    (swap! ztx
+           dissoc
+           :errors
+           :zen.v2-validation/compiled-schemas
+           :zen.v2-validation/prop-schemas)
 
-  (matcho/match (zen.core/validate ztx
-                                   #{'test-patient/schema}
-                                   [{}])
-                {:errors [{} {} {}]})
+    (matcho/match (zen.core/errors ztx) [{:type :unbound-binding} nil])
 
-  (matcho/match (zen.core/validate ztx
-                                   #{'test-patient/schema}
-                                   {})
-                {:errors [{} {} {}]})
+    (matcho/match (zen.core/validate ztx
+                                     #{'test-patient/schema}
+                                     "hello")
+                  {:errors [{} nil]})
 
-  (matcho/match (zen.core/validate ztx
-                                   #{'test-patient/schema}
-                                   {:name {}
-                                    :gender "unknown"
-                                    :identifier [{:system "sys"
-                                                  :value "val"}]
-                                    :telecom [{:system "sys"
-                                               :value "val"}]})
-                {:errors [{:path [:name nil]}
-                          nil]}))
+    (matcho/match (zen.core/validate ztx
+                                     #{'test-patient/schema}
+                                     [{}])
+                  {:errors [{} {} {}]})
+
+    (matcho/match (zen.core/validate ztx
+                                     #{'test-patient/schema}
+                                     {})
+                  {:errors [{} {} {}]})
+
+    (matcho/match (zen.core/validate ztx
+                                     #{'test-patient/schema}
+                                     {:name {}
+                                      :gender "unknown"
+                                      :identifier [{:system "sys"
+                                                    :value "val"}]
+                                      :telecom [{:system "sys"
+                                                 :value "val"}]})
+                  {:errors [{:path [:name nil]}
+                            nil]})))
 
 
 (comment
@@ -279,7 +298,7 @@
              (cons b maps))))
 
   (def strdefs
-    (->> (concat #_(file-seq (clojure.java.io/file us-core-ig-dir))
+    (->> (concat (file-seq (clojure.java.io/file us-core-ig-dir))
                  (file-seq (clojure.java.io/file fhir-core-ig-dir)))
          (filter #(clojure.string/starts-with? (.getName %)
                                                "StructureDefinition"))
@@ -287,6 +306,16 @@
          (keep #(try (json/parse-string % keyword)
                      (catch Exception _)))
          (filter #(= "StructureDefinition" (:resourceType %)))))
+
+  (->> strdefs
+       (filter #(= "primitive-type" (:kind %)))
+       (map #(dissoc % :text :snapshot))
+       (map #(get-in % [:differential :element]))
+       (map #(map (fn [e]
+                    (apply dissoc e (:zf/description sut/elements-keys-types))) %))
+       #_(mapcat #(mapcat (comp (fn [t] (map :code t)):type) %))
+       #_distinct
+       #_sort)
 
   (def schemas
     (into {}

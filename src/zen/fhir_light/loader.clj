@@ -168,15 +168,19 @@
                parsed-id)))
 
 
+(defn- mk-parent-id [parsed-id]
+  (->> parsed-id
+       reverse
+       rest
+       (drop-while #(not= :key (:type %)))
+       reverse))
+
+
 (defn- el-part-path [parsed-id elements-keys-type]
   (case elements-keys-type
     :zf/value     (conj (parsed-id->nested-path parsed-id) :zf/value)
     :zf/container (conj (parsed-id->nested-path parsed-id) :zf/container)
-    :zf/outer     (let [outer-id   (->> parsed-id
-                                        reverse
-                                        rest
-                                        (drop-while #(not= :key (:type %)))
-                                        reverse)
+    :zf/outer     (let [outer-id   (mk-parent-id parsed-id)
                         outer-path (parsed-id->nested-path outer-id)]
                     (conj outer-path :zf/els-constraints (last parsed-id)))
     :zf/context   [:zf/context parsed-id]
@@ -206,6 +210,7 @@
 
 
 (declare nested->zen*)
+
 
 (defn- els->zen
   "{<key> <nested>}"
@@ -285,12 +290,58 @@
   [ctx poly-keys])
 
 
-(defn mk-type-binding [fhir-sequence fhir-version type-code]
-  (let [sym (symbol (str "zen.fhir.bindings.fhir-" fhir-sequence ".types/" type-code))
+(def ^:private fhir-type-url-prefix "http://hl7.org/fhir/StructureDefinition/")
+(def ^:private fhirpath-type-url-prefix "http://hl7.org/fhirpath/")
+
+
+(defn- complex-type-code? [^String type-code]
+  (Character/isUpperCase ^Character (first type-code)))
+
+
+(defn- parse-fhir-type [type-code]
+  {:type/code type-code
+   :type/url  (str fhir-type-url-prefix type-code)
+   :type/kind (if (complex-type-code? type-code)
+                "complex"
+                "primitive")
+   :type/name type-code})
+
+
+(defn- get-fhirpath-type [fhirpath-type-url]
+  (subs fhirpath-type-url
+        (count (str fhirpath-type-url-prefix "System."))))
+
+
+(defn- parse-system-type [fhirpath-type-url]
+  {:type/code fhirpath-type-url
+   :type/url  fhirpath-type-url
+   :type/kind "system"
+   :type/name (get-fhirpath-type fhirpath-type-url)})
+
+
+(defn- parse-type [type-code]
+  (if (str/starts-with? type-code "http://")
+    (parse-system-type type-code)
+    (parse-fhir-type type-code)))
+
+
+(defn- mk-type-sym [fhir-sequence parsed-type]
+  (symbol (str "zen.fhir.bindings.fhir-" fhir-sequence
+               "." (:type/kind parsed-type) "-types"
+               "/" (:type/name parsed-type))))
+
+
+(defn- mk-type-binding [fhir-sequence fhir-version type-code]
+  (let [{:as parsed-type :type/keys [url code]} (parse-type type-code)
+
+        sym (mk-type-sym fhir-sequence parsed-type)
+
         zen-def {:zen/tags #{'zen/schema 'zen/binding 'zen.fhir/type-binding}
                  :fhirSequence fhir-sequence
                  :fhirVersion fhir-version
-                 :code type-code}]
+                 :url url
+                 :code code}]
+
     {:zf/symbol sym
      :zf/binding {sym zen-def}}))
 
