@@ -179,12 +179,12 @@
     (matcho/match
       boolean-sch
       {:zf/bindings
-       {'zen.fhir.bindings.fhir-r4.system-types/Boolean
+       {'zen.fhir.bindings.system-types/Boolean
         {:url "http://hl7.org/fhirpath/System.Boolean"
          :code "http://hl7.org/fhirpath/System.Boolean"}}
        :zf/schema
        {:type 'zen.fhir/element
-        :zen.fhir/el {:confirms #{'zen.fhir.bindings.fhir-r4.system-types/Boolean}}}}))
+        :zen.fhir/el {:confirms #{'zen.fhir.bindings.system-types/Boolean}}}}))
 
   (t/testing "base schema"
     (def fhir-patient-sch (sut/strdef->zen-ns fhir-patient-str-def))

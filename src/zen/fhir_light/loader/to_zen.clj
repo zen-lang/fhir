@@ -131,43 +131,33 @@
   (Character/isUpperCase ^Character (first type-code)))
 
 
-(defn- parse-fhir-type [type-code]
-  {:type/code type-code
-   :type/url  (str fhir-type-url-prefix type-code)
-   :type/kind (if (complex-type-code? type-code)
-                "complex"
-                "primitive")
-   :type/name type-code})
-
-
-(defn- get-fhirpath-type [fhirpath-type-url]
-  (subs fhirpath-type-url
-        (count (str fhirpath-type-url-prefix "System."))))
+(defn- parse-fhir-type [fhir-sequence type-code]
+  (let [kind (if (complex-type-code? type-code)
+               "complex"
+               "primitive")]
+    {:type/code type-code
+     :type/url  (str fhir-type-url-prefix type-code)
+     :type/sym  (symbol (str "zen.fhir.bindings.fhir-" fhir-sequence
+                             "." kind "-types"
+                             "/" type-code))}))
 
 
 (defn- parse-system-type [fhirpath-type-url]
-  {:type/code fhirpath-type-url
-   :type/url  fhirpath-type-url
-   :type/kind "system"
-   :type/name (get-fhirpath-type fhirpath-type-url)})
+  (let [type-name (subs fhirpath-type-url
+                        (count (str fhirpath-type-url-prefix "System.")))]
+    {:type/code fhirpath-type-url
+     :type/url  fhirpath-type-url
+     :type/sym  (symbol (str "zen.fhir.bindings.system-types/" type-name))}))
 
 
-(defn- parse-type [type-code]
+(defn- parse-type [fhir-sequence type-code]
   (if (str/starts-with? type-code "http://")
     (parse-system-type type-code)
-    (parse-fhir-type type-code)))
-
-
-(defn- mk-type-sym [fhir-sequence parsed-type]
-  (symbol (str "zen.fhir.bindings.fhir-" fhir-sequence
-               "." (:type/kind parsed-type) "-types"
-               "/" (:type/name parsed-type))))
+    (parse-fhir-type fhir-sequence type-code)))
 
 
 (defn- mk-type-binding [fhir-sequence fhir-version type-code]
-  (let [{:as parsed-type :type/keys [url code]} (parse-type type-code)
-
-        sym (mk-type-sym fhir-sequence parsed-type)
+  (let [{:type/keys [sym url code]} (parse-type fhir-sequence type-code)
 
         zen-def {:zen/tags #{'zen/schema 'zen/binding 'zen.fhir/type-binding}
                  :fhirSequence fhir-sequence
