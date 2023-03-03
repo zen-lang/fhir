@@ -44,7 +44,8 @@
                                     %)))))
 
 
-(defn enrich-loc [grouped-element]
-  (let [id        (get-in grouped-element [:zf/loc :id])
-        parsed-id (loader.parse-id/parse-id id)]
+(defn enrich-loc [ctx grouped-element]
+  (let [primitive? (= "primitive-type" (get-in ctx [:zf/strdef :zf/meta :kind]))
+        id         (get-in grouped-element [:zf/loc :id])
+        parsed-id  (loader.parse-id/parse-id id :primitive? primitive?)]
     (assoc-in grouped-element [:zf/loc :zf/id] parsed-id)))

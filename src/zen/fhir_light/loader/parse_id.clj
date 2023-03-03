@@ -30,9 +30,18 @@
       [{:type :key, :key (keyword key-part)}])))
 
 
-(defn parse-id [id]
+(defn try-parse-primitive-value
+  "primitive-types have <type>.value element which
+   describes value itself rather a :value key."
+  [id-parts {:keys [primitive?]}]
+  (when (and primitive? (= 1 (count id-parts)) (= "value" (first id-parts)))
+    [{:type :primitive-value}]))
+
+
+(defn parse-id [id & {:as params}]
   (if (str/blank? id)
     []
-    (let [id-parts (str/split (str id) #"\.")]
-      (vec (cons {:type :root, :root (first id-parts)}
-                 (mapcat parse-id-part (rest id-parts)))))))
+    (let [[root-part & rest-parts] (str/split (str id) #"\.")]
+      (vec (cons {:type :root, :root root-part}
+                 (or (try-parse-primitive-value rest-parts params)
+                     (mapcat parse-id-part rest-parts)))))))

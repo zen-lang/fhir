@@ -93,6 +93,12 @@
   #_(dissoc us-core-patient-str-def :text :snapshot)
 
   (t/testing "pure convertation, no context"
+    (def ctx
+      {:zf/strdef
+       (sut.group/group-keys us-core-patient-str-def
+                             sut.group/strdef-keys-types
+                             nil)})
+
     (t/testing "keys grouping"
       (def el-res (map #(#'sut.group/group-keys % sut.group/elements-keys-types sut.group/elements-poly-keys-types)
                        (get-in us-core-patient-str-def [:differential :element])))
@@ -114,7 +120,7 @@
          {:zf/loc {:path string? :id "Patient.name.suffix"}}]))
 
     (t/testing "parse id"
-      (def enriched-res (map sut.group/enrich-loc el-res))
+      (def enriched-res (map #(sut.group/enrich-loc ctx %) el-res))
 
       (matcho/match
         enriched-res
@@ -139,11 +145,7 @@
                   :telecom {:zf/els {:system {}}}}}))
 
     (t/testing "to zen"
-      (def zen-sch (sut.to-zen/nested->zen {:zf/strdef
-                                            (sut.group/group-keys us-core-patient-str-def
-                                                                  sut.group/strdef-keys-types
-                                                                  nil)}
-                                           nested-res))
+      (def zen-sch (sut.to-zen/nested->zen ctx nested-res))
 
       (t/is (= (:zf/schema zen-sch)
                (:zf/schema (sut/strdef->zen-ns us-core-patient-str-def)))))))
@@ -319,6 +321,18 @@
        #_(mapcat #(mapcat (comp (fn [t] (map :code t)):type) %))
        #_distinct
        #_sort)
+
+  (->> strdefs
+       (filter #(->> (get-in % [:differential :element])
+                     (some :representation)))
+       (remove #(= "primitive-type" (:kind %)))
+       (map #(dissoc % :text :snapshot))
+       #_(mapcat #(->> (get-in % [:differential :element])
+                     (keep :representation)))
+       #_#_(map #(dissoc % :text :snapshot))
+       (map (juxt :url :type #(get-in % [:differential :element])))
+       #_(map #(map (fn [e]
+                    (apply dissoc e (:zf/description sut.group/elements-keys-types))) %)))
 
   (def schemas
     (into {}

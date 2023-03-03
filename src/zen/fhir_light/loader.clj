@@ -8,15 +8,17 @@
   (let [grouped-strdef
         (loader.group/group-keys strdef loader.group/strdef-keys-types nil)
 
+        ctx {:zf/strdef grouped-strdef}
+
         nested-els
         (->> (get-in strdef [:differential :element])
              (map #(loader.group/group-keys %
                                             loader.group/elements-keys-types
                                             loader.group/elements-poly-keys-types))
-             (map loader.group/enrich-loc)
+             (map #(loader.group/enrich-loc ctx %))
              loader.nest/nest-by-enriched-loc)
 
-        zen-res (loader.to-zen/nested->zen {:zf/strdef grouped-strdef} nested-els)
+        zen-res (loader.to-zen/nested->zen ctx nested-els)
 
         bindings-ns (loader.to-zen/symbols-map->zen-nss (:zf/bindings zen-res))]
 

@@ -2,25 +2,14 @@
 
 
 (defn- parsed-id->nested-path [parsed-id]
-  (mapcat
-    (fn [id-el]
-      (case (:type id-el)
-        :root      []
-        :key       [:els (:key id-el)]
-        :poly-root [:poly-roots (:poly-root id-el)]
-        :poly-key  [:poly-keys (:poly-key id-el)]
-        :slice     [:slicing :slices (:slice id-el)]))
-    parsed-id))
-
-
-(defn- parsed-id->nested-path [parsed-id]
   (vec (mapcat (fn [id-el]
                  (case (:type id-el)
                    :root      []
                    :key       [:zf/els (:key id-el)]
                    :poly-root [:zf/poly-roots (:poly-root id-el)]
                    :poly-key  [:zf/poly-keys (:poly-key id-el)]
-                   :slice     [:zf/slicing :zf/slices (:slice id-el)]))
+                   :slice     [:zf/slicing :zf/slices (:slice id-el)]
+                   :primitive-value []))
                parsed-id)))
 
 
