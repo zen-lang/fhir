@@ -231,7 +231,7 @@
   [ctx description])
 
 
-(defn nested->zen
+(defn- nested->zen
   "#{:zf/description :zf/loc :zf/meta
      :zf/context :zf/els :zf/els-cnstraints
      :zf/slicing :zf/container :zf/value
@@ -252,7 +252,7 @@
     (description->zen ctx (:zf/description nested))))
 
 
-(defn symbols-map->zen-nss [symbols-map]
+(defn- symbols-map->zen-nss [symbols-map]
   (->> symbols-map
        (group-by #(namespace (key %)))
        (map (fn [[zen-ns symbols]]
@@ -264,7 +264,7 @@
                     symbols)))))
 
 
-(defn mk-binding [grouped-strdef]
+(defn- mk-binding [grouped-strdef]
   (let [fhir-version  (get-in grouped-strdef [:zf/meta :fhirVersion])
         fhir-sequence (fhir-version->sequence-mapping fhir-version)
         type-code     (get-in grouped-strdef [:zf/meta :type])
@@ -281,7 +281,7 @@
                        :url          url}}}))
 
 
-(defn strdef->sym [grouped-strdef]
+(defn- strdef->sym [grouped-strdef]
   (let [fhir-version  (get-in grouped-strdef [:zf/meta :fhirVersion])
         fhir-sequence (fhir-version->sequence-mapping fhir-version)
         type-code     (get-in grouped-strdef [:zf/meta :type])
@@ -297,3 +297,19 @@
       (symbol (str "zen.fhir.profiles."
                    profile-name
                    ".v" (str/replace profile-version \. \-) "/schema")))))
+
+
+(defn strdef->zen-nss [grouped-strdef nested-els]
+  (let [this-binding (mk-binding grouped-strdef)
+
+        zen-res (nested->zen {:zf/strdef grouped-strdef} nested-els)
+
+        this-schema {(strdef->sym grouped-strdef)
+                     (assoc (:zf/schema zen-res)
+                            :zen/tags #{'zen/schema}
+                            :zen/binding (:zf/sym this-binding))}
+
+        symbols (merge (:zf/bindings zen-res)
+                       (:zf/binding this-binding)
+                       this-schema)]
+    (symbols-map->zen-nss symbols)))
