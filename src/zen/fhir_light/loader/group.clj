@@ -1,6 +1,5 @@
 (ns zen.fhir-light.loader.group
-  (:require [zen.fhir-light.loader.parse-id :as loader.parse-id]
-            [zen.fhir.utils :as utils]))
+  (:require [zen.fhir.utils :as utils]))
 
 
 (def strdef-keys-types
@@ -32,7 +31,7 @@
    :zf/meta  #{:default}})
 
 
-(defn group-keys [element keys-types poly-keys-types]
+(defn- group-keys [element keys-types poly-keys-types]
   (utils/strip-when
     empty?
     (merge-with merge
@@ -44,8 +43,10 @@
                                     %)))))
 
 
-(defn enrich-loc [grouped-strdef grouped-element]
-  (let [primitive? (= "primitive-type" (get-in grouped-strdef [:zf/meta :kind]))
-        id         (get-in grouped-element [:zf/loc :id])
-        parsed-id  (loader.parse-id/parse-id id :primitive? primitive?)]
-    (assoc-in grouped-element [:zf/loc :zf/id] parsed-id)))
+(defn group-strdef [strdef]
+  (group-keys strdef strdef-keys-types nil))
+
+
+(defn group-elements [elements]
+  (map #(group-keys % elements-keys-types elements-poly-keys-types)
+       elements))

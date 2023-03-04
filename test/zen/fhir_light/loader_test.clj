@@ -6,6 +6,7 @@
             [zen.fhir-light.loader :as sut]
             [zen.fhir-light.loader.group :as sut.group]
             [zen.fhir-light.loader.nest :as sut.nest]
+            [zen.fhir-light.loader.parse-id :as sut.parse-id]
             [zen.fhir-light.loader.to-zen :as sut.to-zen]
             [zen.v2-validation]))
 
@@ -95,9 +96,9 @@
   (t/testing "pure convertation, no context"
     (def ctx
       {:zf/strdef
-       (sut.group/group-keys us-core-patient-str-def
-                             sut.group/strdef-keys-types
-                             nil)})
+       (#'sut.group/group-keys us-core-patient-str-def
+                               sut.group/strdef-keys-types
+                               nil)})
 
     (t/testing "keys grouping"
       (def el-res (map #(#'sut.group/group-keys % sut.group/elements-keys-types sut.group/elements-poly-keys-types)
@@ -120,7 +121,7 @@
          {:zf/loc {:path string? :id "Patient.name.suffix"}}]))
 
     (t/testing "parse id"
-      (def enriched-res (map #(sut.group/enrich-loc ctx %) el-res))
+      (def enriched-res (map #(sut.parse-id/enrich-loc ctx %) el-res))
 
       (matcho/match
         enriched-res

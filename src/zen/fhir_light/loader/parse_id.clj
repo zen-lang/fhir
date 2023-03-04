@@ -45,3 +45,10 @@
       (vec (cons {:type :root, :root root-part}
                  (or (try-parse-primitive-value rest-parts params)
                      (mapcat parse-id-part rest-parts)))))))
+
+
+(defn enrich-loc [grouped-strdef grouped-element]
+  (let [primitive? (= "primitive-type" (get-in grouped-strdef [:zf/meta :kind]))
+        id         (get-in grouped-element [:zf/loc :id])
+        parsed-id  (parse-id id :primitive? primitive?)]
+    (assoc-in grouped-element [:zf/loc :zf/id] parsed-id)))
