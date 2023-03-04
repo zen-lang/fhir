@@ -5,7 +5,22 @@
             [zen.fhir-light.loader.to-zen :as loader.to-zen]))
 
 
-(defn strdef->zen-ns [strdef]
+#_"TODO: element.type.profile is just a url without version.
+         Need to come up with bindings that will resolve version without collisions"
+(defn strdef->zen-ns
+  "Accepts a strdef with #{:url :name :fhirVersion :type :kind :differential}
+   Returns {zen.fhir.bindings.fhir-<stu3|r4|r4b|r5>.<primitive|complex>-type
+            {<type> <type binding>}
+
+            zen.fhir.bindings.fhir-<stu3|r4|r4b|r5>.structure
+            {<type> <structure binding>}
+
+            zen.fhir.fhir-<stu3|r4|r4b|r5>.<kind>.<type>
+            {schema <strdef-zen-schema that also binds to a structure or a type>}
+
+            zen.fhir.profiles.<strdef.name>.v<version>
+            {schema <strdef-zen-schema that also binds to a struture or a type>}}"
+  [strdef]
   (let [grouped-strdef (loader.group/group-strdef strdef)
 
         nested-els (->> (get-in strdef [:differential :element])
