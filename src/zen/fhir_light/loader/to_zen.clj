@@ -194,7 +194,8 @@
 
 
 (defn- value->zen
-  "#{:type :binding :contentReference :maxLength :base}"
+  "#{:type :binding :contentReference :maxLength
+     :pattern[x] :fixed[x] :maxValue[x] :minValue[x] :base}"
   [ctx value]
   (when (some? value)
     (merge
