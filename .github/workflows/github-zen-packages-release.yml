@@ -67,6 +67,7 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
+          append_body: true
           body_path: "release.txt"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

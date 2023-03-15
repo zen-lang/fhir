@@ -1,10 +1,9 @@
 name: publish-npm-package
 
 on:
-  workflow_run:
-    workflows: [github-zen-packages-release]
-    types:
-      - completed
+  push:
+    tags:
+      - "*"
 
 jobs:
   build:
