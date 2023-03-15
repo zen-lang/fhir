@@ -80,7 +80,7 @@
          zen-profiles (let [[node-modules zrc ver package] *command-line-args*]
                         (clojure (str "-M -m zen.fhir.tooling " node-modules " " zrc " " ver " " package)))
 
-         zen-profiles-packages (clojure (str "-J-Xmx8g -M -m zen.fhir.tooling-packages " (str/join " " *command-line-args*)))
+         zen-profiles-packages (clojure (str "-J-Xmx10g -M -m zen.fhir.tooling-packages " (str/join " " *command-line-args*)))
 
          build-stanadlone-projects (let [[node-modules zrc preserve-package alt-package-name] *command-line-args*
                                          opts (cond-> {}
