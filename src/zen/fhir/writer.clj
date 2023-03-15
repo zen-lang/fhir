@@ -446,3 +446,22 @@
    []
    (release-xform ztx config)
    (collect-packages ztx config)))
+
+
+(defn release-xform-cli [ztx config]
+  (let [xforms [(filter (partial filter-zen-packages ztx config))
+                (map (partial generate-package-config ztx config))
+                (map (partial init-zen-repo! ztx))
+                (map (partial produce-ftr-manifests ztx))
+                (map (partial spit-data ztx))
+                (map commit-zen-changes)]]
+    (apply comp (interleave xforms
+                            (repeat (reduced-shortcircuit-xf))
+                            #_"NOTE: this interleave is ugly, maybe there's a better way to somehow break into/transduce?"))))
+
+
+(defn release-packages-cli [ztx config]
+  (into
+   []
+   (release-xform-cli ztx config)
+   (collect-packages ztx config)))

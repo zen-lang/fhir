@@ -4,6 +4,7 @@
             [cli-matic.utils :as u]
             [zen.fhir.tooling.conceptmap-to-ndjson]
             [zen.fhir.tooling.aidbox-standalone]
+            [zen.fhir.tooling-packages]
             [zen.fhir.tooling]))
 
 (defmacro cli-output [fn-form]
@@ -57,7 +58,14 @@
                            :type :string}]
                    :runs (fn [{:keys [input output]}]
                            (cli-output (zen.fhir.tooling.conceptmap-to-ndjson/-main
-                                        input output)))}]})
+                                        input output)))}
+                  {:command "ig-to-zenpackage"
+                   :opts    [{:option "modules" :type :string :short "m" :as "Node modules folder"}
+                             {:option "output"  :type :string :short "o" :as "Output directory"}]
+                   :runs    (fn [args]
+                              (cli-output (zen.fhir.tooling-packages/build
+                                           (:modules args)
+                                           (:output args))))}]})
 
 (defn -main
   [& args]
