@@ -7,12 +7,13 @@
 
 (def main-ns 'zen.fhir.tooling.cli)
 
-(def tag (-> {:command-args ["git" "describe" "--tags"]
+(def tag #_(-> {:command-args ["git" "describe" "--tags"]
               :dir "./."
               :out :capture}
              b/process
              :out
-             str/trim))
+             str/trim)
+  (System/getenv "RELEASE_VERSION"))
 
 (def class-dir "target/classes")
 
@@ -21,7 +22,7 @@
 (def uber-file
   (format "target/%s-%s-standalone.jar"
           (str/replace (name lib) #"\." "-")
-          tag))
+     tag))
 
 
 (defn clean [_]
