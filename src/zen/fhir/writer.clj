@@ -228,6 +228,12 @@
   config)
 
 
+(defn ls-empty-dir! [{:as config, :keys [package-dir]}]
+  (when package-dir
+    (sh! "ls" "-halt" :dir package-dir))
+  config)
+
+
 (defn infer-node-modules-path [f package-name]
   (-> f
       (str/split #"/")
@@ -428,6 +434,7 @@
                 (map (partial init-zen-repo! ztx))
                 (map (partial create-remote! ztx))
                 (map clean-up-clonned-repo!)
+                (map ls-empty-dir!)
                 (map (partial rsync-ftr< ztx))
                 (map (partial produce-ftr-manifests ztx))
                 (map (partial spit-data ztx))
