@@ -95,13 +95,17 @@
 
 (defn collect-packages ;; TODO: Shouldn't be a function, result should be stored in ztx
   "Finds all zen packages in ztx"
-  [ztx & [{:as _opts, :keys [blacklisted-packages]
+  [ztx & [{:as _opts, :keys [blacklisted-packages main-package]
            :or {blacklisted-packages #{}}}]]
-  (->> (vals (:fhir/inter @ztx))
-       (mapcat vals)
-       (keep #(some-> % :zen.fhir/package-ns name))
-       (remove blacklisted-packages)
-       set))
+  (cond->> 
+      (->> (vals (:fhir/inter @ztx))
+           (mapcat vals)
+           (keep #(some-> % :zen.fhir/package-ns name))
+           (remove blacklisted-packages))
+
+    (some? main-package)
+    (filter #(= % main-package))
+    :always set))
 
 
 (defn spit-zen-modules [ztx zrc-dir & [package-name]]
@@ -217,18 +221,16 @@
         (reduced (assoc config :error {:status status :body body}))))))
 
 
-(defn init-zen-repo! [ztx {:as config, :keys [main-package cloned? out-dir package package-dir]}]
+(defn init-zen-repo! [ztx {:as config, :keys [cloned? out-dir package package-dir]}]
   (show-success-message "[" package "]" "Init zen repository")
   (if cloned?
     config
     (do
-      (when (or (nil? main-package)
-                (= package main-package))
-        (zen.package/mkdir! out-dir package)
-        (zen.package/zen-init! package-dir)
-        (sh! "git" "add" "--all" :dir package-dir)
-        (sh! "git" "commit" "-m" "'Init commit'" :dir package-dir)
-        (sh! "git" "branch" "-M" "main" :dir package-dir))
+      (zen.package/mkdir! out-dir package)
+      (zen.package/zen-init! package-dir)
+      (sh! "git" "add" "--all" :dir package-dir)
+      (sh! "git" "commit" "-m" "'Init commit'" :dir package-dir)
+      (sh! "git" "branch" "-M" "main" :dir package-dir)
       config)))
 
 
@@ -270,40 +272,38 @@
 
 
 (defn produce-ftr-manifests [ztx {:as config,
-                                  :keys [package main-package]
+                                  :keys [package]
                                   {ftr-extraction-result :extraction-result} :ftr-context}]
-  (when (or (nil? main-package)
-            (= main-package package))
-    (show-success-message "[" package "]" "Produce FTR manifests")
-    (when-let [loader-meta
-               (->> (get-in @ztx [:fhir/inter "ValueSet"])
-                    (filter (fn [[_vs-url {:as _vs, :zen.fhir/keys [package-ns]}]]
-                              (= (name package-ns) package)))
-                    (first)
-                    (second)
-                    (:zen/loader))]
-      (let [ftr-source-urls
-            (get-ftr-source-urls loader-meta)
+  (show-success-message "[" package "]" "Produce FTR manifests")
+  (when-let [loader-meta
+             (->> (get-in @ztx [:fhir/inter "ValueSet"])
+                  (filter (fn [[_vs-url {:as _vs, :zen.fhir/keys [package-ns]}]]
+                            (= (name package-ns) package)))
+                  (first)
+                  (second)
+                  (:zen/loader))]
+    (let [ftr-source-urls
+          (get-ftr-source-urls loader-meta)
 
-            ftr-manifest
-            {:module      package
-             :source-urls ftr-source-urls
-             :source-type :igs
-             :ftr-path    "ftr"
-             :tag         "init"}]
-        (swap! ztx update :fhir.zen/ns
-               (fn [namespaces]
-                 (into {}
-                       (map (fn [[zen-ns ns-content]]
-                              (let [nss  (name zen-ns)
-                                    package-name (first (str/split nss #"\." 2))
-                                    vs-uri (get-in ns-content ['value-set :uri])]
-                                (if (and (= package package-name)
-                                         vs-uri
-                                         (get ftr-extraction-result vs-uri))
-                                  [zen-ns (assoc-in ns-content ['value-set :ftr] ftr-manifest)]
-                                  [zen-ns ns-content]))))
-                       namespaces))))))
+          ftr-manifest
+          {:module      package
+           :source-urls ftr-source-urls
+           :source-type :igs
+           :ftr-path    "ftr"
+           :tag         "init"}]
+      (swap! ztx update :fhir.zen/ns
+             (fn [namespaces]
+               (into {}
+                     (map (fn [[zen-ns ns-content]]
+                            (let [nss  (name zen-ns)
+                                  package-name (first (str/split nss #"\." 2))
+                                  vs-uri (get-in ns-content ['value-set :uri])]
+                              (if (and (= package package-name)
+                                       vs-uri
+                                       (get ftr-extraction-result vs-uri))
+                                [zen-ns (assoc-in ns-content ['value-set :ftr] ftr-manifest)]
+                                [zen-ns ns-content]))))
+                     namespaces)))))
   config)
 
 (defn produce-ftr-manifests-for-remote-repo [ztx {:as config,
@@ -380,21 +380,17 @@
       (str package-dir File/separator "index.nippy"))))
 
 
-(defn spit-data [ztx {:keys [main-package package-dir package package-file-path package-file ftr-context produce-remote-ftr-manifests?] :as config}]
-  (when (or (nil? main-package)
-            (= package main-package))
-
-
-    (spit-ftr ztx ftr-context package-dir package)
-    (spit-validation-index ztx package package-dir)
-    (when produce-remote-ftr-manifests?
-      (produce-ftr-manifests-for-remote-repo ztx config))
-    (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
-    (spit package-file-path (with-out-str (clojure.pprint/pprint package-file))))
+(defn spit-data [ztx {:keys [package-dir package package-file-path package-file ftr-context produce-remote-ftr-manifests?] :as config}]
+  (spit-ftr ztx ftr-context package-dir package)
+  (spit-validation-index ztx package package-dir)
+  (when produce-remote-ftr-manifests?
+    (produce-ftr-manifests-for-remote-repo ztx config))
+  (spit-zen-schemas ztx (str package-dir "/zrc") {:package package})
+  (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
   config)
 
 
-(defn commit-zen-changes [{:keys [package-dir] :as config}]
+(defn commit-zen-changes [{:keys [package-dir package] :as config}]
   (sh! "git" "add" "--all" :dir package-dir)
   (sh! "git" "commit" "-m" "'Update zen package'" :dir package-dir)
   config)
