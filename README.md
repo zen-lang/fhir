@@ -168,78 +168,81 @@ Download and execute a jar executable from [the latest release](https://github.c
 ```bash
 java -jar [JAR_PATH] [COMMAND] [OPTIONS]
 ```
-  
   #### Commands
+  ----
+  **`ig-to-zenpackage`**     Builds zen-packages from provided IGs
+  ###### Options:
+   `-i`, `--input` S   Node modules folder\
+   `-o`, `--output` S  Output directory\
+   `-m`, `--output` S  Sets main package, FTR/Validation index will be created only for specified package name
+
+  ----
+
   **`stndlp`**               Builds standalone zen project. Result is a zip archive.
   ###### Options:
    `-i`, `--input` S   Path to node-modules-folder (including node-modules)\
    `-o`, `--output` S  Path to resulting zip archive\
    `--omit-deps`  Remove deps from resulting project
-   
+
+  ---- 
+
   **`zenbnd`**               Builds zen project from provided IG. Result is a NPM package directory
   ###### Options:
    `-i`, `--input` S    Path to node-modules-folder (including node-modules)\
    `-o`, `--output` S   Path to resulting directory\
    `-v`, `--version` S  Resulting package version\
    `-n`, `--name` S     Resulting package name (optional)
-   
+
+  ----
+
   **`cmndj`**                Converts ConceptMap to .ndjson.gz bundle
   ###### Options:
    `-i`, `--input` S   Path to node-modules-folder (including node-modules)\
    `-o`, `--output` S  Path to resulting zip archive
 
+  ----
+  
 #### Example
 
 ```bash
 # Create and open directory
-$ mkdir zen-profiling && cd zen-profiling
+$ mkdir zen-profiling && cd zen-profiling && mkdir output
+
+# Get tarball link
+$ npm --registry https://packages.simplifier.net view hl7.fhir.us.davinci-pdex@latest
+
+# Copy tarball link
+# ...
+# .tarball: https://packages.simplifier.net/hl7.fhir.us.davinci-pdex/2.0.0-ballot
+# ...
 
 # Download needed FHIR package
-$ npm --registry https://packages.simplifier.net install hl7.fhir.us.davinci-cdex@latest                                
+$ npm --registry https://packages.simplifier.net install https://packages.simplifier.net/hl7.fhir.us.davinci-pdex/2.0.0-ballot
 + hl7.fhir.us.davinci-cdex@0.2.0
 added 1 package from 1 contributor
-
-# Download the package dependencies
-$ npm --registry https://packages.simplifier.net install                                                                 
-added 3 packages from 3 contributors
 
 # Current directory structure:
 ├── node_modules
 │   ├── hl7.fhir.r4.core
 │   ├── hl7.fhir.us.core
-│   ├── hl7.fhir.us.davinci-cdex
-│   └── hl7.fhir.us.davinci-hrex
-└── package-lock.json
+│   ├── hl7.fhir.us.davinci-hrex
+│   └── hl7.fhir.us.davinci-pdex
+├── package-lock.json
+└── package.json
 
 # Convert downloaded FHIR packages to zen-lang
-$ java -jar ~/Downloads/zen-fhir-0.0.24-2-standalone.jar zenbnd -i node_modules -o zen/node_modules -v 0.1.0   
+$ java -jar -Xmx8g ~/Downloads/zen-fhir.jar ig-to-zenpackage -i node_modules -o output -m hl7.fhir.us.davinci-pdex
 :done
 
 # Directory structure after convertion
-├── node_modules
-├── package-lock.json
-└── zen
-    └── node_modules
-        ├── hl7-fhir-r4-core
-        │   ├── hl7-fhir-r4-core
-        │   ├── hl7-fhir-r4-core.edn
-        │   ├── hl7-fhir-r4-core-terminology-bundle.ndjson.gz
-        │   └── package.json
-        ├── hl7-fhir-us-core
-        │   ├── hl7-fhir-us-core
-        │   ├── hl7-fhir-us-core.edn
-        │   ├── hl7-fhir-us-core-terminology-bundle.ndjson.gz
-        │   └── package.json
-        ├── hl7-fhir-us-davinci-cdex
-        │   ├── hl7-fhir-us-davinci-cdex
-        │   ├── hl7-fhir-us-davinci-cdex.edn
-        │   ├── hl7-fhir-us-davinci-cdex-terminology-bundle.ndjson.gz
-        │   └── package.json
-        └── hl7-fhir-us-davinci-hrex
-            ├── hl7-fhir-us-davinci-hrex
-            ├── hl7-fhir-us-davinci-hrex.edn
-            ├── hl7-fhir-us-davinci-hrex-terminology-bundle.ndjson.gz
-            └── package.json
+output
+├── ftr
+│   └── hl7-fhir-us-davinci-pdex
+├── index.nippy
+├── zen-package.edn
+└── zrc
+    ├── hl7-fhir-us-davinci-pdex
+    └── hl7-fhir-us-davinci-pdex.edn
 ```
 [How to use zen-lang schemas guide](https://docs.aidbox.app/profiling/draft-profiling-with-zen-lang)
 
