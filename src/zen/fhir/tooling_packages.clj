@@ -65,6 +65,7 @@
 
         ftr-build-deps-coords (zen.fhir.inter-utils/build-ftr-deps-coords {:node-modules-folder node-modules-folder})
 
+        _ (zen.fhir.writer/show-success-message "Build FTR context")
         ftr-context (ftr.core/extract {:cfg
                                        {:module      "ig"
                                         :source-url  node-modules-folder

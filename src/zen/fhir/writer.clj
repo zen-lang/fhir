@@ -14,6 +14,9 @@
             [clojure.java.shell])
   (:import java.io.File))
 
+(defn show-success-message
+  [& text]
+  (println (str "\u001B[32m" (clojure.string/join " " text) "\u001B[0m")))
 
 (defn sh! [& args]
   (println "$" (str/join " " args))
@@ -57,6 +60,7 @@
 
 
 (defn spit-zen-schemas [ztx zrc-dir & [{:keys [package]}]]
+  (show-success-message "[" package "]" "Writing zen schemas on disk")
   (doseq [[zen-ns ns-content] (get-in @ztx [:fhir.zen/ns])
           :let [nss  (name zen-ns)
                 file (str zrc-dir "/" (str/replace nss #"\." "/") ".edn")
@@ -137,6 +141,7 @@
 
 
 (defn filter-zen-packages [ztx {:keys [package] :as config} package-name]
+  (show-success-message "Filter zen packages")
   (or (nil? package)
       (= (name package) package-name)))
 
@@ -144,6 +149,7 @@
 (defn generate-package-config [ztx
                                {:keys [out-dir git-url-format zen-fhir-lib-url git-auth-url-format node-modules-folder ftr-context ftr-build-deps-coords produce-remote-ftr-manifests? remote-repo-url]}
                                package]
+  (show-success-message "[" package "]" "Generate package config")
   (let [package-dir (str out-dir \/ package \/)
         packages-deps (zen.fhir.inter-utils/packages-deps-nses (:fhir.zen/ns @ztx) (:fhir/inter @ztx))
         package-git-url (format git-url-format package)
@@ -211,6 +217,7 @@
 
 
 (defn init-zen-repo! [ztx {:as config, :keys [cloned? out-dir package package-dir]}]
+  (show-success-message "[" package "]" "Init zen repository")
   (if cloned?
     config
     (do
@@ -262,6 +269,7 @@
 (defn produce-ftr-manifests [ztx {:as config,
                                   :keys [package]
                                   {ftr-extraction-result :extraction-result} :ftr-context}]
+  (show-success-message "[" package "]" "Produce FTR manifests")
   (when-let [loader-meta
              (->> (get-in @ztx [:fhir/inter "ValueSet"])
                   (filter (fn [[_vs-url {:as _vs, :zen.fhir/keys [package-ns]}]]
@@ -296,6 +304,7 @@
 (defn produce-ftr-manifests-for-remote-repo [ztx {:as config,
                                                   :keys [package remote-repo-url package-dir]
                                                   {ftr-extraction-result :extraction-result} :ftr-context}]
+  (show-success-message "[" package "]" "Produce FTR manifests for remote repository")
   (let [ftr-manifest {:module       package
                       :source-url   (or remote-repo-url package-dir)
                       :source-type  :cloud-storage
@@ -321,6 +330,7 @@
 
 
 (defn spit-ftr [ztx ftr-context package-dir package]
+  (show-success-message "[" package "]" "Writing FTR data on disk")
   (let [value-sets (->> (get-in @ztx [:fhir.zen/ns])
                         (filter (fn [[zen-ns ns-content]]
                                   (let [nss  (name zen-ns)
@@ -339,6 +349,7 @@
 
 
 (defn spit-validation-index [ztx package package-dir]
+  (show-success-message "[" package "]" "Writing validation index on disk")
   (let [valueset-defs (->> (get-in @ztx [:fhir.zen/ns])
                            (filter (fn [[zen-ns ns-content]]
                                      (let [nss  (name zen-ns)
