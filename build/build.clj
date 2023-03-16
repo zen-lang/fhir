@@ -7,13 +7,14 @@
 
 (def main-ns 'zen.fhir.tooling.cli)
 
-(def tag #_(-> {:command-args ["git" "describe" "--tags"]
-              :dir "./."
-              :out :capture}
-             b/process
-             :out
-             str/trim)
-  (System/getenv "RELEASE_VERSION"))
+(def tag
+  (or (System/getenv "RELEASE_VERSION")
+      (-> {:command-args ["git" "describe" "--tags"]
+           :dir "./."
+           :out :capture}
+          b/process
+          :out
+          str/trim)))
 
 (def class-dir "target/classes")
 
