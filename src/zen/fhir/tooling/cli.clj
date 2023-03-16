@@ -60,12 +60,15 @@
                            (cli-output (zen.fhir.tooling.conceptmap-to-ndjson/-main
                                         input output)))}
                   {:command "ig-to-zenpackage"
-                   :opts    [{:option "modules" :type :string :short "m" :as "Node modules folder"}
-                             {:option "output"  :type :string :short "o" :as "Output directory"}]
+                   :description "Builds zen-packages from provided IGs"
+                   :opts    [{:option "input" :type :string :short "i" :as "Node modules folder"}
+                             {:option "output"  :type :string :short "o" :as "Output directory"}
+                             {:option "main" :type :string :short "m" :as "Sets main package, FTR/Validation index will be created only for specified package name"}]
                    :runs    (fn [args]
                               (cli-output (zen.fhir.tooling-packages/build
-                                           (:modules args)
-                                           (:output args))))}]})
+                                            (:input args)
+                                            (:output args)
+                                            (:main args))))}]})
 
 (defn -main
   [& args]

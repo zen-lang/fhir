@@ -55,7 +55,8 @@
       (->> (map :package-git-url release-result)
            (clojure.string/join "\n")))))
 
-(defn release-zen-packages [{:keys [node-modules-folder out-dir package-name]}]
+
+(defn build-zen-packages [{:keys [node-modules-folder out-dir main-package]}]
   (let [zen-fhir-lib-url     "https://github.com/zen-fhir/zen.fhir.git"
         git-url-format       "https://github.com/zen-fhir/%s.git"
 
@@ -77,22 +78,24 @@
 
         
         _ (zen.fhir.generator/generate-zen-schemas ztx)
-        release-result (zen.fhir.writer/release-packages-cli ztx {:ftr-context                   ftr-context
-                                                                  :out-dir                       out-dir
-                                                                  :package                       package-name
-                                                                  :git-url-format                git-url-format
-                                                                  :zen-fhir-lib-url              zen-fhir-lib-url
-                                                                  :node-modules-folder           node-modules-folder
-                                                                  :ftr-build-deps-coords         ftr-build-deps-coords})]
+        release-result (zen.fhir.writer/release-packages-cli ztx {:main-package          (some-> main-package (clojure.string/replace #"\." "-"))
+                                                                  :ftr-context           ftr-context
+                                                                  :out-dir               out-dir
+                                                                  :git-url-format        git-url-format
+                                                                  :zen-fhir-lib-url      zen-fhir-lib-url
+                                                                  :node-modules-folder   node-modules-folder
+                                                                  :ftr-build-deps-coords ftr-build-deps-coords})]
     (if-let [error (:error (last release-result))]
       (throw (ex-info "Release error" {:error error}))
       "Package was succesfully builded")))
 
+
 (defn build
-  [node-modules-folder out-dir]
-  (release-zen-packages
-   {:node-modules-folder  node-modules-folder
-    :out-dir              out-dir}))
+  [node-modules-folder out-dir main-package]
+  (build-zen-packages
+    {:node-modules-folder  node-modules-folder
+     :out-dir              out-dir
+     :main-package         main-package}))
 
 
 (defn -main [return-path node-modules-folder out-dir & [zen-fhir-lib-url git-url-format git-auth-url-format package-name]]
