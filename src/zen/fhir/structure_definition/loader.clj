@@ -106,6 +106,12 @@
 (defn enrich-slicing [ctx el base-els]
   (update-in el [:fhir/slicing :slices] #(sp/transform [sp/MAP-VALS] fix-match-vectors %)))
 
+
+(defn replace-ns-in-sym [sym ns]
+  (symbol (str ns)
+          (name sym)))
+
+
 (defn enrich-element [ctx el base-els]
   ;; TODO: if vector do min/max items
   ;;       required/prohibited
@@ -115,6 +121,11 @@
               (make-first-class-ext-keys acc el)
               (assoc acc k el)))]
     (let [v? (some :vector (cons el base-els))
+          recur? (first (filter (fn [el'] (get-in el' [:| (last (:path ctx)) :recur])) (cons el base-els)))
+          recur  (when recur? (update (get-in recur? [:| (last (:path ctx)) :recur]) :symbol
+                                      replace-ns-in-sym (:zen.fhir/schema-ns ctx)))
+          recur-refs? (first (filter :recur-refs (cons el base-els)))
+          recur-refs  (when recur-refs? (set (map #(update % :symbol replace-ns-in-sym (:zen.fhir/schema-ns ctx)) (:recur-refs recur-refs?))))
           tp (or (:type el)
                  (->> base-els
                       (filter (fn [{tp :type}] (and (not (nil? tp))
@@ -127,6 +138,8 @@
         (assoc :required true)
 
         v?                            (assoc :vector true)
+        recur?                        (assoc-in [:| (last (:path ctx)) :recur] recur)
+        recur-refs?                   (assoc :recur-refs recur-refs)
         (not v?)                      (dissoc :minItems :maxItems)
         tp                            (assoc :type tp)
         (contains? el :fhir/slicing)  (as-> $ (enrich-slicing ctx $ base-els))
@@ -256,6 +269,7 @@
           (walk-with-bases ztx {:lvl 0
                                 :path [url]
                                 :derivation (:derivation subj)
+                                :zen.fhir/schema-ns (get subj :zen.fhir/schema-ns)
                                 :do-not-handle-first-class-ext?
                                 (or (= "http://hl7.org/fhir/StructureDefinition/Element"
                                        (:url subj))

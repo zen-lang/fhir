@@ -198,6 +198,12 @@
                                           :operator {}
                                           :answer   {}}}}}}})
 
+  (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-behave"
+               {:| {:item {:| {:item {:recur {:symbol 'hl7-fhir-uv-sdc.sdc-questionnaire-behave/item-schema
+                                              :path [:item nil]}}}}}
+                :recur-refs #{{:symbol 'hl7-fhir-uv-sdc.sdc-questionnaire-behave/item-schema,
+                               :path [:item]}}})
+
   (comment
     (inspect/inspect "/tmp/pres.html" (get-in @ztx [:fhir/inter "StructureDefinition"]) {:closed true})
 
