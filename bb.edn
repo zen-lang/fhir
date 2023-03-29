@@ -60,7 +60,18 @@
                   (shell "mkdir -p node_modules")
                   (clojure "-X zen.fhir.igs-etl.nz/etl! :package-dir-dest '\"node_modules\"'"))}
 
-         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm pull-nz-igs]}
+         pull-r4b
+         {:task     (let [url      "http://packages2.fhir.org/packages/hl7.fhir.r4b.core/4.3.0"
+                          dirname "node_modules/hl7.fhir.r4b.core"
+                          arch-name "pack.tgz"
+                          _        (shell (format "mkdir -p %s" dirname))
+                          _        (shell (format "curl -o %s %s" (str dirname \/ "pack.tgz") url))
+                          _        (shell {:dir dirname} (format "tar -xzf %s" arch-name))
+                          _        (shell {:dir dirname} (format "rm -rf %s" arch-name))
+                          _        (shell {:dir dirname} (format "cp -a package/. ." arch-name))
+                          _        (shell {:dir dirname} "rm -rf package")])}
+
+         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm pull-nz-igs pull-r4b]}
 
          repl {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                :task (clojure "-M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]")}
