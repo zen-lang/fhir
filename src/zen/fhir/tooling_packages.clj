@@ -109,7 +109,8 @@
            :git-url-format       git-url-format
            :remote-repo-url      "https://storage.googleapis.com"
            :produce-remote-ftr-manifests? true
-           :blacklisted-packages #{}})))
+           :blacklisted-packages #{}})
+        :append true))
 
 
 (comment
