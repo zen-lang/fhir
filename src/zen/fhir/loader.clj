@@ -160,7 +160,8 @@
 
 
 (defn normalize-polymorphic [el & [stu3?]]
-  (if (str/ends-with? (str (:id el)) "[x]")
+  (if (or (str/ends-with? (str (:id el)) "[x]")
+          (>= (count (:type el)) 2))
     (-> (assoc el :polymorphic true)
         (dissoc :type)
         (assoc :| (->> (:type el)
