@@ -71,12 +71,12 @@ jobs:
           ZEN_FHIR_RELEASE_GITHUB_TOKEN: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_TOKEN }}
           ZEN_FHIR_RELEASE_GITHUB_ORG: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_ORG }}
 
-     - run: bb zen-profiles-packages "release.txt" "r5/" "zen-packages/"
-       name: Generate & release npm r5 core zen package
-       env:
-         ZEN_FHIR_RELEASE_GITHUB_USER: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_USER }}
-         ZEN_FHIR_RELEASE_GITHUB_TOKEN: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_TOKEN }}
-         ZEN_FHIR_RELEASE_GITHUB_ORG: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_ORG }}
+      - run: bb zen-profiles-packages "release.txt" "r5/" "zen-packages/"
+        name: Generate & release npm r5 core zen package
+        env:
+          ZEN_FHIR_RELEASE_GITHUB_USER: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_USER }}
+          ZEN_FHIR_RELEASE_GITHUB_TOKEN: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_TOKEN }}
+          ZEN_FHIR_RELEASE_GITHUB_ORG: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_ORG }}
 
       - name: Release
         uses: softprops/action-gh-release@v1
