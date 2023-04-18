@@ -53,6 +53,9 @@ jobs:
       - name: Genrate npm R4B Zen packages
         run: bb zen-profiles "r4b/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
 
+      - name: Genrate npm R5 Zen packages
+        run: bb zen-profiles "r5/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
+
       - run: for folder in $(ls -d zrc/node_modules/*); do npm publish $folder --access=public; done
         name: Publish npm Zen packages
         env:

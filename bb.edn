@@ -71,7 +71,25 @@
                           _        (shell {:dir dirname} (format "cp -a package/. ." arch-name))
                           _        (shell {:dir dirname} "rm -rf package")])}
 
-         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm pull-nz-igs pull-r4b]}
+         pull-r5
+         {:task (let [data-sources [{:url "http://packages2.fhir.org/packages/hl7.fhir.r5.core/5.0.0"
+                                     :dirname "r5/hl7.fhir.r5.core"}
+                                    {:url "http://packages2.fhir.org/packages/hl7.terminology.r5/4.0.0"
+                                     :dirname "r5/hl7.terminology.r5"}
+                                    {:url "http://packages2.fhir.org/packages/hl7.fhir.uv.extensions.r5/1.0.0"
+                                     :dirname "r5/hl7.fhir.uv.extensions.r5"}
+                                    {:url "http://packages2.fhir.org/packages/hl7.fhir.r5.search/5.0.0"
+                                     :dirname "r5/hl7.fhir.r5.search"}]]
+                  (doseq [{:keys [url dirname]} data-sources]
+                    (let [arch-name "pack.tgz"
+                          _        (shell (format "mkdir -p %s" dirname))
+                          _        (shell (format "curl -o %s %s" (str dirname \/ "pack.tgz") url))
+                          _        (shell {:dir dirname} (format "tar -xzf %s" arch-name))
+                          _        (shell {:dir dirname} (format "rm -rf %s" arch-name))
+                          _        (shell {:dir dirname} (format "cp -a package/. ." arch-name))
+                          _        (shell {:dir dirname} "rm -rf package")])))}
+
+         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm pull-nz-igs pull-r4b pull-r5]}
 
          repl {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                :task (clojure "-M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]")}

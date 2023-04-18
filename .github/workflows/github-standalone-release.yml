@@ -56,6 +56,9 @@ jobs:
       - name: Build standalone R4B
         run: bb build-stanadlone-projects "r4b/" "zrc/standalone_projects/"
 
+      - name: Build standalone R5
+        run: bb build-stanadlone-projects "r5/" "zrc/standalone_projects/"
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
