@@ -80,8 +80,9 @@
                        (:type inter-res))
         zen-type-schema   (fhir-primitive->zen-primitive tp)]
     (merge zen-type-schema
-           (when (not= "http://hl7.org/fhir/StructureDefinition/Element"
-                       (:baseDefinition inter-res))
+           (when (not (contains? #{"http://hl7.org/fhir/StructureDefinition/Element"
+                                   "http://hl7.org/fhir/StructureDefinition/PrimitiveType"}
+                                 (:baseDefinition inter-res)))
              (confirms-base fhir-inter [url inter-res])))))
 
 
