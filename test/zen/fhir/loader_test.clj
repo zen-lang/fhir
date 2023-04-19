@@ -93,7 +93,8 @@
     ;; (matcho/match (sut/normalize-element {:id "a.b.f", :max "0", :base {:max "1"}}
     ;;                                      nil)
     ;;               {:required not, :vector not, :prohibited true?})
-    ))
+    )
+  )
 
 
 ;; 1 use base of base for element
@@ -325,7 +326,6 @@
       {:| {:el {:vector true
                 :|      {:attr {:vector true :type "prim"}}}}}))
 
-
   (t/testing "Complex type inheritance"
     (load-complex-type
       {:name "BaseType"
@@ -353,68 +353,88 @@
       {:| {:el {:vector true
                 :|      {:attr {:vector true :type "prim"}}}}}))
 
+  (t/testing "Several element profiles"
+    (load-complex-type {:name "Identifier" :base "BaseType" :els  []})
+    (load-profile
+     {:name "au-element-profiles"
+      :els
+      [{:id "identifier"
+        :path "identifier"
+        :type [{:code "Identifier"
+                :profile ["http://hl7.org/fhir/StructureDefinition/Identifier"
+                          "http://hl7.org.au/fhir/StructureDefinition/au-insurancemembernumber"]}]}]})
+    (matcho/match
+     (sut.sd/get-definition aztx "url://au-element-profiles") 
+     {:derivation "constraint"
+      :|
+      {:identifier
+       {:type "Identifier"
+        :fhir/element-profiles
+        ["http://hl7.org/fhir/StructureDefinition/Identifier"
+         "http://hl7.org.au/fhir/StructureDefinition/au-insurancemembernumber"]}}}))
+
   (t/testing "Polymorphic shortcut"
     (load-base
-      {:name "PBase"
-       :els  [{:id "el[x]" :type [{:code "prim"}
-                                  {:code "ComplexType"}]}]})
+     {:name "PBase"
+      :els  [{:id "el[x]" :type [{:code "prim"}
+                                 {:code "ComplexType"}]}]})
 
     (load-profile
-      {:name "PProfile1"
-       :base "PBase"
-       :els  [{:id "elPrim"}]})
+     {:name "PProfile1"
+      :base "PBase"
+      :els  [{:id "elPrim"}]})
 
     (load-profile
-      {:name "PProfile2"
-       :base "PBase"
-       :els  [{:id "elComplexType"}]})
+     {:name "PProfile2"
+      :base "PBase"
+      :els  [{:id "elComplexType"}]})
 
     (load-profile
-      {:name "PProfile3"
-       :base "PBase"
-       :els  [{:id "el[x]:elComplexType"}
-              {:id "el[x]:elPrim"}]})
+     {:name "PProfile3"
+      :base "PBase"
+      :els  [{:id "el[x]:elComplexType"}
+             {:id "el[x]:elPrim"}]})
 
     (load-profile
-      {:name "PProfile4"
-       :base "PBase"
-       :els  [{:id "el[x]:elComplexType.attr", :max "1"}]})
+     {:name "PProfile4"
+      :base "PBase"
+      :els  [{:id "el[x]:elComplexType.attr", :max "1"}]})
 
 
     (load-profile
-      {:name "PTProfile"
-       :base "PBase"
-       :els  [{:id "elComplexType"}
-              {:id "elComplexType.attr" :max "1"}]})
+     {:name "PTProfile"
+      :base "PBase"
+      :els  [{:id "elComplexType"}
+             {:id "elComplexType.attr" :max "1"}]})
 
     (reload)
 
     (matcho/match
-      (sut.sd/get-definition aztx "url://PProfile1")
-      {:| {:el     {:| {:prim        {:type "prim"}
-                        :ComplexType nil}}
-           :elPrim nil?}})
+     (sut.sd/get-definition aztx "url://PProfile1")
+     {:| {:el     {:| {:prim        {:type "prim"}
+                       :ComplexType nil}}
+          :elPrim nil?}})
 
     (matcho/match
-      (sut.sd/get-definition aztx  "url://PProfile2")
-      {:| {:el {:| {:ComplexType {:type "ComplexType"}
-                    :prim        nil?}}}})
+     (sut.sd/get-definition aztx  "url://PProfile2")
+     {:| {:el {:| {:ComplexType {:type "ComplexType"}
+                   :prim        nil?}}}})
 
     (matcho/match
-      (sut.sd/get-definition aztx "url://PProfile3")
-      {:| {:el {:| {:ComplexType {:type "ComplexType"}
-                    :prim        {:type "prim"}}}}})
+     (sut.sd/get-definition aztx "url://PProfile3")
+     {:| {:el {:| {:ComplexType {:type "ComplexType"}
+                   :prim        {:type "prim"}}}}})
 
     (matcho/match
-      (sut.sd/get-definition aztx "url://PProfile4")
-      {:| {:el {:| {:ComplexType {:type "ComplexType"
-                                  :|    {:attr {:vector true
-                                                :type   "prim"}}}}}}})
+     (sut.sd/get-definition aztx "url://PProfile4")
+     {:| {:el {:| {:ComplexType {:type "ComplexType"
+                                 :|    {:attr {:vector true
+                                               :type   "prim"}}}}}}})
 
     (matcho/match
-      (sut.sd/get-definition aztx "url://PTProfile")
-      {:| {:el {:| {:ComplexType {:type "ComplexType"
-                                  :|    {:attr {:vector true :type "prim"}}}}}}}))
+     (sut.sd/get-definition aztx "url://PTProfile")
+     {:| {:el {:| {:ComplexType {:type "ComplexType"
+                                 :|    {:attr {:vector true :type "prim"}}}}}}}))
 
   (load-extension
     {:name "us-race"
@@ -489,6 +509,15 @@
      :els
      [{:id "url", :fixedUri "http://hl7.org/fhir/StructureDefinition/structuredefinition-xml-type"}
       {:id "valueString", :type [{:code "string"}]}]})
+
+  (load-extension
+    {:name "au-element-profiles"
+     :els
+     [{:id "Patient.identifier"
+       :path "Patient.identifier"
+       :type [{:code "Identifier"
+               :profile ["http://hl7.org/fhir/StructureDefinition/Identifier"
+                         "http://hl7.org.au/fhir/StructureDefinition/au-insurancemembernumber"]}]}]})
 
   (reload)
 
