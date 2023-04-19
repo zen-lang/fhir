@@ -214,7 +214,15 @@
                {:zen.fhir/nested {}})
 
              (when-let [text (or (:short el) (:definiton el))]
-               {:zen/desc text}))
+               {:zen/desc text})
+
+             (when (:fhir/element-profiles el)
+               {:type 'zen/case
+                :case (mapv
+                       (fn [url]
+                         {:when {:confirms #{(url->symbol fhir-inter url)}}
+                          :then {}})
+                       (:fhir/element-profiles el))}))
         slicing (when (seq (:fhir/slicing el))
                   (slicing-schema fhir-inter [url el]))]
     (not-empty-merge

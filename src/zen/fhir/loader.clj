@@ -141,9 +141,9 @@
 (defn extension-profiles [el]
   (if-let [ext-profs (:profile (first (:type el)))]
     (let [ext-profs (if (string? ext-profs) [ext-profs] ext-profs)]
-      (do
-        (assert (= 1 (count ext-profs)) (pr-str :unexpected-extension-profiles (:type el)))
-        (assoc el :fhir/extension (first ext-profs))))
+      (if (= 1 (count ext-profs))
+          (assoc el :fhir/extension (first ext-profs))
+          (assoc el :fhir/element-profiles ext-profs)))
     el))
 
 
@@ -524,7 +524,6 @@
 
     (contains? res :slicing) (update-in [:slicing :slices] (partial into {} (keep preprocess-slicing)))
     :always                  (as-> $ (utils/dissoc-when (comp empty? :slices) $ :slicing))
-
     (contains? res :fhir/slicing) (update-in [:fhir/slicing :slices] (partial into {} (keep preprocess-slicing)))
     :always                       (as-> $ (utils/dissoc-when (comp empty? :slices) $ :fhir/slicing))))
 
