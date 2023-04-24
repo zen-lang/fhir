@@ -29,13 +29,7 @@
       (def from-network-extension (-> "zen/fhir/plannet_fromnetwork_stripped.edn" io/resource slurp read-string))
       (def new-patients-extension (-> "zen/fhir/plannet_newpatients_stripped.edn" io/resource slurp read-string))
       (def practitioner-role-profile (-> "zen/fhir/plannet_practitionerrole_stripped.edn" io/resource slurp read-string))
-      (def elements-profiles         (-> "zen/fhir/elements-profiles.edn" io/resource slurp read-string))
-      (def elements-profiles2         (-> "zen/fhir/elements-profiles2.edn" io/resource slurp read-string))
       (def multiple-same-url-includes-excludes-vs (-> "zen/fhir/ig-fiction_multiple-same-url-includes-excludes.edn" io/resource slurp read-string))
-      (zen.fhir.core/load-definiton ztx {:url (:url elements-profiles)}
-                                    (assoc elements-profiles :zen.fhir/package-ns "element-profiles"))
-      (zen.fhir.core/load-definiton ztx {:url (:url elements-profiles2)}
-                                    (assoc elements-profiles2 :zen.fhir/package-ns "element-profiles"))
       (zen.fhir.core/load-definiton ztx {:url (:url practitioner-role-profile)} (assoc practitioner-role-profile :zen.fhir/package-ns "plannet"))
       (zen.fhir.core/load-definiton ztx {:url (:url new-patients-extension)} (assoc new-patients-extension :zen.fhir/package-ns "plannet"))
       (zen.fhir.core/load-definiton ztx {:url (:url from-network-extension)} (assoc from-network-extension :zen.fhir/package-ns "plannet"))
@@ -705,7 +699,7 @@
 (t/deftest element-profiles-test
   (sut/generate-zen-schemas ztx)
   (matcho/match
-   (get-in @ztx [:fhir.zen/ns 'element-profiles.au-patient])
+   (get-in @ztx [:fhir.zen/ns 'hl7-fhir-au-base.au-patient])
    '{schema
      {:keys
       {:identifier
@@ -714,4 +708,4 @@
         {:type zen/case
          :case
          [{:when {:confirms #{fhir-r4.Identifier/schema}} :then {}}
-          {:when {:confirms #{element-profiles.au-ihi/schema}} :then {}}]}}}}}))
+          {:when {:confirms #{hl7-fhir-au-base.au-ihi/schema}} :then {}}]}}}}}))
