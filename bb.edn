@@ -102,7 +102,7 @@
                             {:url "http://hl7.org/fhir/uv/ips/STU1/package.tgz"
                              :dirname "node_modules/hl7.fhir.uv.ips"}])}
 
-         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm pull-nz-igs pull-r4b pull-r5 pull-au-igs]}
+         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm pull-nz-igs pull-r4b pull-r5 pull-au-igs pull-chile-igs]}
 
          repl {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                :task (clojure "-M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]")}
