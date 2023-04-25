@@ -109,8 +109,7 @@ Bundle.entry[0].resource
            (sut/fhirpath->knife "QuestionnaireResponse.item.where(hasExtension('http://hl7.org/fhir/StructureDefinition/questionnaireresponse-isSubject')).answer.value.ofType(Reference)")))
 
 
-  (t/is (= #_{"Bundle" [["entry" 0 "resource"]]}
-         nil
+  (t/is (= {"Bundle" [["entry" 0 "resource"]]}
            (sut/fhirpath->knife "Bundle.entry[0].resource"))))
 
 
