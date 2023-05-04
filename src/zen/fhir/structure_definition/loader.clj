@@ -227,6 +227,13 @@
         (-> (update :| (partial reduce walk-with-bases-recursive {}))
             (update :| (partial reduce add-primitive-element-attrs {})))
 
+        (:recur-refs enr-subj)
+        (update :recur-refs
+                (fn [refs]
+                  (set (filter (fn [ref-schema]
+                                 (get-in enr-subj (cons :| (interpose :| (:path ref-schema)))))
+                               refs))))
+
         (seq (get-in enr-subj [:fhir/slicing :slices]))
         (update-in [:fhir/slicing :slices]
                    (fn [slices]

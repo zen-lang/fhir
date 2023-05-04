@@ -53,6 +53,9 @@
 
     (t)))
 
+(t/deftest fhir-r4-shareablevalueset-mapping
+  (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/shareablevalueset"
+               {:recur-refs empty?}))
 
 (t/deftest fhir-aidbox-poly-keys-mapping
   (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/Extension"

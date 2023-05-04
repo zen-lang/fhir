@@ -697,7 +697,6 @@
 
 
 (t/deftest element-profiles-test
-  (sut/generate-zen-schemas ztx)
   (matcho/match
    (get-in @ztx [:fhir.zen/ns 'hl7-fhir-au-base.au-patient])
    '{schema
@@ -709,3 +708,16 @@
          :case
          [{:when {:confirms #{fhir-r4.Identifier/schema}} :then {}}
           {:when {:confirms #{hl7-fhir-au-base.au-ihi/schema}} :then {}}]}}}}}))
+
+(t/deftest element-profiles-test
+  (matcho/match
+   (get-in @ztx [:fhir.zen/ns 'fhir-r4.shareablevalueset])
+   {'schema
+    {:zen/tags            #{'zen.fhir/profile-schema 'zen/schema}
+     :confirms            #{'fhir-r4.ValueSet/schema 'zen.fhir/Resource}
+     :zen.fhir/type       "ValueSet"
+     :zen.fhir/profileUri "http://hl7.org/fhir/StructureDefinition/shareablevalueset"
+     :type                'zen/map
+     :every               nil?
+     :keys                nil?
+     :require             #{:description :publisher :name :experimental :status :url :version}}}))
