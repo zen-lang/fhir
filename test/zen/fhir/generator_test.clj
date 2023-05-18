@@ -721,3 +721,8 @@
      :every               nil?
      :keys                nil?
      :require             #{:description :publisher :name :experimental :status :url :version}}}))
+
+(t/deftest reference-schema-test
+  (matcho/match
+   (get-in @ztx [:fhir.zen/ns 'fhir-r4.Reference]) 
+   {'schema {:confirms #{'zen.fhir/Reference 'fhir-r4.Element/schema}}}))

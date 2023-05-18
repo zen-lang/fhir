@@ -253,9 +253,10 @@
 
 
 (defmethod generate-kind-schema :complex-type [fhir-inter [url inter-res]]
-  (merge
-    (confirms-base fhir-inter [url inter-res])
-    (el-schema fhir-inter [url (dissoc inter-res :fhir/extension)])))
+  (merge-with
+   into 
+   (confirms-base fhir-inter [url inter-res])
+   (el-schema fhir-inter [url (dissoc inter-res :fhir/extension)])))
 
 
 (defmethod generate-kind-schema :resource [fhir-inter [url inter-res]]
