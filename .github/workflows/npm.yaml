@@ -59,6 +59,9 @@ jobs:
         
       - run: ls node_modules/hl7.org.nz.fhir.ig.nhi
         name: test3
+        
+      - run: ls -halt node_modules/hl7.org.nz.fhir.ig.nhi
+        name: test4
 
       - run: bb zen-profiles "node_modules/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
         name: Generate npm Zen packages
