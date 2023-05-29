@@ -47,6 +47,9 @@ jobs:
         
       - run: grep -rli https://nzhts.digital.health.nz/fhir/ValueSet/nhiContactUseType
         name: clash UB
+        
+      - run: grep -rli hl7.org.nz.fhir.ig.nhi
+        name: Clash UB
 
       - run: bb zen-profiles "node_modules/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
         name: Generate npm Zen packages
