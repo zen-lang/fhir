@@ -73,6 +73,7 @@
         ig-dir "ig"]
     (doseq [{:keys [url dir]} igs
             :let [download-path (.getPath (io/file work-dir-path dir))
+                  _ (println "Cleanup" (.getPath (io/file work-dir-path dir)) (:out (clojure.java.shell/sh "rm" "-rf" (.getPath (io/file work-dir-path dir)))))
                   ig-work-dir-path (.getPath (io/file download-path "site"))]]
       (zen.utils/unzip! url download-path)
       (let [package-archive (io/file ig-work-dir-path "package.tgz")
