@@ -38,9 +38,15 @@ jobs:
       - uses: DeLaGuardo/setup-clojure@9.5
         with:
           cli: 1.11.1.1155
-
+          
+      - run: cat node_modules/hl7.org.nz.fhir.ig.nhi/ValueSet-nhi-address-type.json || echo "FAIL. but it's ok"
+        name: test 0.1
+        
       - run: bb init
         name: Install npm FHIR packages
+        
+      - run: cat node_modules/hl7.org.nz.fhir.ig.nhi/ValueSet-nhi-address-type.json || echo "FAIL. but it's ok"
+        name: test 0.2
 
       - run: bb init-r3
         name: Install npm R3 packages
