@@ -50,6 +50,12 @@ jobs:
         
       - run: grep -rli hl7.org.nz.fhir.ig.nhi
         name: Clash UB
+        
+      - run: cat node_modules/hl7.org.nz.fhir.ig.nhi/ValueSet-nhi-address-type.json
+        name: test1
+      
+      - run: cat node_modules/hl7.org.nz.fhir.ig.nhi/ValueSet-nhi-contactpoint-use.json
+        name: test2
 
       - run: bb zen-profiles "node_modules/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
         name: Generate npm Zen packages
