@@ -44,6 +44,9 @@ jobs:
 
       - run: bb init-r3
         name: Install npm R3 packages
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
         
       - run: grep -rli https://nzhts.digital.health.nz/fhir/ValueSet/nhiContactUseType
         name: clash UB
