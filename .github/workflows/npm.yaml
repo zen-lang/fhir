@@ -43,6 +43,9 @@ jobs:
 
       - run: bb init-r3
         name: Install npm R3 packages
+        
+      - run: grep -rli https://nzhts.digital.health.nz/fhir/ValueSet/nhiContactUseType
+        name: clash UB
 
       - run: bb zen-profiles "node_modules/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
         name: Generate npm Zen packages
