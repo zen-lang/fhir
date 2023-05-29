@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Generate FHIR profiles
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v3.0.2
@@ -44,9 +44,6 @@ jobs:
         
       - run: bb init-r3
         name: Install npm R3 packages
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
         
       - run: grep -rli https://nzhts.digital.health.nz/fhir/ValueSet/nhiContactUseType
         name: clash UB
