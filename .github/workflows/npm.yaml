@@ -45,24 +45,6 @@ jobs:
       - run: bb init-r3
         name: Install npm R3 packages
         
-      - run: grep -rli https://nzhts.digital.health.nz/fhir/ValueSet/nhiContactUseType
-        name: clash UB
-        
-      - run: grep -rli hl7.org.nz.fhir.ig.nhi
-        name: Clash UB
-        
-      - run: cat node_modules/hl7.org.nz.fhir.ig.nhi/ValueSet-nhi-address-type.json
-        name: test1
-      
-      - run: cat node_modules/hl7.org.nz.fhir.ig.nhi/ValueSet-nhi-contactpoint-use.json
-        name: test2
-        
-      - run: ls node_modules/hl7.org.nz.fhir.ig.nhi
-        name: test3
-        
-      - run: ls -halt node_modules/hl7.org.nz.fhir.ig.nhi
-        name: test4
-
       - run: bb zen-profiles "node_modules/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
         name: Generate npm Zen packages
 
