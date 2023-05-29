@@ -75,7 +75,8 @@
             :let [download-path (.getPath (io/file work-dir-path dir))
                   ig-work-dir-path (.getPath (io/file download-path "site"))]]
       (zen.utils/unzip! url download-path)
-      (let [package-archive (io/file ig-work-dir-path "package.tgz")]
+      (let [package-archive (io/file ig-work-dir-path "package.tgz")
+            _ (println ig-work-dir-path ":" (:out (clojure.java.shell/sh "md5sum" (str ig-work-dir-path \/ "package.tgz"))))]
         (if (.exists package-archive)
           (do
             (clojure.java.shell/sh "tar" "-xzf" (.getPath package-archive) "-C" ig-work-dir-path)
