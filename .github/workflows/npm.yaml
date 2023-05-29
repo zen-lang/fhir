@@ -56,6 +56,9 @@ jobs:
       
       - run: cat node_modules/hl7.org.nz.fhir.ig.nhi/ValueSet-nhi-contactpoint-use.json
         name: test2
+        
+      - run: ls node_modules/hl7.org.nz.fhir.ig.nhi
+        name: test3
 
       - run: bb zen-profiles "node_modules/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
         name: Generate npm Zen packages
