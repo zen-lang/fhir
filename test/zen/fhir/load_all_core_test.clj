@@ -414,3 +414,24 @@
         (doseq [code ["RSK" "GOL" "CRT" "OPT" "EXPEC" "EVN.CRT" "PRMS.CRT" "RQO.CRT" "RSK.CRT" "GOL.CRT" "INT.CRT"]]
           (match-inter ztx "Concept" (str "http://terminology.hl7.org/CodeSystem/v3-ActMood-" code)
                        {:valueset #(contains? % "http://hl7.org/fhir/ValueSet/inactive")}))))))
+
+
+(t/deftest stu3-reference-elements-handled-correctly
+  (t/testing "STU3 elements that contains multiple types describing reference treats as NON-poly value"
+    (def r3-ztx (zen.core/new-context {}))
+    (sut/load-all r3-ztx nil {:whitelist deps, :blacklist blacklist :node-modules-folder (str (System/getProperty "user.dir") \/ "r3")})
+    (match-inter ztx "StructureDefinition" "http://hl7.org/fhir/StructureDefinition/MedicationDispense"
+                 {:|
+                  {:performer
+                   {:|
+                    {:actor
+                     {:polymorphic nil?
+                      :type "Reference"
+                      :profiles
+                      #{"http://hl7.org/fhir/StructureDefinition/RelatedPerson"
+                        "http://hl7.org/fhir/StructureDefinition/Practitioner"
+                        "http://hl7.org/fhir/StructureDefinition/Device"
+                        "http://hl7.org/fhir/StructureDefinition/Patient"
+                        "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
+                        "http://hl7.org/fhir/StructureDefinition/Organization"}
+                      :required true}}}}})))

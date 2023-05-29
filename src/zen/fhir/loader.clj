@@ -159,33 +159,46 @@
       code))
 
 
+(declare normalize-polymorphic)
+
+
+(defn flatize-type-target-profiles||profiles [el]
+  ;; In STU3 type is an array of entries each of which can contain
+  ;; a `profile` or a `targetProfile` (or both).
+  ;; In R4 each type can contain an array of `profile`s
+  ;; or an array or `targetProfile`-s (or both)
+  (let [profiles (mapv :profile (:type el))
+        target-profiles (mapv :targetProfile (:type el))
+        type' (-> (first (:type el))
+                  (assoc :profile profiles
+                         :targetProfile target-profiles)
+                  (utils/sanitize-obj))
+        el' (assoc el :type [type'])]
+    (normalize-polymorphic el')))
+
+
 (defn normalize-polymorphic [el & [stu3?]]
   (if (or (str/ends-with? (str (:id el)) "[x]")
-          (>= (count (:type el)) 2))
+          (and (not stu3?)
+               ;; Temporary solution (i hope so) for https://hl7.org/fhir/ebmrecommendation.html
+               ;; FHIR fellas lost poly-marker for polymorphic element in this profile.
+               ;; https://chat.fhir.org/#narrow/stream/179166-implementers/topic/Missed.20polymorphic.20marker discussion here.
+               ;; Usually (in 99% cases) polymorphic elements with more than 1 type contains poly-marker, **in versions after STU3**.
+               ;; STU3 includes reference elements which contains multiple types for every reference type)
+               (>= (count (:type el)) 2)))
     (-> (assoc el :polymorphic true)
         (dissoc :type)
         (assoc :| (->> (:type el)
-                         (reduce (fn [acc {c :code :as tp}]
-                                   (assoc acc (keyword c) (-> (reference-profiles {:type [tp]})
-                                                              (assoc :type (get-type-code tp)))))
-                                 {})))
+                       (reduce (fn [acc {c :code :as tp}]
+                                 (assoc acc (keyword c) (-> (reference-profiles {:type [tp]})
+                                                            (assoc :type (get-type-code tp)))))
+                               {})))
         (assoc :types (->> (:type el) (map :code) (into #{}))))
     (if-not (:type el)
       el
       (cond
         stu3?
-        ;; In STU3 type is an array of entries each of which can contain
-        ;; a `profile` or a `targetProfile` (or both).
-        ;; In R4 each type can contain an array of `profile`s
-        ;; or an array or `targetProfile`-s (or both)
-        (let [profiles (mapv :profile (:type el))
-              target-profiles (mapv :targetProfile (:type el))
-              type' (-> (first (:type el))
-                        (assoc :profile profiles
-                               :targetProfile target-profiles)
-                        (utils/sanitize-obj))
-              el' (assoc el :type [type'])]
-          (normalize-polymorphic el'))
+        (flatize-type-target-profiles||profiles el)
 
         (= 1 (count (:type el)))
         (let [tp  (first (:type el))
