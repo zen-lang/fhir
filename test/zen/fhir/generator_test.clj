@@ -354,7 +354,7 @@
       'import #{'zen.fhir 'fhir-r4.string}
 
       'schema
-      {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
+      {:zen/tags #{'zen.fhir/extension 'zen/schema 'zen.fhir/structure-schema}
        :zen/desc "An extension to provide a human-readable description of an organization."
        :confirms #{'fhir-r4.string/schema}
        :zen.fhir/type "string"
@@ -362,7 +362,7 @@
 
      'fhir-r4.condition-dueTo
      {'schema
-      {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
+      {:zen/tags #{'zen.fhir/extension 'zen/schema 'zen.fhir/structure-schema}
        :type 'zen/map
        :confirms nil?
        :zen.fhir/profileUri "http://hl7.org/fhir/StructureDefinition/condition-dueTo"
@@ -372,7 +372,7 @@
 
      'hl7-fhir-us-davinci-pdex-plan-net.practitioner-qualification
      {'schema
-      {:zen/tags #{'zen/schema 'zen.fhir/structure-schema}
+      {:zen/tags #{'zen.fhir/extension 'zen/schema 'zen.fhir/structure-schema}
        :confirms empty?
        :keys {:status {:confirms #{'fhir-r4.code/schema}}
               :whereValid {:type 'zen/vector
@@ -575,7 +575,7 @@
        'plannet.plannet-FromNetwork-extension
        {'ns 'plannet.plannet-FromNetwork-extension
 
-        'schema {:zen/tags          #{'zen/schema 'zen.fhir/structure-schema}
+        'schema {:zen/tags          #{'zen.fhir/extension 'zen/schema 'zen.fhir/structure-schema}
                  :zen/desc          "A reference to a healthcare provider insurance network (plannet-Network) for which the entity is/isn’t accepting new patients. This is a component of the NewPatients extension."
                  :confirms          #{'zen.fhir/Reference}
                  :zen.fhir/version zen-fhir-version

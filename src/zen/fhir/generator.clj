@@ -417,11 +417,18 @@
                                  "constraint"     'zen.fhir/profile-schema
                                  "specialization" 'zen.fhir/base-schema
                                  'zen.fhir/structure-schema)
+        extension-tag          (when (contains? inter-res :fhir/extension)
+                                 'zen.fhir/extension)
         schema-part            (generate-kind-schema fhir-inter [url inter-res])
         this-schema-sym        (symbol (name schema-ns) "schema")
         schema                 (-> (utils/safe-merge-with-into
                                      {:zen/tags            (into #{'zen/schema}
-                                                                 (when severity-tag [severity-tag]))
+                                                                 (cond-> []
+                                                                   severity-tag
+                                                                   (conj severity-tag)
+
+                                                                   extension-tag
+                                                                   (conj extension-tag)))
                                       :zen/desc            (:text-description inter-res)
                                       :zen.fhir/type       (:type inter-res)
                                       :zen.fhir/profileUri url
@@ -471,28 +478,31 @@
 
 
 (defn ig-entrypoint-resource-path [url rt resource]
-  (let [schema-resource-type (:type resource)
 
+  (let [schema-resource-type (:type resource)
+        _ (when (:fhir/extension resource)
+            (assert (= (:fhir/extension resource) url)))
         ig-artifact-type
         (case rt #_"NOTE: if unknown RT then generator will throw exception here. This is intended behavior"
-          "ValueSet"        :value-sets
-          "SearchParameter" :searches
-          "StructureDefinition"
-          (cond
-            (and (= "Extension" schema-resource-type)
-                 (= "constraint" (:derivation resource)))
-            :extensions
+              "ValueSet"        :value-sets
+              "SearchParameter" :searches
+              "StructureDefinition"
+              (cond
+                (or (and (= "Extension" schema-resource-type)
+                         (= "constraint" (:derivation resource)))
+                    (:fhir/extension resource))
+                :extensions
 
-            (and (= "resource" (:kind resource))
-                 (= "constraint" (:derivation resource)))
-            :profiles
+                (and (= "resource" (:kind resource))
+                     (= "constraint" (:derivation resource)))
+                :profiles
 
-            (and (= "resource" (:kind resource))
-                 (= "specialization" (:derivation resource)))
-            :base-schemas
+                (and (= "resource" (:kind resource))
+                     (= "specialization" (:derivation resource)))
+                :base-schemas
 
-            :else
-            :structures))]
+                :else
+                :structures))]
 
     (case ig-artifact-type
       (:profiles :base-schemas)
