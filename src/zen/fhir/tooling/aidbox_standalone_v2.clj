@@ -7,7 +7,8 @@
                                         packages-deps-nses]]
             [zen.fhir.inter-utils]
             [clojure.java.shell :as shell]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.java.io :as io]))
 
 (comment
   (require '[clj-async-profiler.core :as prof])
@@ -43,9 +44,8 @@
       (str/replace "." "-")
       (str/lower-case)))
 
-
 (defn -main [node-modules-folder zrc-dir & {:as opts}]
-  (let [{:as opts, :strs [omit-deps? preserve-package alt-package-name]} opts
+  (let [{:as opts, :strs [omit-deps? preserve-package alt-package-name rename-package]} opts
         ztx (zen-core/new-context {})]
     (load-all ztx nil {:node-modules-folder node-modules-folder})
     (generate-zen-schemas ztx)
@@ -55,7 +55,8 @@
                         (= package-name (symbol (coerce-to-internal-package-name preserve-package))))]
         (let [package-name package-name
               standalone-dir (str zrc-dir "/" package-name "/")
-              alt-package-name (or alt-package-name package-name)]
+              rename-package (when rename-package (read-string (slurp "resources/rename-package.edn")))
+              alt-package-name (or (get rename-package package-name) alt-package-name package-name)]
           (if omit-deps?
             (spit-zen-modules ztx standalone-dir package-name)
             (doseq [package (cons package-name (zen.fhir.inter-utils/get-all-deps package-name packages-deps))]

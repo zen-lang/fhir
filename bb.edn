@@ -119,6 +119,18 @@
                           (shell {:dir "r3"} "npm --registry=https://packages.simplifier.net install")
                           (shell {:dir "r3"} "npm --registry=https://packages.simplifier.net install"))}
 
+         init-r3-nictiz-hack {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
+                              :task (do
+                                      (shell {:dir "r3-tmp-nictiz-hack"} "npm --registry=https://packages.simplifier.net install")
+                                      (shell {:dir "r3-tmp-nictiz-hack"} "npm --registry=https://packages.simplifier.net install"))}
+
+         build-r3-nictiz-hack (binding [*command-line-args* (list "r3-tmp-nictiz-hack/"
+                                                                  "zrc/standalone_projects/"
+                                                                  nil
+                                                                  nil
+                                                                  true)]
+                                (run 'build-stanadlone-projects))
+
          build (clojure "-X:build all")
 
          zen-profiles (let [[node-modules zrc ver package] *command-line-args*]
@@ -126,12 +138,15 @@
 
          zen-profiles-packages (clojure (str "-J-Xmx16g -M -m zen.fhir.tooling-packages " (str/join " " *command-line-args*)))
 
-         build-stanadlone-projects (let [[node-modules zrc preserve-package alt-package-name] *command-line-args*
+         build-stanadlone-projects (let [[node-modules zrc preserve-package alt-package-name rename-package] *command-line-args*
                                          opts (cond-> {}
                                                 preserve-package
                                                 (assoc "preserve-package" preserve-package)
                                                 alt-package-name
-                                                (assoc "alt-package-name" alt-package-name))]
+                                                (assoc "alt-package-name" alt-package-name)
+                                                rename-package
+                                                (assoc "rename-package" rename-package))]
+
                                      (clojure (str "-M -m zen.fhir.tooling.aidbox-standalone-v2 " node-modules " " zrc " " (str/join " " (flatten (seq opts))))))
 
          build-standalone-zen-profiles-all-versions

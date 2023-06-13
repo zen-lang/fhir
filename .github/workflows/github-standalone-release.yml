@@ -44,11 +44,17 @@ jobs:
       - run: bb init-r3
         name: Install npm R3 packages
 
+      - run: bb init-r3
+        name: Install specific version of NICTIZ package, tmp hack
+
       - name: Build jar
         run: bb build
 
       - name: Build standalone R3
         run: bb build-stanadlone-projects "r3/node_modules/" "zrc/standalone_projects/"
+
+      - name: Build R3-nictiz-hack
+        run: bb build-r3-nictiz-hack
 
       - name: Build standalone projects
         run: bb build-standalone-zen-profiles-all-versions "node_modules/" "zrc/standalone_projects/"
