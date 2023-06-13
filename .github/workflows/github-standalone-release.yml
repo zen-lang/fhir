@@ -44,7 +44,7 @@ jobs:
       - run: bb init-r3
         name: Install npm R3 packages
 
-      - run: bb init-r3
+      - run: bb init-r3-nictiz-hack
         name: Install specific version of NICTIZ package, tmp hack
 
       - name: Build jar
