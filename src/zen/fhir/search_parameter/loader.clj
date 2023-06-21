@@ -86,7 +86,7 @@
   (let [knife-paths (fhirpath/fhirpath->knife (:expression inter))]
     (reduce-kv
      (fn [inter base-rt paths]
-       (assoc-in inter [:expr base-rt]
+       (assoc-in inter [:expr (keyword base-rt)]
                  (parse-components ztx inter base-rt paths (:component inter))))
      inter
      knife-paths)))

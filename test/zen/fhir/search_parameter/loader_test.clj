@@ -137,7 +137,7 @@
                    :valueCode "normative"}],
                  :zen.fhir/schema-ns 'fhir-r5.search.Observation-combo-code-value-quantity,
                  :expr
-                 {"Observation"
+                 {:Observation
                   {:knife
                    [[["code"]
                      ["value" "Quantity"]]
