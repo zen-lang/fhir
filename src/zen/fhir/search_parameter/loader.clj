@@ -1,6 +1,5 @@
 (ns zen.fhir.search-parameter.loader
   (:require [zen.fhir.utils :as utils]
-
             [zen.fhir.search-parameter.template :as template]
             [zen.fhir.search-parameter.fhirpath :as fhirpath]
 
@@ -13,18 +12,23 @@
     (println :search-parameter/no-expression (:url res))
 
     (= "composite" (:type res))
-    (println :search-parameter/composite-not-supported (:url res))
-
-    :else
     (merge res
            (when-let [package-ns (:zen.fhir/package-ns res)]
              {:zen.fhir/schema-ns (symbol (str (name package-ns) ".search." (:id res)))})
-           {:id (:id res)
-            :url (:url res)
-            :type (:type res)
-            :sp-name (:code res)
-            :base-resource-types (:base res)
-            :expression (:expression res)})))
+           {:sp-name (:code res)
+            :base-resource-types (:base res)})
+
+    :else
+    (merge res
+          (when-let [package-ns (:zen.fhir/package-ns res)]
+            {:zen.fhir/schema-ns (symbol (str (name package-ns) ".search." (:id res)))})
+          {:id (:id res)
+           :url (:url res)
+           :type (:type res)
+           :sp-name (:code res)
+           :base-resource-types (:base res)
+           :expression (:expression res)})))
+    
 
 (defn get-type-by-knife [ztx inter base-rt knife]
   (let [inter-path (->> (remove map? knife)
@@ -42,29 +46,63 @@
                                :polymorphic? true}))
             (:types el)))))
 
-(defn process-search-parameter [ztx inter]
+(defn process-expression [ztx inter base-rt]
   (let [knife-paths (fhirpath/fhirpath->knife (:expression inter))
-        expr        (into {}
-                          (map (fn [base-rt]
-                                 (let [knifes      (get knife-paths base-rt)
-                                       default-knifes (get knife-paths :default)
-                                       all-knifes (into [] (concat knifes default-knifes))
-                                       jsonpath    (fhirpath/knife->jsonpath all-knifes)
-                                       sp-template (keyword (:type inter))
-                                       types       (into #{}
-                                                         (mapcat (partial get-type-by-knife ztx inter base-rt))
-                                                         knifes)]
-                                   {(keyword base-rt)
-                                    (utils/strip-nils
-                                     {:knife      all-knifes
-                                      :jsonpath   jsonpath
-                                      :data-types types
-                                      :template   sp-template
-                                      :sql        (template/expand sp-template types jsonpath)})})))
-                          (:base inter))]
-    (-> inter
-        (dissoc :expression)
-        (assoc :expr expr))))
+        knifes      (get knife-paths base-rt)
+        default-knifes (get knife-paths :default)
+        all-knifes (into [] (concat knifes default-knifes))
+        jsonpath    (fhirpath/knife->jsonpath all-knifes)
+        sp-template (keyword (:type inter))
+        types       (into #{}
+                          (mapcat (partial get-type-by-knife ztx inter base-rt))
+                          knifes)]
+     {(keyword base-rt)
+      (utils/strip-nils
+        {:knife      all-knifes
+         :jsonpath   jsonpath
+         :data-types types
+         :template   sp-template
+         :sql        (template/expand sp-template types jsonpath)})}))
+
+(defn process-composite-expression [ztx inter base-rt paths]
+  (let [jsonpath    (mapv fhirpath/knife->jsonpath paths)
+        types       (reduce
+                     #(into %1 (mapcat (partial get-type-by-knife ztx inter base-rt)) %2)
+                     #{}
+                     paths)]
+     (utils/strip-nils
+      {:knife      paths
+       :jsonpath   jsonpath
+       :data-types types
+       :template   :composite
+       :sql        (template/expand :composite types jsonpath)})))
+
+(defn parse-components [ztx inter base-rt base-paths components]
+  (let [component-paths (mapcat (comp :default fhirpath/fhirpath->knife :expression) components)
+        base-components-paths (mapv #(mapv (partial into %) component-paths) base-paths)]
+    (process-composite-expression ztx inter base-rt base-components-paths)))
+
+(defn process-composite-search-parameter [ztx inter]
+  (let [knife-paths (fhirpath/fhirpath->knife (:expression inter))]
+    (reduce-kv
+     (fn [inter base-rt paths]
+       (assoc-in inter [:expr base-rt]
+                 (parse-components ztx inter base-rt paths (:component inter))))
+     inter
+     knife-paths)))
+
+(defn process-common-search-parameter [ztx inter]
+  (->> inter
+       :base
+       (into {} (map (partial process-expression ztx inter)))
+       (assoc inter :expr)))
+
+(defn process-search-parameter [ztx inter]
+  (->
+   (if (= "composite" (:type inter))
+    (process-composite-search-parameter ztx inter)
+    (process-common-search-parameter ztx inter))
+   (dissoc :expression)))
 
 (defn process-search-parameters [ztx]
   (swap! ztx update-in [:fhir/inter "SearchParameter"]

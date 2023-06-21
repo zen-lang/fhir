@@ -39,19 +39,52 @@
                 :version "4.0.1",
                 :sp-name "given"})
 
+(def loaded-composite-sp {:zen.fhir/package-ns 'fhir-r5,
+                          :expression "Observation | Observation.component",
+                          :multipleOr false,
+                          :name "combo-code-value-quantity",
+                          :type "composite",
+                          :resourceType "SearchParameter",
+                          :component
+                          [{:definition "http://hl7.org/fhir/SearchParameter/Observation-combo-code",
+                            :expression "code"}
+                           {:definition
+                            "http://hl7.org/fhir/SearchParameter/Observation-combo-value-quantity",
+                            :expression "value.ofType(Quantity)"}],
+                          :base-resource-types ["Observation"],
+                          :extension
+                          [{:url
+                            "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+                            :valueCode "normative"}],
+                          :zen.fhir/schema-ns 'fhir-r5.search.Observation-combo-code-value-quantity,
+                          :status "active",
+                          :id "Observation-combo-code-value-quantity",
+                          :processingMode "normal",
+                          :url
+                          "http://hl7.org/fhir/SearchParameter/Observation-combo-code-value-quantity",
+                          :code "combo-code-value-quantity",
+                          :base ["Observation"],
+                          :version "5.0.0",
+                          :_source "zen.fhir",
+                          :sp-name "combo-code-value-quantity"})
+
+
 (def structure-definition-ir-fixture
   {"http://hl7.org/fhir/StructureDefinition/Patient"
    {:| {:name {:| {:given {:type "string"}
                    :abc {:type "string"}}}}}
    "http://hl7.org/fhir/StructureDefinition/Practitioner"
    {:| {:name {:| {:given {:type "string"}
-                   :abc {:type "string"}}}}}})
+                   :abc {:type "string"}}}}}
+   "http://hl7.org/fhir/StructureDefinition/Observation"
+   {:| {:code {:type "CodeableConcept"}
+        :value {:| {:Quantity {:type "Quantity"}}}}}})
 
 (def ztx
   (atom {:fhir/inter {"StructureDefinition" structure-definition-ir-fixture
-                 "SearchParameter"
-                 {"http://hl7.org/fhir/SearchParameter/individual-given"
-                  loaded-sp}}}))
+                      "SearchParameter"
+                      {"http://hl7.org/fhir/SearchParameter/individual-given" loaded-sp
+                       "http://hl7.org/fhir/SearchParameter/Observation-combo-code-value-quantity" loaded-composite-sp}}}))
 
 (t/deftest process-on-load-test
   (t/is (= loaded-sp
@@ -83,3 +116,47 @@
                  :base ["Patient" "Practitioner"]
                  :version "4.0.1"
                  :sp-name "given"}))
+
+(t/deftest process-composite-search-parameter-test
+  (matcho/match (sut/process-search-parameter ztx user/composite-sp)
+                {:zen.fhir/package-ns 'fhir-r5,
+                 :multipleOr false,
+                 :name "combo-code-value-quantity",
+                 :type "composite",
+                 :resourceType "SearchParameter",
+                 :component
+                 [{:definition "http://hl7.org/fhir/SearchParameter/Observation-combo-code",
+                   :expression "code"}
+                  {:definition
+                   "http://hl7.org/fhir/SearchParameter/Observation-combo-value-quantity"
+                   :expression "value.ofType(Quantity)"}],
+                 :base-resource-types ["Observation"],
+                 :extension
+                 [{:url
+                   "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+                   :valueCode "normative"}],
+                 :zen.fhir/schema-ns 'fhir-r5.search.Observation-combo-code-value-quantity,
+                 :expr
+                 {"Observation"
+                  {:knife
+                   [[["code"]
+                     ["value" "Quantity"]]
+                    [["component" "code"]
+                     ["component" "value" "Quantity"]]],
+                   :jsonpath
+                   [["$.\"code\"[*]" "$.\"value\".\"Quantity\"[*]"]
+                    ["$.\"component\".\"code\"[*]" "$.\"component\".\"value\".\"Quantity\"[*]"]]
+                   :data-types
+                   #{{:type "Quantity", :polymorphic? false}
+                     {:type "CodeableConcept", :polymorphic? false}}
+                   :template :composite}},
+                 :status "active",
+                 :id "Observation-combo-code-value-quantity",
+                 :processingMode "normal",
+                 :url
+                 "http://hl7.org/fhir/SearchParameter/Observation-combo-code-value-quantity",
+                 :code "combo-code-value-quantity",
+                 :base ["Observation"],
+                 :version "5.0.0",
+                 :_source "zen.fhir",
+                 :sp-name "combo-code-value-quantity"}))
