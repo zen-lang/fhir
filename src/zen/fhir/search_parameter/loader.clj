@@ -1,20 +1,12 @@
 (ns zen.fhir.search-parameter.loader
   (:require [zen.fhir.utils :as utils]
             [zen.fhir.search-parameter.template :as template]
-            [zen.fhir.search-parameter.fhirpath :as fhirpath]
-            [com.rpl.specter :as sp]))
+            [zen.fhir.search-parameter.fhirpath :as fhirpath]))
 
 (defn process-on-load [res]
   (cond
     (nil? (:expression res))
     (println :search-parameter/no-expression (:url res))
-
-    (= "composite" (:type res))
-    (merge res
-           (when-let [package-ns (:zen.fhir/package-ns res)]
-             {:zen.fhir/schema-ns (symbol (str (name package-ns) ".search." (:id res)))})
-           {:sp-name (:code res)
-            :base-resource-types (:base res)})
 
     :else
     (merge res
@@ -95,20 +87,23 @@
                     #(into %1 (mapcat (partial get-type-by-knife ztx inter base-rt)) %2)
                     #{}
                     paths)]
-     (utils/strip-nils
-      {:knife      full-paths
-       :jsonpath   jsonpath
-       :data-types types
-       :search-types search-types
-       :template   :composite
-       :sql        (template/expand :composite types jsonpath)})))
+    (if (some nil? search-types)
+      nil
+      (utils/strip-nils
+        {:knife      full-paths
+         :jsonpath   jsonpath
+         :data-types types
+         :search-types search-types
+         :template   :composite
+         :sql        (template/expand :composite types jsonpath)}))))
 
 (defn process-composite-search-parameter [ztx inter]
   (let [knife-paths (fhirpath/fhirpath->knife (:expression inter))]
     (reduce-kv
      (fn [inter base-rt paths]
-       (assoc-in inter [:expr (keyword base-rt)]
-                 (process-composite-expression ztx inter base-rt paths (:component inter))))
+       (if-let [expr (process-composite-expression ztx inter base-rt paths (:component inter))]
+         (assoc-in inter [:expr (keyword base-rt)] expr)
+         (reduced nil)))
      inter
      knife-paths)))
 
@@ -127,6 +122,9 @@
 
 (defn process-search-parameters [ztx]
   (swap! ztx update-in [:fhir/inter "SearchParameter"]
-         #(sp/transform [sp/MAP-VALS]
-                        (partial process-search-parameter ztx)
-                        %)))
+         #(reduce-kv
+           (fn [search-params sp-name sp]
+             (if-let [sp (process-search-parameter ztx sp)]
+               (assoc search-params sp-name sp)
+               search-params))
+           {} %)))
