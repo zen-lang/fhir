@@ -56,11 +56,14 @@ jobs:
       - name: Build R3-nictiz-hack
         run: bb build-r3-nictiz-hack
 
-      - name: Build standalone projects
-        run: bb build-standalone-zen-profiles-all-versions "node_modules/" "zrc/standalone_projects/"
-
       - name: Build standalone R4B
         run: bb build-stanadlone-projects "r4b/" "zrc/standalone_projects/"
+
+      - name: cleanup r4.terminology from r4b to avoid clashes
+        run: rm -rf zrc/standalone_projects/hl7-terminology-r4.zip
+
+      - name: Build standalone projects
+        run: bb build-standalone-zen-profiles-all-versions "node_modules/" "zrc/standalone_projects/"
 
       - name: Build standalone R5
         run: bb build-stanadlone-projects "r5/" "zrc/standalone_projects/"

@@ -44,15 +44,18 @@ jobs:
         
       - run: bb init-r3
         name: Install npm R3 packages
-        
+
+      - name: Genrate npm R4B Zen packages
+        run: bb zen-profiles "r4b/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
+
+      - name: cleanup r4.terminology from r4b to avoid clashes
+        run: rm -rf zrc/node_modules/hl7-terminology-r4
+
       - run: bb zen-profiles "node_modules/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
         name: Generate npm Zen packages
 
       - name: Genrate npm R3 Zen packages
         run: bb zen-profiles "r3/node_modules/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
-
-      - name: Genrate npm R4B Zen packages
-        run: bb zen-profiles "r4b/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
 
       - name: Genrate npm R5 Zen packages
         run: bb zen-profiles "r5/" "zrc/node_modules/" "${{ env.RELEASE_VERSION }}"
