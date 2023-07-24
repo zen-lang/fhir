@@ -148,20 +148,12 @@
                  :zen.fhir/schema-ns 'fhir-r5.search.Observation-combo-code-value-quantity,
                  :expr
                  {:Observation
-                  {:knife
-                   [[[["code"]]
-                     [["value" "Quantity"]
-                      ["value" "Number"]]]
-                    [[["component" "code"]]
-                     [["component" "value" "Quantity"]
-                      ["component" "value" "Number"]]]]
-                   :jsonpath
-                   [[["$.\"code\"[*]"]
-                     ["$.\"value\".\"Quantity\"[*]"
-                      "$.\"value\".\"Number\"[*]"]]
-                    [["$.\"component\".\"code\"[*]"]
-                     ["$.\"component\".\"value\".\"Quantity\"[*]"
-                      "$.\"component\".\"value\".\"Number\"[*]"]]]
+                  {:base-knife [[] ["component"]]
+                   :base-jsonpath ["$[*]" "$.\"component\"[*]"]
+                   :component-knife [[["code"]]
+                                     [["value" "Quantity"]]],
+                   :component-jsonpath [["$.\"code\"[*]"]
+                                        ["$.\"value\".\"Quantity\"[*]"]],
                    :data-types
                    #{{:type "Quantity", :polymorphic? false}
                      {:type "CodeableConcept", :polymorphic? false}}

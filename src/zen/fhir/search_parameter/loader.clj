@@ -54,18 +54,6 @@
          :template   sp-template
          :sql        (template/expand sp-template types jsonpath)})}))
 
-(defn merge-with-base-paths [base-paths components]
-  (mapv
-   (fn [base-path]
-     (mapv
-      (fn [c]
-        (mapv
-         (fn [knife-path]
-           (into base-path knife-path))
-         c))
-      components))
-   base-paths))
-
 (defn components-search-types [ztx components]
   (mapv
    (fn [component]
@@ -78,30 +66,33 @@
            keyword)))
    components))
 
-(defn process-composite-expression [ztx inter base-rt base-paths components]
-  (let [paths (map (comp :default fhirpath/fhirpath->knife :expression) components)
+(defn process-composite-expression [ztx inter base-rt base-paths]
+  (let [components (:component inter)
+        base-jsonpath (fhirpath/knife->jsonpath base-paths)
+        components-paths (mapv (comp :default fhirpath/fhirpath->knife :expression) components)
+        components-jsonpaths (mapv fhirpath/knife->jsonpath components-paths)
         search-types (components-search-types ztx components)
-        full-paths (merge-with-base-paths base-paths paths)
-        jsonpath   (mapv (partial mapv fhirpath/knife->jsonpath) full-paths)
         types      (reduce
                     #(into %1 (mapcat (partial get-type-by-knife ztx inter base-rt)) %2)
                     #{}
-                    paths)]
+                    components-paths)]
     (if (some nil? search-types)
       nil
       (utils/strip-nils
-        {:knife      full-paths
-         :jsonpath   jsonpath
+        {:base-knife base-paths
+         :base-jsonpath base-jsonpath
+         :component-knife components-paths
+         :component-jsonpath components-jsonpaths
          :data-types types
          :search-types search-types
          :template   :composite
-         :sql        (template/expand :composite types jsonpath)}))))
+         :sql        (template/expand :composite types base-rt)}))))
 
 (defn process-composite-search-parameter [ztx inter]
   (let [knife-paths (fhirpath/fhirpath->knife (:expression inter))]
     (reduce-kv
      (fn [inter base-rt paths]
-       (if-let [expr (process-composite-expression ztx inter base-rt paths (:component inter))]
+       (if-let [expr (process-composite-expression ztx inter base-rt paths)]
          (assoc-in inter [:expr (keyword base-rt)] expr)
          (reduced nil)))
      inter
