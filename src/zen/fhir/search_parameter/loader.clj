@@ -1,7 +1,9 @@
 (ns zen.fhir.search-parameter.loader
-  (:require [zen.fhir.utils :as utils]
-            [zen.fhir.search-parameter.template :as template]
-            [zen.fhir.search-parameter.fhirpath :as fhirpath]))
+  (:require
+   [clojure.string :as str]
+   [zen.fhir.utils :as utils]
+   [zen.fhir.search-parameter.template :as template]
+   [zen.fhir.search-parameter.fhirpath :as fhirpath]))
 
 (defn process-on-load [res]
   (cond
@@ -66,10 +68,20 @@
            keyword)))
    components))
 
+(defn remove-fhirpath-references [fhirpath]
+  (str/replace fhirpath #"%(resource|rootResource|context)\." ""))
+
+(defn component->knife-path [component]
+  (-> component
+      :expression
+      remove-fhirpath-references
+      fhirpath/fhirpath->knife
+      :default))
+
 (defn process-composite-expression [ztx inter base-rt base-paths]
   (let [components (:component inter)
         base-jsonpath (fhirpath/knife->jsonpath base-paths)
-        components-paths (mapv (comp :default fhirpath/fhirpath->knife :expression) components)
+        components-paths (mapv component->knife-path components)
         components-jsonpaths (mapv fhirpath/knife->jsonpath components-paths)
         search-types (components-search-types ztx components)
         types      (reduce

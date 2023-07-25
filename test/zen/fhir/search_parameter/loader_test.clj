@@ -59,7 +59,10 @@
                             :expression "code"}
                            {:definition
                             "http://hl7.org/fhir/SearchParameter/Observation-combo-value-quantity",
-                            :expression "value.ofType(Quantity) | value.ofType(Number)"}],
+                            :expression "value.ofType(Quantity) | value.ofType(Number)"},
+                           {:definition
+                            "http://hl7.org/fhir/SearchParameter/Observation-combo-value-quantity",
+                            :expression "%resource.value.ofType(Quantity)"}],
                           :base-resource-types ["Observation"],
                           :extension
                           [{:url
@@ -139,7 +142,10 @@
                    :expression "code"}
                   {:definition
                    "http://hl7.org/fhir/SearchParameter/Observation-combo-value-quantity"
-                   :expression "value.ofType(Quantity) | value.ofType(Number)"}],
+                   :expression "value.ofType(Quantity) | value.ofType(Number)"},
+                  {:definition
+                            "http://hl7.org/fhir/SearchParameter/Observation-combo-value-quantity",
+                            :expression "%resource.value.ofType(Quantity)"}],
                  :base-resource-types ["Observation"],
                  :extension
                  [{:url
@@ -148,12 +154,16 @@
                  :zen.fhir/schema-ns 'fhir-r5.search.Observation-combo-code-value-quantity,
                  :expr
                  {:Observation
-                  {:base-knife [[] ["component"]]
-                   :base-jsonpath ["$[*]" "$.\"component\"[*]"]
-                   :component-knife [[["code"]]
-                                     [["value" "Quantity"]]],
-                   :component-jsonpath [["$.\"code\"[*]"]
-                                        ["$.\"value\".\"Quantity\"[*]"]],
+                  {:base-knife [[nil] ["component" nil] nil]
+                   :base-jsonpath ["$[*]" "$.\"component\"[*]" nil]
+                   :component-knife [[["code"] nil]
+                                     [["value" "Quantity" nil]
+                                      ["value" "Number" nil]
+                                      nil]
+                                     [["value" "Quantity" nil] nil]],
+                   :component-jsonpath [["$.\"code\"[*]" nil]
+                                        ["$.\"value\".\"Quantity\"[*]" "$.\"value\".\"Number\"[*]" nil]
+                                        ["$.\"value\".\"Quantity\"[*]" nil] nil],
                    :data-types
                    #{{:type "Quantity", :polymorphic? false}
                      {:type "CodeableConcept", :polymorphic? false}}
