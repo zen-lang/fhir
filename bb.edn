@@ -109,7 +109,7 @@
          my-debug {:task (sh "cat node_modules/hl7.org.nz.fhir.ig.nhi/ValueSet-nhi-address-type.json || echo \"FAIL. but it's ok\"")}
 
          kbv-basis-patch
-         {:task (shell "cp resources/KBV-PR-Base-Patient.json node_modules/kbv.basis/KBV-PR-Base-Patient.json")}
+         {:task (shell "cp resources/KBV_PR_Base_Patient.json node_modules/kbv.basis/KBV_PR_Base_Patient.json")}
 
          init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm kbv-basis-patch pull-nz-igs pull-r4b pull-r5 pull-au-igs pull-chile-igs]}
 
