@@ -108,7 +108,10 @@
 
          my-debug {:task (sh "cat node_modules/hl7.org.nz.fhir.ig.nhi/ValueSet-nhi-address-type.json || echo \"FAIL. but it's ok\"")}
 
-         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm pull-nz-igs pull-r4b pull-r5 pull-au-igs pull-chile-igs]}
+         kbv-basis-patch
+         {:task (shell "cp resources/KBV-PR-Base-Patient.json node_modules/kbv.basis/KBV-PR-Base-Patient.json")}
+
+         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm kbv-basis-patch pull-nz-igs pull-r4b pull-r5 pull-au-igs pull-chile-igs]}
 
          repl {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                :task (clojure "-M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]")}
