@@ -12,7 +12,8 @@
 
 
 (defn github-release-zen-packages [{:keys [node-modules-folder out-dir package-name zen-fhir-lib-url git-url-format git-auth-url-format
-                                           blacklisted-packages remote-repo-url produce-remote-ftr-manifests?]}]
+                                           blacklisted-packages remote-repo-url produce-remote-ftr-manifests?
+                                           blacklist]}]
   (let [github-user  (System/getenv "ZEN_FHIR_RELEASE_GITHUB_USER")
         github-token (System/getenv "ZEN_FHIR_RELEASE_GITHUB_TOKEN")
         org-name     (System/getenv "ZEN_FHIR_RELEASE_GITHUB_ORG")
@@ -23,9 +24,10 @@
 
         ztx (zen.core/new-context {:env {:github-token github-token}
                                    :org-name org-name})
-        _ (zen.fhir.loader/load-all ztx nil {:node-modules-folder node-modules-folder
-                                             :skip-concept-processing true})
-
+        _ (zen.fhir.loader/load-all ztx nil (cond-> {:node-modules-folder node-modules-folder
+                                                     :skip-concept-processing true}
+                                              blacklist
+                                              (assoc :blacklist blacklist)))
         ftr-build-deps-coords (zen.fhir.inter-utils/build-ftr-deps-coords {:node-modules-folder node-modules-folder})
 
         ftr-context (ftr.core/extract {:cfg
@@ -98,17 +100,18 @@
      :main-package         main-package}))
 
 
-(defn -main [return-path node-modules-folder out-dir & [zen-fhir-lib-url git-url-format git-auth-url-format package-name]]
+(defn -main [return-path node-modules-folder out-dir & [zen-fhir-lib-url git-url-format git-auth-url-format package-name blacklist]]
   (spit return-path
         (github-release-zen-packages
           {:node-modules-folder  node-modules-folder
            :out-dir              out-dir
-           :package-name         package-name
-           :zen-fhir-lib-url     zen-fhir-lib-url
-           :git-auth-url-format  git-auth-url-format
-           :git-url-format       git-url-format
+           :package-name         (when (not= package-name "nil") package-name)
+           :zen-fhir-lib-url     (when (not= zen-fhir-lib-url "nil") zen-fhir-lib-url)
+           :git-auth-url-format  (when (not= git-auth-url-format "nil") git-auth-url-format)
+           :git-url-format       (when (not= git-url-format "nil") git-url-format)
            :remote-repo-url      "https://storage.googleapis.com"
            :produce-remote-ftr-manifests? true
+           :blacklist (when blacklist (read-string blacklist))
            :blacklisted-packages #{}})
         :append true))
 
