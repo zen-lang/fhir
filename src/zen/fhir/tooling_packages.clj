@@ -111,7 +111,7 @@
            :git-url-format       (when (not= git-url-format "nil") git-url-format)
            :remote-repo-url      "https://storage.googleapis.com"
            :produce-remote-ftr-manifests? true
-           :blacklist (when blacklist (read-string blacklist))
+           :blacklist (when blacklist (read-string (slurp blacklist)))
            :blacklisted-packages #{}})
         :append true))
 
