@@ -389,8 +389,10 @@
   (spit package-file-path (with-out-str (clojure.pprint/pprint package-file)))
   config)
 
+(def a (atom []))
 
 (defn commit-zen-changes [{:keys [package-dir package] :as config}]
+  (swap! a conj config)
   (sh! "git" "add" "--all" :dir package-dir)
   (sh! "git" "commit" "-m" "'Update zen package'" :dir package-dir)
   config)
@@ -457,7 +459,7 @@
                 (map (partial rsync-ftr> ztx))
                 (map (partial delete-ftr-folder ztx))
                 (map commit-zen-changes)
-                (map release-zen-package)
+                #_(map release-zen-package)
                 (map rm-local-repo!)]]
     (apply comp (interleave xforms
                             (repeat (reduced-shortcircuit-xf))

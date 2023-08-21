@@ -23,12 +23,14 @@
 
 (comment
   (let [ztx (zen-core/new-context {})]
-    (load-all ztx nil {#_#_:params {"hl7.fhir.r4.core"     {:zen.fhir/package-ns 'fhir-r4}
-                                    "hl7.fhir.r3.core"     {:zen.fhir/package-ns 'fhir-r3}
-                                    "hl7.fhir.us.core"     {:zen.fhir/package-ns 'us-core}
-                                    "hl7.fhir.us.mcode"    {:zen.fhir/package-ns 'mcode-v1}
-                                    "hl7.fhir.us.carin-bb" {:zen.fhir/package-ns 'carin-bb-v1}}
-                       :node-modules-folder "/home/puck/Work/sansara/box/libs/fhir/r3/node_modules"
+    (load-all ztx nil {:params {;"hl7.fhir.r4.core"     {:zen.fhir/package-ns 'fhir-r4}
+                                "hl7.fhir.r4b.core"     {:zen.fhir/package-ns 'fhir-r4b}
+                                ;"hl7.fhir.r3.core"     {:zen.fhir/package-ns 'fhir-r3}
+                                ;"hl7.fhir.us.core"     {:zen.fhir/package-ns 'us-core}
+                                ;"hl7.fhir.us.mcode"    {:zen.fhir/package-ns 'mcode-v1}
+                                #_#_"hl7.fhir.us.carin-bb" {:zen.fhir/package-ns 'carin-bb-v1}}
+
+                       :node-modules-folder "/home/hex/Development/Projects/fhir/r4b/hl7.fhir.r4b.core"
                        :blacklist  {"StructureDefinition"
                                     #{"http://hl7.org/fhir/StructureDefinition/allergyintolerance-substanceExposureRisk"
                                       "http://hl7.org/fhir/StructureDefinition/cqif-measureInfo"

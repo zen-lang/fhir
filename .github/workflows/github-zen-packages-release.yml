@@ -57,7 +57,7 @@ jobs:
       - run: git config --global user.email "hello@health-samurai.io" && git config --global user.name "zen-lang/fhir GH Action —  release"
         name: Set up git config
 
-      - run: bb zen-profiles-packages "release.txt" "r4b/" "zen-packages/"
+      - run: bb zen-profiles-packages return-path=release.txt node-modules-folder=r4b/ out-dir=zen-packages/ release-to-github=false
         name: Generate & release npm r4b core zen package
         env:
           ZEN_FHIR_RELEASE_GITHUB_USER: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_USER }}
@@ -67,14 +67,14 @@ jobs:
       - name: cleanup r4.terminology from r4b to avoid clashes
         run: rm -rf zen-packages/hl7-terminology-r4
 
-      - run: bb zen-profiles-packages "release.txt" "node_modules/" "zen-packages/"
+      - run: bb zen-profiles-packages "release.txt" "node_modules/" "zen-packages/" true
         name: Generate & release npm Zen packages
         env:
           ZEN_FHIR_RELEASE_GITHUB_USER: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_USER }}
           ZEN_FHIR_RELEASE_GITHUB_TOKEN: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_TOKEN }}
           ZEN_FHIR_RELEASE_GITHUB_ORG: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_ORG }}
 
-      - run: bb zen-profiles-packages "release.txt" "r5/" "zen-packages/"
+      - run: bb zen-profiles-packages "release.txt" "r5/" "zen-packages/" true
         name: Generate & release npm r5 core zen package
         env:
           ZEN_FHIR_RELEASE_GITHUB_USER: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_USER }}

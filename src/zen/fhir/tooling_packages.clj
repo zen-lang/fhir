@@ -97,8 +97,18 @@
      :out-dir              out-dir
      :main-package         main-package}))
 
+(defn parse-params [params]
+  (reduce
+   (fn [acc param]
+     (println param)
+     (let [[key value] (clojure.string/split param #"=" 2)]
+       (when (nil? value)
+         (throw (Exception. (format "Missing value for the key %s" key))))
+       (assoc acc (keyword key) value)))
+   {}
+   params))
 
-(defn -main [return-path node-modules-folder out-dir & [zen-fhir-lib-url git-url-format git-auth-url-format package-name]]
+(defn main-build [{:keys [return-path node-modules-folder out-dir release-to-github zen-fhir-lib-url git-url-format git-auth-url-format package-name] :as params}]
   (spit return-path
         (github-release-zen-packages
           {:node-modules-folder  node-modules-folder
@@ -107,16 +117,16 @@
            :zen-fhir-lib-url     zen-fhir-lib-url
            :git-auth-url-format  git-auth-url-format
            :git-url-format       git-url-format
+           :release-to-github    release-to-github
            :remote-repo-url      "https://storage.googleapis.com"
            :produce-remote-ftr-manifests? true
            :blacklisted-packages #{}})
         :append true))
 
+(defn -main [& params]
+  (main-build (parse-params params)))
+
 
 (comment
 
-  (-main "release.txt" "node_modules" "/tmp/output")
-
-
-
-  )
+  (-main "release.txt" "node_modules" "/tmp/output" false))
