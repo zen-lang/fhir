@@ -39,7 +39,7 @@
     "markdown"     {:type      zen/string
                     :maxLength 1048576}
     "id"           {:type  zen/string
-                    :regex "^[A-Za-z0-9\\-\\.]{1,64}$"}
+                    :regex "^[A-Za-z0-9\\-\\.]*$"}
     "uuid"         {:type  zen/string}
     "oid"          {:type  zen/string
                     :regex "^urn:oid:[0-2](\\.(0|[1-9][0-9]*))+$"}
