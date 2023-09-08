@@ -111,7 +111,7 @@
          kbv-basis-patch
          {:task (shell "cp resources/KBV_PR_Base_Patient.json node_modules/kbv.basis/KBV_PR_Base_Patient.json")}
 
-         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm kbv-basis-patch pull-nz-igs pull-r4b pull-r5 pull-au-igs pull-chile-igs]}
+         init {:depends [set-zen-fhir-version set-zen-fhir-lib-version install-npm kbv-basis-patch pull-nz-igs pull-r4b pull-r5 pull-au-igs pull-chile-igs build-us-core-601]}
 
          repl {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                :task (clojure "-M:test:nrepl -m nrepl.cmdline --middleware [cider.nrepl/cider-middleware]")}
@@ -137,6 +137,20 @@
                                                                   nil
                                                                   true)]
                                 (run 'build-stanadlone-projects))
+
+         build-us-core-601 {:task (do
+                                    (shell {:dir "us-core-610"} "npm --registry=https://packages.simplifier.net install")
+                                    (shell {:dir "us-core-610"} "npm --registry=https://packages.simplifier.net install")
+                                    (let [root-manifest-file (io/file "us-core-610/package.json")
+                                          root-manifest-deps (:dependencies (json/parse-string (slurp root-manifest-file) keyword))
+                                          us-core-manifest-file (io/file "us-core-610/node_modules/hl7.fhir.us.core/package.json")
+                                          updated-manifest (assoc (json/parse-string (slurp us-core-manifest-file) keyword)
+                                                                  :name "hl7.fhir.us.core610"
+                                                                  :dependencies (dissoc root-manifest-deps :hl7.fhir.us.core))
+                                          _ (spit us-core-manifest-file (json/generate-string updated-manifest))
+                                          _  (.renameTo
+                                               ^File (io/file "us-core-610/node_modules/hl7.fhir.us.core")
+                                               (io/file "us-core-610/node_modules/hl7.fhir.us.core610"))]))}
 
          build (clojure "-X:build all")
 

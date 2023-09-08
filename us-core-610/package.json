@@ -1,0 +1,12 @@
+{
+    "dependencies" : {
+        "hl7.fhir.us.core" : "6.1.0",
+        "hl7.fhir.r4.core" : "4.0.1",
+        "hl7.fhir.uv.bulkdata" : "2.0.0",
+        "hl7.fhir.uv.smart-app-launch" : "2.1.0",
+        "us.nlm.vsac" : "0.7.0",
+        "hl7.fhir.uv.sdc" : "3.0.0",
+        "us.cdc.phinvads" : "0.12.0",
+        "ihe.formatcode.fhir" : "1.1.0"
+    }
+}

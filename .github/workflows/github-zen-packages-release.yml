@@ -67,6 +67,16 @@ jobs:
       - name: cleanup r4.terminology from r4b to avoid clashes
         run: rm -rf zen-packages/hl7-terminology-r4
 
+      - run: bb zen-profiles-packages "release.txt" "us-core-610/" "zen-packages/"
+        name: Generate & release us-core610
+        env:
+          ZEN_FHIR_RELEASE_GITHUB_USER: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_USER }}
+          ZEN_FHIR_RELEASE_GITHUB_TOKEN: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_TOKEN }}
+          ZEN_FHIR_RELEASE_GITHUB_ORG: ${{ secrets.ZEN_FHIR_RELEASE_GITHUB_ORG }}
+
+      - name: cleanup after us-core601 build
+        run: rm -rf zen-packages/hl7.fhir.r4.core zen-packages/hl7.fhir.uv.bulkdata zen-packages/us.nlm.vsac zen-packages/hl7.fhir.uv.sdc
+
       - run: bb zen-profiles-packages "release.txt" "node_modules/" "zen-packages/"
         name: Generate & release npm Zen packages
         env:
