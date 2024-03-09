@@ -6,4 +6,5 @@
                 "hl7.fhir.us.davinci-pdex-plan-net"
                 "hl7.fhir.us.dme-orders"
                 "hl7.fhir.us.carin-bb"
-                "hl7.fhir.us.mcode"]}
+                "hl7.fhir.us.mcode"
+                "hl7.fhir.uv.genomics-reporting"]}
