@@ -66,7 +66,11 @@
          install-npm
          {:depends [clean-up-npm]
           :task (do
+                  (println "- SLEEP #1")
+                  (Thread/sleep (rand-int 100000))
                   (shell "npm --registry=https://packages.simplifier.net install")
+                  (println "- SLEEP #2")
+                  (Thread/sleep (rand-int 100000))
                   (shell "npm --registry=https://packages.simplifier.net install"))}
 
          pull-nz-igs
