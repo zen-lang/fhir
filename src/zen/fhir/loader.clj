@@ -549,6 +549,7 @@
               (update res :derivation (fn [x] (or x "specialization")))
               res)]
     #_(assert (:derivation res) (str ":derivation is required " (pr-str (:url res))))
+    (println "load-intermidiate" (or (:url res) (:id res)))
     (let [stu3? ((fnil str/starts-with? "") (:fhirVersion res) "3")]
       (->> (get-in res [:differential :element])
            (mapv #(normalize-element % res stu3?))
