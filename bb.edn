@@ -41,11 +41,15 @@
                        (shell {:dir dirname} (format "cp -a package/. ." arch-name))
                        (shell {:dir dirname} "rm -rf package")))))
          :enter (do
+                  (Thread/sleep (rand-int 100000))
                   (println (str purple  "Executing: " clear-color bold (:name (current-task)) bold-end))
                   (def task-start-ts (System/currentTimeMillis)))
-         :leave (println (str green "Task: " bold  (:name (current-task)) bold-end
-                              " " green-underline "finished in "
-                              (- (System/currentTimeMillis) task-start-ts) " ms" clear-color \newline))
+         :leave (do
+                  (Thread/sleep (rand-int 100000))
+                  (println
+                   (str green "Task: " bold  (:name (current-task)) bold-end
+                        " " green-underline "finished in "
+                        (- (System/currentTimeMillis) task-start-ts) " ms" clear-color \newline)))
          set-zen-fhir-version {:doc "Setup zen.fhir/version regex"
                                :task (let [current-git-repo-tag (or (first *command-line-args*) (-> "git describe --tag --abbrev=0" sh str/trim-newline))
                                            semantic-version-pattern (re-pattern "(\\d+)\\.(\\d+)\\.(\\d+)(-.+)?")
@@ -131,12 +135,16 @@
 
          init-r3 {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                   :task (do
+                          (Thread/sleep (rand-int 100000))
                           (shell {:dir "r3"} "npm --registry=https://packages.simplifier.net install")
+                          (Thread/sleep (rand-int 100000))
                           (shell {:dir "r3"} "npm --registry=https://packages.simplifier.net install"))}
 
          init-r3-nictiz-hack {:depends [set-zen-fhir-version set-zen-fhir-lib-version]
                               :task (do
+                                      (Thread/sleep (rand-int 100000))
                                       (shell {:dir "r3-tmp-nictiz-hack"} "npm --registry=https://packages.simplifier.net install")
+                                      (Thread/sleep (rand-int 100000))
                                       (shell {:dir "r3-tmp-nictiz-hack"} "npm --registry=https://packages.simplifier.net install"))}
 
          build-r3-nictiz-hack (binding [*command-line-args* (list "r3-tmp-nictiz-hack/"
@@ -147,7 +155,9 @@
                                 (run 'build-stanadlone-projects))
 
          build-us-core-601 {:task (do
+                                    (Thread/sleep (rand-int 100000))
                                     (shell {:dir "us-core-610"} "npm --registry=https://packages.simplifier.net install")
+                                    (Thread/sleep (rand-int 100000))
                                     (shell {:dir "us-core-610"} "npm --registry=https://packages.simplifier.net install")
                                     (let [root-manifest-file (io/file "us-core-610/package.json")
                                           root-manifest-deps (:dependencies (json/parse-string (slurp root-manifest-file) keyword))
