@@ -53,7 +53,8 @@
                                                               :produce-remote-ftr-manifests? produce-remote-ftr-manifests?
                                                               :ftr-build-deps-coords         ftr-build-deps-coords})]
     (if-let [error (:error (last release-result))]
-      (throw (ex-info "Release error" {:error error}))
+      (do (throw (ex-info "Release error" {:error error}))
+          (println (format "RELEASE ERROR:\n%s" error)))
       (->> (map :package-git-url release-result)
            (clojure.string/join "\n")))))
 
