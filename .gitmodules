@@ -4,3 +4,4 @@
 [submodule "libs/ftr"]
 	path = libs/ftr
 	url = git@github.com:HealthSamurai/ftr.git
+        shallow = true
