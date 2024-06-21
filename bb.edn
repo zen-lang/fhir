@@ -41,11 +41,9 @@
                        (shell {:dir dirname} (format "cp -a package/. ." arch-name))
                        (shell {:dir dirname} "rm -rf package")))))
          :enter (do
-                  (Thread/sleep (rand-int 100000))
                   (println (str purple  "Executing: " clear-color bold (:name (current-task)) bold-end))
                   (def task-start-ts (System/currentTimeMillis)))
          :leave (do
-                  (Thread/sleep (rand-int 100000))
                   (println
                    (str green "Task: " bold  (:name (current-task)) bold-end
                         " " green-underline "finished in "
